@@ -19,6 +19,10 @@ type
 	 *}
 	TEachFunction = reference to function(AQ:TAQ; O:TObject):Boolean;
 	{**
+	 * Typ für anonyme Benachrichtigungs-Events, der auch mit TNotifyEvent kompatibel ist
+	 *}
+	TAnonymNotifyEvent = reference to procedure(Sender:TObject);
+	{**
 	 * Typ für nicht lineare Beschleunigungsfunktionen
 	 *
 	 * @param StartValue Der Wert, ab dem gestartet wird
@@ -65,9 +69,13 @@ type
 	public
 		constructor Infinite(Interval:Integer; Each:TEachFunction);
 		constructor Finite(Duration:Integer; Each, LastEach:TEachFunction);
+
 		function Each:TEachFunction;
 		function IsFinished:Boolean;
+		function IsFinite:Boolean;
 		function Progress:Real;
+
+		procedure Finish;
 	end;
 
 	TAQ = class(Contnrs.TObjectList)
@@ -88,6 +96,8 @@ type
 		procedure IntervalTimerEvent(Sender:TObject);
 		procedure AnimateObject(O:TObject; Duration:Integer; Each:TEachFunction;
 			LastEach:TEachFunction = nil);
+
+		procedure HeartBeat;
 	public
 		constructor Create; reintroduce;
 		destructor Destroy; override;
@@ -98,8 +108,15 @@ type
 		function EachInterval(Interval:Integer; Each:TEachFunction):TAQ;
 		function EachTimer(Duration:Integer; Each:TEachFunction; LastEach:TEachFunction = nil):TAQ;
 
+		function FinishTimers:TAQ;
+		function CancelTimers:TAQ;
+		function CancelIntervals:TAQ;
+
+		function Filter(ByClass:TClass):TAQ; overload;
+		function Filter(FilterEach:TEachFunction):TAQ; overload;
+
 		function BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Duration:Integer;
-			EaseType:TEaseType = etLinear; OnComplete:TNotifyEvent = nil):TAQ;
+			EaseType:TEaseType = etLinear; OnComplete:TAnonymNotifyEvent = nil):TAQ;
 
 		class function Take(Objects:TObjectArray):TAQ; overload;
 		class function Take(AQ:TAQ):TAQ; overload;
@@ -113,26 +130,32 @@ type
 		 *}
 		property CurrentInterval:TInterval read FCurrentInterval;
 		{**
-		 * Sagt aus, ob die aktuelle Instanz eine Animation durchführt
+		 * Sagt aus, ob die aktuelle Instanz eine Animation durchführt. Sie wird nur von
+		 * internen XAnimation-Methoden gesetzt. Manuelle Animationen mittels EachTimer können
+		 * das hier nicht setzen.
 		 *}
 		property Animating:Boolean read FAnimating;
 	end;
 
-	function LinearEase(StartValue, EndValue, Progress:Real):Real; forward;
-	function QuadraticEase(StartValue, EndValue, Progress:Real):Real; forward;
-	function MassiveQuadraticEase(StartValue, EndValue, Progress:Real):Real; forward;
+//	function LinearEase(StartValue, EndValue, Progress:Real):Real;
+//	function QuadraticEase(StartValue, EndValue, Progress:Real):Real;
+//	function MassiveQuadraticEase(StartValue, EndValue, Progress:Real):Real;
 
 implementation
 
 const
 	{**
-	 * Die maximale Lebensdauer einer TAQ-Instanz bei Nichtbeschäftigung
+	 * Die maximale Lebensdauer einer TAQ-Instanz bei Nichtbeschäftigung (msec)
 	 *}
 	MaxLifeTime = 10000;
 	{**
 	 * Der Interval basiert auf 40 msec (25fps = 1 sec)
 	 *}
 	IntervalResolution = 40;
+	{**
+	 * Interval für GarbageCollector in msec
+	 *}
+	GarbageCleanInterval = 1000;
 
 
 function LinearEase(StartValue, EndValue, Progress:Real):Real;
@@ -178,30 +201,48 @@ end;
  * Instanzen machen...
  *}
 procedure TAQ.AnimateObject(O:TObject; Duration:Integer; Each, LastEach:TEachFunction);
+var
+	CustomLastEach:TEachFunction;
 begin
+	CustomLastEach:=function(AQ:TAQ; O:TObject):Boolean
+	begin
+		Result:=TRUE;
+		AQ.FAnimating:=FALSE;
+		if Assigned(LastEach) then
+			LastEach(AQ, O)
+		else
+			Each(AQ, O);
+	end;
 	{**
 	 * Wenn es nur ein Objekt ist, welches sich in der aktuellen TAQ-Instanz befindet, dann kann
 	 * man die aktuelle TAQ auch nehmen...
 	 *}
 	if (Count = 1) and (Items[0] = O) then
-		EachTimer(Duration, Each, LastEach)
+	begin
+		EachTimer(Duration, Each, CustomLastEach).FAnimating:=TRUE;
+	end
 	{**
 	 * ...andernfalls muss ein neues her.
 	 *}
 	else
-		TAQ.Take(O).EachTimer(Duration, Each, LastEach);
+	begin
+		TAQ.Take(O).EachTimer(Duration, Each, CustomLastEach).FAnimating:=TRUE;
+	end;
 end;
 
 {**
  * Liefert die TAQ-Instanz, die mit der Animierung des übergebenen Objekts beschäftigt ist
  *
- * Achtung: Wird das Objekt nicht animiert, wird nil geliefert!
+ * @see TAQ.Animating
+ *
+ * Achtung: Wird das Objekt nicht animiert, wird eine neue TAQ-Instanz mit dem übergebenen Objekt
+ * geliefert! Diese ist natürlich auch gemanaged und wird automatisch freigegeben.
  *}
 class function TAQ.Animator(SO:TObject):TAQ;
 var
 	AnimatorAQ:TAQ;
 begin
-	AnimatorAQ=nil;
+	AnimatorAQ:=nil;
 	{**
 	 * Der GarbageCollector enthält ja bekanntlich alle TAQ-Instanzen
 	 *}
@@ -220,7 +261,11 @@ begin
 			if not Result and TAQ(O).Animating then
 				AnimatorAQ:=TAQ(O);
 		end);
-	Result:=AnimatorAQ;
+
+	if Assigned(AnimatorAQ) then
+		Result:=AnimatorAQ
+	else
+		Result:=TAQ.Take(SO);
 end;
 
 {**
@@ -236,11 +281,11 @@ end;
  *        beendet ist. Das Ereignis wird übrigens für jedes Objekt, das animiert wird, ausgelöst.
  *}
 function TAQ.BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Duration:Integer;
-	EaseType:TEaseType; OnComplete:TNotifyEvent):TAQ;
+	EaseType:TEaseType; OnComplete:TAnonymNotifyEvent):TAQ;
 var
 	WholeEach:TEachFunction;
 begin
-	Result:=Self;
+	Result:=Self.Filter(TControl); //Self;
 
 	WholeEach:=function(AQ:TAQ; O:TObject):Boolean
 	var
@@ -249,8 +294,8 @@ begin
 	begin
 		Result:=TRUE;
 
-		if not (O is TControl) then
-			Exit;
+//		if not (O is TControl) then
+//			Exit;
 
 		with TControl(O) do
 		begin
@@ -292,10 +337,42 @@ begin
 			TControl(O).SetBounds(AniLeft, AniTop, AniWidth, AniHeight);
 		end;
 
-		AnimateObject(O, Duration, EachF);
+		AQ.AnimateObject(O, Duration, EachF);
 	end;
 
 	Result.Each(WholeEach);
+end;
+
+{**
+ * Bricht alle, mittels EachInterval erstellte, Intervale ab
+ *}
+function TAQ.CancelIntervals:TAQ;
+var
+	TempInterval:TInterval;
+begin
+	Result:=Self;
+	FCurrentInterval:=nil;
+	for TempInterval in FIntervals do
+		if not TempInterval.IsFinite then
+			FIntervals.Remove(TempInterval);
+end;
+
+{**
+ * Bricht alle, mittels EachTimer erstellte, Intervale ab
+ *
+ * Die Timer können dadurch !nicht! die letzte Each-Funktion ausführen. Siehe FinishTimers.
+ *
+ * @see TAQ.FinishTimers
+ *}
+function TAQ.CancelTimers:TAQ;
+var
+	TempInterval:TInterval;
+begin
+	Result:=Self;
+	FCurrentInterval:=nil;
+	for TempInterval in FIntervals do
+		if TempInterval.IsFinite then
+			FIntervals.Remove(TempInterval);
 end;
 
 {**
@@ -321,16 +398,7 @@ constructor TAQ.Create;
 begin
 	inherited Create(FALSE);
 	FIntervals:=TObjectList<TInterval>.Create(TRUE);
-	FLifeTick:=GetTickCount;
-end;
-
-class function TAQ.Take(Objects:TObjectArray):TAQ;
-var
-	cc:Integer;
-begin
-	Result:=Managed;
-	for cc:=0 to Length(Objects) - 1 do
-		Result.Add(Objects[cc]);
+	HeartBeat;
 end;
 
 destructor TAQ.Destroy;
@@ -356,7 +424,7 @@ begin
 		if not EachFunction(Self, Items[cc]) or (cc >= Count) then
 			Break;
 	end;
-	FLifeTick:=GetTickCount;
+	HeartBeat;
 end;
 
 {**
@@ -367,6 +435,7 @@ begin
 	Result:=Self;
 	FIntervals.Add(TInterval.Infinite(Interval, Each));
 	CheckIntervalTimer;
+	HeartBeat;
 end;
 
 {**
@@ -377,8 +446,12 @@ begin
 	Result:=Self;
 	FIntervals.Add(TInterval.Finite(Duration, Each, LastEach));
 	CheckIntervalTimer;
+	HeartBeat;
 end;
 
+{**
+ * Liefert eine Beschleunigungsfunktion anhand eines TEaseType
+ *}
 class function TAQ.EaseFunction(EaseType:TEaseType):TEaseFunction;
 begin
 	case EaseType of
@@ -389,6 +462,68 @@ begin
 		else
 			Result:=LinearEase;
 	end;
+end;
+
+{**
+ * Erstellt eine neue TAQ-Instanz, die alle hier verfügbare Objekte enthält, wenn sie von der
+ * übergebenen Klasse abgeleitet sind
+ *}
+function TAQ.Filter(ByClass:TClass):TAQ;
+var
+	NewAQ:TAQ;
+begin
+	NewAQ:=Managed;
+
+	Each(
+	function(AQ:TAQ; O:TObject):Boolean
+	begin
+		Result:=TRUE;
+		if O is ByClass then
+			NewAQ.Add(O);
+	end);
+
+	Result:=NewAQ;
+end;
+
+{**
+ * Übernimmt alle Objekte aus der aktuellen in eine neue TAQ-Instanz, die von der übergebenen
+ * Each-Funktion mit TRUE bestätigt werden.
+ *}
+function TAQ.Filter(FilterEach:TEachFunction):TAQ;
+var
+	NewAQ:TAQ;
+begin
+	NewAQ:=Managed;
+	Each(
+	function(OAQ:TAQ; OO:TObject):Boolean
+	begin
+		Result:=TRUE;
+		if FilterEach(OAQ, OO) then
+			NewAQ.Add(OO);
+	end);
+	Result:=NewAQ;
+end;
+
+{**
+ * Beendet alle, mittels EachTimer erstellte, Intervale
+ *
+ * Auf diese Weise haben die Intervale die Möglichkeit, ihre letzte Each-Funktion auszuführen.
+ *
+ * Alle mittels XAnimation-Methoden gestartete Animationen sollten nur mit dieser Methode beendet
+ * werden, da auf diese Weise das Animating-Flag korrekt zurückgesetzt wird.
+ *
+ * @see TAQ.CancelTimers
+ *}
+function TAQ.FinishTimers:TAQ;
+var
+	TempInterval:TInterval;
+begin
+	Result:=Self;
+	for TempInterval in FIntervals do
+		{**
+		 * TInterval.Finish beendet nur die endlichen Intervale
+		 *}
+		TempInterval.Finish;
 end;
 
 {**
@@ -404,7 +539,7 @@ begin
 	begin
 		FGarbageCollector:=TAQ.Create;
 		FGarbageCollector.OwnsObjects:=TRUE;
-		FGarbageCollector.EachInterval(1000,
+		FGarbageCollector.EachInterval(GarbageCleanInterval,
 			{**
 			 * In GarbageCollector befindet sich der FGarbageCollector selbst und
 			 * in O eine TAQ-Instanz die auf ihre Lebenszeichen untersucht werden muss.
@@ -418,13 +553,26 @@ begin
 				begin
 					GarbageCollector.Remove(CheckAQ);
 					{$IFDEF DEBUG}
-					OutputDebugString(PWideChar(Format('Verbleibende TAQ-Instanzen im GarbageCollector: %d', [GarbageCollector.Count])));
+					OutputDebugString(
+						PWideChar(Format('Verbleibende TAQ-Instanzen im GarbageCollector: %d',
+						[GarbageCollector.Count])));
 					{$ENDIF}
 				end;
 				Result:=TRUE;
 			end);
 	end;
 	Result:=FGarbageCollector;
+end;
+
+{**
+ * Macht einen "Herzschlag"
+ *
+ * Dies bedeutet: FLifeTick wird aktualisiert. Diese Instanz wird dann erst nach Ablauf von
+ * GetTickCount > (FLifeTick + MaxLifeTime) freigegeben.
+ *}
+procedure TAQ.HeartBeat;
+begin
+	FLifeTick:=GetTickCount;
 end;
 
 procedure TAQ.IntervalTimerEvent(Sender:TObject);
@@ -457,8 +605,6 @@ begin
 		CheckIntervalTimer;
 end;
 
-
-
 {**
  * Liefert eine neue gemanagete TAQ-Instanz, die automatisch freigegeben wird, wenn sie nicht
  * mehr verwendet wird.
@@ -469,12 +615,30 @@ begin
 	GarbageCollector.Add(Result);
 end;
 
+{**
+ * Erstellt eine neue gemanagete TAQ-Instanz, mit Objekten aus dem Array
+ *}
+class function TAQ.Take(Objects:TObjectArray):TAQ;
+var
+	cc:Integer;
+begin
+	Result:=Managed;
+	for cc:=0 to Length(Objects) - 1 do
+		Result.Add(Objects[cc]);
+end;
+
+{**
+ * Erstellt eine neue gemanagete TAQ-Instanz, mit einem einzelnen übergebenen Objekt
+ *}
 class function TAQ.Take(AObject:TObject):TAQ;
 begin
 	Result:=Managed;
 	Result.Add(AObject);
 end;
 
+{**
+ * Erstellt eine neue gemanagete TAQ-Instanz, mit Objekten aus einer anderen TAQ-Instanz
+ *}
 class function TAQ.Take(AQ:TAQ):TAQ;
 begin
 	Result:=Managed;
@@ -516,12 +680,21 @@ begin
 end;
 
 {**
+ * Manuelle Beendigung eines endlichen Intervals
+ *}
+procedure TInterval.Finish;
+begin
+	if IsFinite and not IsFinished then
+		FLastTick:=GetTickCount;
+end;
+
+{**
  * Erstellt einen endlichen Interval
  *
  * @param Duration Die Dauer des gesamten Intervals in Millisekunden
  * @param Each Each-Funktion, die in Teilintervalen ausgeführt wird. Es ist durchaus möglich, dass
  *        diese nie ausgeführt wird, es sei denn der LastEach-Parameter wird nicht angegeben.
- * @param LastEach Each-Funktion, die in jedem Fall beim Ablauf des Gesamtinterval ausgeführt wird.
+ * @param LastEach Each-Funktion, die in jedem Fall beim Ablauf des Gesamtintervals ausgeführt wird.
  *        Wird hier nil angegeben, wird stellvertretend die im Each-Parameter angegebene Funktion
  *        verwendet.
  *}
@@ -564,6 +737,14 @@ begin
 end;
 
 {**
+ * Sagt aus, ob das Interval endlich ist
+ *}
+function TInterval.IsFinite:Boolean;
+begin
+	Result:=FLastTick > 0;
+end;
+
+{**
  * Liefert den Fortschritt des Intervals als Fließkommazahl im Bereich von 0..1
  *}
 function TInterval.Progress:Real;
@@ -578,5 +759,15 @@ procedure TInterval.UpdateNextTick;
 begin
 	FNextTick:=GetTickCount + Cardinal(FInterval);
 end;
+
+initialization
+
+finalization
+{**
+ * Alle offenen TAQ-Instanzen freigeben
+ *}
+if Assigned(TAQ.FGarbageCollector) then
+	TAQ.FGarbageCollector.Free;
+
 
 end.
