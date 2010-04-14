@@ -19,7 +19,7 @@ type
 	 *}
 	TEachFunction = reference to function(AQ:TAQ; O:TObject):Boolean;
 	{**
-	 * Typ für anonyme Benachrichtigungs-Events, der auch mit TNotifyEvent kompatibel ist
+	 * Typ für anonyme Benachrichtigungs-Events, der aber auch mit TNotifyEvent kompatibel ist
 	 *}
 	TAnonymNotifyEvent = reference to procedure(Sender:TObject);
 	{**
@@ -55,7 +55,7 @@ type
 		 *}
 		FInterval:Integer;
 		{**
-		 * Die Each-Funktion, die nicht unbedingt ausgeführt wird ()
+		 * Die Each-Funktion, die nicht unbedingt ausgeführt wird
 		 *}
 		FNextEach,
 		{**
@@ -82,13 +82,13 @@ type
 	private
 	class var
 		FGarbageCollector:TAQ;
-	var
+	protected
 		FLifeTick:Cardinal;
 		FIntervals:TObjectList<TInterval>;
 		FIntervalTimer:TTimer;
 		FCurrentInterval:TInterval;
 		FAnimating:Boolean;
-	protected
+
 		class function GarbageCollector:TAQ;
 		class function Managed:TAQ;
 
@@ -117,6 +117,13 @@ type
 
 		function BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Duration:Integer;
 			EaseType:TEaseType = etLinear; OnComplete:TAnonymNotifyEvent = nil):TAQ;
+
+		function ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration:Integer;
+			OnComplete:TAnonymNotifyEvent = nil):TAQ;
+
+		function Append(Objects:TObjectArray):TAQ; overload;
+		function Append(AQ:TAQ):TAQ; overload;
+		function Append(AObject:TObject):TAQ; overload;
 
 		class function Take(Objects:TObjectArray):TAQ; overload;
 		class function Take(AQ:TAQ):TAQ; overload;
@@ -184,6 +191,29 @@ end;
 
 {** TAQ **}
 
+
+
+function TAQ.Append(Objects:TObjectArray):TAQ;
+var
+	cc:Integer;
+begin
+	for cc:=0 to Length(Objects) - 1 do
+		Add(Objects[cc]);
+	Result:=Self;
+end;
+
+function TAQ.Append(AQ:TAQ):TAQ;
+begin
+	if AQ <> Self then
+		Assign(AQ);
+	Result:=Self;
+end;
+
+function TAQ.Append(AObject:TObject):TAQ;
+begin
+	Add(AObject);
+	Result:=Self;
+end;
 
 {**
  * Startet die Animation für ein einzelnes Objekt
@@ -285,7 +315,7 @@ function TAQ.BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Durat
 var
 	WholeEach:TEachFunction;
 begin
-	Result:=Self.Filter(TControl); //Self;
+	Result:=Self.Filter(TControl);
 
 	WholeEach:=function(AQ:TAQ; O:TObject):Boolean
 	var
@@ -293,9 +323,6 @@ begin
 		PrevLeft, PrevTop, PrevWidth, PrevHeight:Integer;
 	begin
 		Result:=TRUE;
-
-//		if not (O is TControl) then
-//			Exit;
 
 		with TControl(O) do
 		begin
@@ -327,7 +354,7 @@ begin
 			if Progress = 1 then
 			begin
 				{$IFDEF DEBUG}
-				OutputDebugString(PWideChar('Animation beendet für ' + IntToHex(Integer(O),
+				OutputDebugString(PWideChar('BoundsAnimation beendet für $' + IntToHex(Integer(O),
 					SizeOf(Integer) * 2)));
 				{$ENDIF}
 				if Assigned(OnComplete) then
@@ -401,6 +428,10 @@ begin
 	HeartBeat;
 end;
 
+{**
+ * Wichtig:
+ * TAQ-Instanzen sollten nie außerhalb freigegeben werden, das ist Aufgabe des GarbageCollectors!
+ *}
 destructor TAQ.Destroy;
 begin
 	if Assigned(FIntervalTimer) then
@@ -509,7 +540,7 @@ end;
  *
  * Auf diese Weise haben die Intervale die Möglichkeit, ihre letzte Each-Funktion auszuführen.
  *
- * Alle mittels XAnimation-Methoden gestartete Animationen sollten nur mit dieser Methode beendet
+ * Alle mittels XAnimation-Methoden gestartete Animationen sollten mit dieser Methode beendet
  * werden, da auf diese Weise das Animating-Flag korrekt zurückgesetzt wird.
  *
  * @see TAQ.CancelTimers
@@ -612,19 +643,77 @@ end;
 class function TAQ.Managed:TAQ;
 begin
 	Result:=TAQ.Create;
-	GarbageCollector.Add(Result);
+	GarbageCollector.Append(Result);
+end;
+
+function TAQ.ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration:Integer;
+	OnComplete:TAnonymNotifyEvent):TAQ;
+var
+	WholeEach:TEachFunction;
+begin
+	Result:=Self.Filter(TControl);
+
+	WholeEach:=function(AQ:TAQ; O:TObject):Boolean
+	var
+		EachF:TEachFunction;
+		PrevLeft, PrevTop:Integer;
+	begin
+		Result:=TRUE;
+
+		with TControl(O) do
+		begin
+			PrevLeft:=Left;
+			PrevTop:=Top;
+		end;
+
+		EachF:=function(AQ:TAQ; O:TObject):Boolean
+		var
+			Progress:Real;
+			AniLeft, AniTop:Integer;
+
+			function Swing(Times, Diff:Integer; Progress:Real):Integer;
+			begin
+				Result:=Ceil(Diff * Sin(Progress * Times * 6.284));
+			end;
+		begin
+			Result:=TRUE;
+			Progress:=AQ.CurrentInterval.Progress;
+			AniLeft:=PrevLeft;
+			AniTop:=PrevTop;
+
+			if Progress <> 0 then
+			begin
+				if XDiff > 0 then
+					AniLeft:=AniLeft + Swing(XTimes, XDiff, Progress);
+				if YDiff > 0 then
+					AniTop:=PrevTop + Swing(YTimes, YDiff, Progress);
+			end
+			else if Progress = 1 then
+			begin
+				{$IFDEF DEBUG}
+				OutputDebugString(PWideChar('ShakeAnimation beendet für $' + IntToHex(Integer(O),
+					SizeOf(Integer) * 2)));
+				{$ENDIF}
+				if Assigned(OnComplete) then
+					OnComplete(O);
+			end;
+
+			with TControl(O) do
+				SetBounds(AniLeft, AniTop, Width, Height);
+		end;
+
+		AQ.AnimateObject(O, Duration, EachF);
+	end;
+
+	Result.Each(WholeEach);
 end;
 
 {**
  * Erstellt eine neue gemanagete TAQ-Instanz, mit Objekten aus dem Array
  *}
 class function TAQ.Take(Objects:TObjectArray):TAQ;
-var
-	cc:Integer;
 begin
-	Result:=Managed;
-	for cc:=0 to Length(Objects) - 1 do
-		Result.Add(Objects[cc]);
+	Result:=Managed.Append(Objects);
 end;
 
 {**
