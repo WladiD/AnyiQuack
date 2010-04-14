@@ -643,7 +643,7 @@ end;
 class function TAQ.Managed:TAQ;
 begin
 	Result:=TAQ.Create;
-	GarbageCollector.Append(Result);
+	GarbageCollector.Add(Result);
 end;
 
 function TAQ.ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration:Integer;
@@ -721,8 +721,7 @@ end;
  *}
 class function TAQ.Take(AObject:TObject):TAQ;
 begin
-	Result:=Managed;
-	Result.Add(AObject);
+	Result:=Managed.Append(AObject);
 end;
 
 {**
@@ -730,8 +729,7 @@ end;
  *}
 class function TAQ.Take(AQ:TAQ):TAQ;
 begin
-	Result:=Managed;
-	Result.Assign(AQ);
+	Result:=Managed.Append(AQ);
 end;
 
 {** TInterval **}
