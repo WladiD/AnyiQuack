@@ -112,18 +112,27 @@ type
 		procedure AnimateObject(O:TObject; Duration:Integer; Each:TEachFunction;
 			LastEach:TEachFunction = nil);
 
+		function CustomFiller(Filler:TEachFunction; Append, Recurse:Boolean):TAQ;
+
 		procedure HeartBeat;
 
 		{**
 		 * Bestimmt, ob TAQ.Each ggf. andere enthaltene TAQ-Instanzen rekursiv mit der übergebenen
 		 * Each-Funktion durchlaufen soll.
 		 *
-		 * Standard ist TRUE. Beim GarbageCollector aber FALSE.
+		 * Standard ist TRUE. Beim FGarbageCollector und FActiveIntervalAQs aber FALSE.
 		 *}
 		property Recurse:Boolean read FRecurse;
 	public
 		constructor Create; reintroduce;
 		destructor Destroy; override;
+
+		class function Managed:TAQ;
+		class function Unmanaged:TAQ;
+
+		class function Take(Objects:TObjectArray):TAQ; overload;
+		class function Take(Objects:TObjectList):TAQ; overload;
+		class function Take(AObject:TObject):TAQ; overload;
 
 		class function Ease(EaseType:TEaseType):TEaseFunction; overload;
 		class function Ease(EaseFunction:TEaseFunction = nil):TEaseFunction; overload;
@@ -134,16 +143,15 @@ type
 
 		function AppendAQ(AQ:TAQ):TAQ;
 
+		function Children(Append:Boolean = FALSE; Recurse:Boolean = FALSE;
+			ChildrenFiller:TEachFunction = nil):TAQ;
+		function Parents(Append:Boolean = FALSE; Recurse:Boolean = FALSE;
+			ParentsFiller:TEachFunction = nil):TAQ;
+
 		function AnimationActors(IncludeOrphans:Boolean = TRUE):TAQ;
 		function IntervalActors(IncludeOrphans:Boolean = TRUE):TAQ;
 		function TimerActors(IncludeOrphans:Boolean = TRUE):TAQ;
 
-		class function Managed:TAQ;
-		class function Unmanaged:TAQ;
-
-		class function Take(Objects:TObjectArray):TAQ; overload;
-		class function Take(Objects:TObjectList):TAQ; overload;
-		class function Take(AObject:TObject):TAQ; overload;
 
 		function Each(EachFunction:TEachFunction):TAQ;
 		function EachInterval(Interval:Integer; Each:TEachFunction):TAQ;
@@ -373,22 +381,38 @@ function TAQ.AnimationActors(IncludeOrphans:Boolean):TAQ;
 var
 	Actors:TAQ;
 begin
-	if IncludeOrphans then
-		Exit(TimerActors);
-
 	Actors:=Managed;
 
-	TimerActors(FALSE).Each(
+	Each(
 		{**
-		 * @param AQ Enthält stets das TAQ-Object von TimerActors
-		 * @param O Ist ein TAQ-Objekt, welches schonmal mind. einen Timer laufen hat und somit
-		 *        ein Animator sein könnte.
+		 * @param SAQ Synonym für SourceAccessQuery und ist Self von TimerActors
+		 * @param SO Synonym für SourceObject und beinhaltet das Objekt für das die passenden
+		 *        TAQ-Instanzen gesucht werden
 		 *}
-		function(AQ:TAQ; O:TObject):Boolean
+		function(SAQ:TAQ; SO:TObject):Boolean
+		var
+			SOFound:Boolean;
 		begin
-			Result:=TRUE; // Each soll komplett durchlaufen
-			if TAQ(O).Animating then
-				Actors.Add(O);
+			Result:=TRUE; // Each soll stets komplett durchlaufen
+			SOFound:=FALSE;
+			GarbageCollector.Each(
+				{**
+				 * @param AQ Enthält den GarbageCollector
+				 * @param O Enthält eine TAQ-Instanz, die darauf untersucht wird, ob sie SO enthält
+				 *        einen aktiven Timer hat und gerade animiert wird
+				 *}
+				function(AQ:TAQ; O:TObject):Boolean
+				begin
+					Result:=TRUE; // Each soll stets komplett durchlaufen
+					with TAQ(O) do
+						if (IndexOf(SO) >= 0) and HasTimer and Animating then
+						begin
+							Actors.Add(O);
+							SOFound:=TRUE;
+						end;
+				end);
+			if IncludeOrphans and not SOFound then
+				Actors.Add(SO);
 		end);
 
 	Result:=Actors;
@@ -541,6 +565,38 @@ begin
 end;
 
 {**
+ * Ermittelt die Kindsobjekte für die enthaltenen Objekte
+ *
+ * @param ChildrenFiller Optional. Standard ist nil. Wie der Name schon vermuten lässt, hat die
+ *        Funktion die Aufgabe, dem übergebenen TAQ-Objekt die Kindsobjekte hinzuzufügen. Wird der
+ *        Parameter nicht angegeben (nil), so wird eine interne Funktion verwendet, die nur
+ *        von TComponent abgeleitete Objekte akzeptiert und deren Components-Eigenschaft
+ *        berücksichtigt.
+ * @param Append Optional. Standard ist FALSE. Bestimmt, ob die Kindsobjekte der aktuellen
+ *        TAQ-Instanz hinzugefügt werden sollen (TRUE) oder ob eine neue Instanz erstellt
+ *        werden soll (FALSE), die zurückgeliefert wird.
+ * @param Recurse Optional. Standard ist FALSE. Bestimmt, ob die ermittelten Kindsobjekte wiederrum
+ *        auf Kindsobjekte untersucht werden sollen.
+ *}
+function TAQ.Children(Append, Recurse:Boolean; ChildrenFiller:TEachFunction):TAQ;
+begin
+	if not Assigned(ChildrenFiller) then
+		ChildrenFiller:=function(AQ:TAQ; O:TObject):Boolean
+		var
+			cc:Integer;
+		begin
+			Result:=TRUE;
+			if not (O is TComponent) then
+				Exit;
+			with TComponent(O) do
+				for cc:=0 to ComponentCount - 1 do
+					AQ.Add(Components[cc]);
+		end;
+
+	Result:=CustomFiller(ChildrenFiller, Append, Recurse);
+end;
+
+{**
  * Überprüft, ob FIntervalTimer erstellt werden muss, oder ob er freigegeben werden kann
  *}
 
@@ -549,6 +605,42 @@ begin
 	inherited Create(FALSE);
 	FRecurse:=TRUE;
 	HeartBeat;
+end;
+
+function TAQ.CustomFiller(Filler:TEachFunction; Append, Recurse:Boolean):TAQ;
+var
+	TargetAQ:TAQ;
+
+	procedure Each(SourceAQ:TAQ);
+	var
+		TempAQ:TAQ;
+	begin
+		TempAQ:=Unmanaged;
+		try
+			SourceAQ.Each(
+				function(AQ:TAQ; O:TObject):Boolean
+				begin
+					Result:=Filler(TempAQ, O);
+				end);
+
+			if TempAQ.Count = 0 then
+				Exit;
+
+			TargetAQ.Append(TempAQ);
+
+			if Recurse then
+				Each(TempAQ);
+		finally
+			TempAQ.Free;
+		end;
+	end;
+begin
+	if Append then
+		TargetAQ:=Self
+	else
+		TargetAQ:=Managed;
+	Each(Self);
+	Result:=TargetAQ;
 end;
 
 {**
@@ -831,8 +923,8 @@ end;
 {**
  * Der globale OnTimer-Event-Handler von FIntervalTimer
  *
- * Um Speicher zu sparen, wird nur ein TTimer verwendet, der mit einem festen Interval läuft. Um
- * nun das Event an die richtigen TAQ-Instanzen zu leiten, wird FActiveIntervalAQs verwendet.
+ * Um Speicher zu sparen, wird nur ein TTimer verwendet, der mit einer festen Auflösung läuft.
+ * Um nun das Event an die richtigen TAQ-Instanzen zu leiten, wird FActiveIntervalAQs verwendet.
  *}
 class procedure TAQ.GlobalIntervalTimerEvent(Sender:TObject);
 begin
@@ -1004,7 +1096,23 @@ end;
 class function TAQ.Managed:TAQ;
 begin
 	Result:=Unmanaged;
+	{**
+	 * Das ist das ganze Geheimnis des TAQ-Objekt-Managing ;)
+	 *}
 	GarbageCollector.Add(Result);
+end;
+
+function TAQ.Parents(Append, Recurse:Boolean; ParentsFiller:TEachFunction):TAQ;
+begin
+	if not Assigned(ParentsFiller) then
+		ParentsFiller:=function(AQ:TAQ; O:TObject):Boolean
+		begin
+			Result:=TRUE;
+			if not ((O is TComponent) and (TComponent(O).HasParent)) then
+				Exit;
+			AQ.Add(TComponent(O).GetParentComponent);
+		end;
+	Result:=CustomFiller(ParentsFiller, Append, Recurse);
 end;
 
 {**
@@ -1155,6 +1263,16 @@ end;
  * Liefert eine neue !nicht! gemanagete TAQ-Instanz
  *
  * Sie muss manuell freigegeben werden.
+ *
+ * Ein sinnvolles Einsatzszenario wäre:
+ *
+ * TAQ.Unmanaged.Append(ObjectList).Each(function...).Free;
+ *
+ * Einschränkung: Die EachTimer- und EachInterval-Methoden können mit ungemanageten TAQ-Instanzen
+ * nicht verwendet werden, da die OnTimer-Event-Verteilung über den GarbageCollector in der Methode
+ * TAQ.GlobalIntervalTimerEvent abgewickelt wird.
+ *
+ * @see TAQ.GlobalIntervalTimerEvent
  *}
 class function TAQ.Unmanaged:TAQ;
 begin
@@ -1163,7 +1281,7 @@ end;
 
 {**
  * Aktualisiert FActiveIntervalAQs, die TAQ-Objekte enthält, die wiederrum mindestens ein aktives
- * Interval besitzen.
+ * Interval/Timer besitzen.
  *}
 class procedure TAQ.UpdateActiveIntervalAQs;
 begin
@@ -1184,6 +1302,7 @@ begin
 	 * Der GarbageCollector ist immer mit dabei
 	 *}
 	FActiveIntervalAQs.Add(GarbageCollector);
+
 	{$IFDEF DEBUG}
 		OutputDebugString(PWideChar('TAQ-Instanzen mit Intervallen: ' +
 			IntToStr(FActiveIntervalAQs.Count)));
