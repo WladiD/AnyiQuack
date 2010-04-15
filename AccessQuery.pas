@@ -3,7 +3,7 @@ unit AccessQuery;
 interface
 
 uses
-	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Generics.Collections, Windows, Math;
+	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Math;
 
 type
 	TAQ = class;
@@ -84,14 +84,16 @@ type
 		FGarbageCollector:TAQ;
 	protected
 		FLifeTick:Cardinal;
-		FIntervals:TObjectList<TInterval>;
+		FIntervals:TObjectList;
 		FIntervalTimer:TTimer;
 		FCurrentInterval:TInterval;
 		FAnimating:Boolean;
+		FRecurse:Boolean;
 
 		class function GarbageCollector:TAQ;
 		class function Managed:TAQ;
 
+		function GetIntervals:TObjectList;
 		procedure CheckIntervalTimer;
 		procedure IntervalTimerEvent(Sender:TObject);
 		procedure AnimateObject(O:TObject; Duration:Integer; Each:TEachFunction;
@@ -122,11 +124,11 @@ type
 			OnComplete:TAnonymNotifyEvent = nil):TAQ;
 
 		function Append(Objects:TObjectArray):TAQ; overload;
-		function Append(AQ:TAQ):TAQ; overload;
+		function Append(Objects:TObjectList):TAQ; overload;
 		function Append(AObject:TObject):TAQ; overload;
 
 		class function Take(Objects:TObjectArray):TAQ; overload;
-		class function Take(AQ:TAQ):TAQ; overload;
+		class function Take(Objects:TObjectList):TAQ; overload;
 		class function Take(AObject:TObject):TAQ; overload;
 
 		class function Animator(SO:TObject):TAQ;
@@ -191,28 +193,45 @@ end;
 
 {** TAQ **}
 
-
-
+{**
+ * Fügt mehrere Objekte mittels eines Objekt-Arrays hinzu
+ *
+ * Fungiert als Shortcut, für die Hinzufügung mehrerer Objekte ohne ein TObjectList-Objekt.
+ *
+ * Beispiel:
+ *
+ * TAQ.Take(Form1).Append(TObjectArray.Create(Button1, Button2));
+ *}
 function TAQ.Append(Objects:TObjectArray):TAQ;
 var
 	cc:Integer;
 begin
+	Result:=Self;
 	for cc:=0 to Length(Objects) - 1 do
 		Add(Objects[cc]);
-	Result:=Self;
 end;
 
-function TAQ.Append(AQ:TAQ):TAQ;
+{**
+ * Fügt mehrere Objekte aus einer TObjectList-Instanz hinzu
+ *}
+function TAQ.Append(Objects:TObjectList):TAQ;
+var
+	cc:Integer;
 begin
-	if AQ <> Self then
-		Assign(AQ);
 	Result:=Self;
+	if Objects = Self then
+		Exit;
+	for cc:=0 to Objects.Count - 1 do
+		Add(Objects[cc]);
 end;
 
+{**
+ * Fügt ein einzelnes Objekt hinzu
+ *}
 function TAQ.Append(AObject:TObject):TAQ;
 begin
-	Add(AObject);
 	Result:=Self;
+	Add(AObject);
 end;
 
 {**
@@ -375,13 +394,16 @@ end;
  *}
 function TAQ.CancelIntervals:TAQ;
 var
-	TempInterval:TInterval;
+	cc:Integer;
 begin
 	Result:=Self;
+	if not Assigned(FIntervals) then
+		Exit;
 	FCurrentInterval:=nil;
-	for TempInterval in FIntervals do
-		if not TempInterval.IsFinite then
-			FIntervals.Remove(TempInterval);
+	for cc:=FIntervals.Count - 1 downto 0 do
+		with TInterval(FIntervals[cc]) do
+			if not IsFinite then
+				FIntervals.Delete(cc);
 end;
 
 {**
@@ -393,13 +415,16 @@ end;
  *}
 function TAQ.CancelTimers:TAQ;
 var
-	TempInterval:TInterval;
+	cc:Integer;
 begin
 	Result:=Self;
+	if not Assigned(FIntervals) then
+		Exit;
 	FCurrentInterval:=nil;
-	for TempInterval in FIntervals do
-		if TempInterval.IsFinite then
-			FIntervals.Remove(TempInterval);
+	for cc:=FIntervals.Count - 1 downto 0 do
+		with TInterval(FIntervals[cc]) do
+			if IsFinite then
+				FIntervals.Delete(cc);
 end;
 
 {**
@@ -407,6 +432,8 @@ end;
  *}
 procedure TAQ.CheckIntervalTimer;
 begin
+	if not Assigned(FIntervals) then
+		Exit;
 	if (FIntervals.Count > 0) and not Assigned(FIntervalTimer) then
 	begin
 		FIntervalTimer:=TTimer.Create(nil);
@@ -424,7 +451,6 @@ end;
 constructor TAQ.Create;
 begin
 	inherited Create(FALSE);
-	FIntervals:=TObjectList<TInterval>.Create(TRUE);
 	HeartBeat;
 end;
 
@@ -436,7 +462,8 @@ destructor TAQ.Destroy;
 begin
 	if Assigned(FIntervalTimer) then
 		FreeAndNil(FIntervalTimer);
-	FIntervals.Free;
+	if Assigned(FIntervals) then
+		FIntervals.Free;
 	inherited;
 end;
 
@@ -464,7 +491,7 @@ end;
 function TAQ.EachInterval(Interval:Integer; Each:TEachFunction):TAQ;
 begin
 	Result:=Self;
-	FIntervals.Add(TInterval.Infinite(Interval, Each));
+	GetIntervals.Add(TInterval.Infinite(Interval, Each));
 	CheckIntervalTimer;
 	HeartBeat;
 end;
@@ -475,7 +502,7 @@ end;
 function TAQ.EachTimer(Duration:Integer; Each, LastEach:TEachFunction):TAQ;
 begin
 	Result:=Self;
-	FIntervals.Add(TInterval.Finite(Duration, Each, LastEach));
+	GetIntervals.Add(TInterval.Finite(Duration, Each, LastEach));
 	CheckIntervalTimer;
 	HeartBeat;
 end;
@@ -547,14 +574,16 @@ end;
  *}
 function TAQ.FinishTimers:TAQ;
 var
-	TempInterval:TInterval;
+	cc:Integer;
 begin
 	Result:=Self;
-	for TempInterval in FIntervals do
+	if not Assigned(FIntervals) then
+		Exit;
+	for cc:=0 to FIntervals.Count - 1 do
 		{**
 		 * TInterval.Finish beendet nur die endlichen Intervale
 		 *}
-		TempInterval.Finish;
+		TInterval(FIntervals[cc]).Finish;
 end;
 
 {**
@@ -596,6 +625,16 @@ begin
 end;
 
 {**
+ * On-Demand-Instanzierung von FIntervals
+ *}
+function TAQ.GetIntervals:TObjectList;
+begin
+	if not Assigned(FIntervals) then
+		FIntervals:=TObjectList.Create(TRUE);
+	Result:=FIntervals;
+end;
+
+{**
  * Macht einen "Herzschlag"
  *
  * Dies bedeutet: FLifeTick wird aktualisiert. Diese Instanz wird dann erst nach Ablauf von
@@ -610,23 +649,23 @@ procedure TAQ.IntervalTimerEvent(Sender:TObject);
 var
 	EachFunction:TEachFunction;
 	AnyRemoved:Boolean;
-	TempInterval:TInterval;
+	cc:Integer;
 begin
-	if not Assigned(FIntervalTimer) or not Assigned(FIntervals) then
+	if not (Assigned(FIntervalTimer) and Assigned(FIntervals)) then
 		Exit;
 
 	AnyRemoved:=FALSE;
 
-	for TempInterval in FIntervals do
+	for cc := FIntervals.Count - 1 downto 0 do
 	begin
-		FCurrentInterval:=TempInterval;
+		FCurrentInterval:=TInterval(FIntervals[cc]);
 		EachFunction:=(CurrentInterval.Each);
 		if Assigned(EachFunction) then
 		begin
 			Each(EachFunction);
 			if CurrentInterval.IsFinished then
 			begin
-				FIntervals.Remove(FCurrentInterval);
+				FIntervals.Delete(cc);
 				FCurrentInterval:=nil;
 				AnyRemoved:=TRUE;
 			end;
@@ -727,9 +766,9 @@ end;
 {**
  * Erstellt eine neue gemanagete TAQ-Instanz, mit Objekten aus einer anderen TAQ-Instanz
  *}
-class function TAQ.Take(AQ:TAQ):TAQ;
+class function TAQ.Take(Objects:TObjectList):TAQ;
 begin
-	Result:=Managed.Append(AQ);
+	Result:=Managed.Append(Objects);
 end;
 
 {** TInterval **}
