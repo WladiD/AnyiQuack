@@ -101,11 +101,12 @@ type
 		FRecurse:Boolean;
 
 		class function GarbageCollector:TAQ;
-		class function Managed:TAQ;
 		class procedure GlobalIntervalTimerEvent(Sender:TObject);
 		class procedure UpdateActiveIntervalAQs;
 
 		function GetIntervals:TObjectList;
+		function HasTimer:Boolean;
+		function HasInterval:Boolean;
 
 		procedure LocalIntervalTimerEvent(Sender:TObject);
 		procedure AnimateObject(O:TObject; Duration:Integer; Each:TEachFunction;
@@ -131,11 +132,18 @@ type
 		function Append(Objects:TObjectList):TAQ; overload;
 		function Append(AObject:TObject):TAQ; overload;
 
+		function AppendAQ(AQ:TAQ):TAQ;
+
+		function AnimationActors(IncludeOrphans:Boolean = TRUE):TAQ;
+		function IntervalActors(IncludeOrphans:Boolean = TRUE):TAQ;
+		function TimerActors(IncludeOrphans:Boolean = TRUE):TAQ;
+
+		class function Managed:TAQ;
+		class function Unmanaged:TAQ;
+
 		class function Take(Objects:TObjectArray):TAQ; overload;
 		class function Take(Objects:TObjectList):TAQ; overload;
 		class function Take(AObject:TObject):TAQ; overload;
-
-		class function Animator(SO:TObject):TAQ;
 
 		function Each(EachFunction:TEachFunction):TAQ;
 		function EachInterval(Interval:Integer; Each:TEachFunction):TAQ;
@@ -279,7 +287,7 @@ var
 begin
 	Result:=Self;
 	{**
-	 * Stack-Overflows vermeiden
+	 * Overflows vermeiden
 	 *}
 	if Objects = Self then
 		Exit;
@@ -294,6 +302,18 @@ function TAQ.Append(AObject:TObject):TAQ;
 begin
 	Result:=Self;
 	Add(AObject);
+end;
+
+{**
+ * Fügt eine TAQ-Instanz als solche hinzu
+ *
+ * Während Append(TObjectList) mit einem TAQ-Objekt als Parameter dessen Objekte hinzufügen würde,
+ * fügt diese Methode das TAQ-Objekt selbst hinzu
+ *}
+function TAQ.AppendAQ(AQ:TAQ):TAQ;
+begin
+	Result:=Self;
+	Add(AQ);
 end;
 
 {**
@@ -341,42 +361,37 @@ begin
 	end;
 end;
 
+
 {**
- * Liefert die TAQ-Instanz, die mit der Animierung des übergebenen Objekts beschäftigt ist
+ * Liefert ein neues TAQ-Objekt mit TAQ-Instanzen, die gerade eine Animation, für die in dieser
+ * Instanz enthaltene Objekte, durchführen.
  *
- * @see TAQ.Animating
- *
- * Achtung: Wird das Objekt nicht animiert, wird eine neue TAQ-Instanz mit dem übergebenen Objekt
- * geliefert! Diese ist natürlich auch gemanaged und wird automatisch freigegeben.
+ * Da die Each-Methode rekursiv mit den enthaltenen TAQ-Objekten arbeitet, laufen weitere Aktionen
+ * transparent ab.
  *}
-class function TAQ.Animator(SO:TObject):TAQ;
+function TAQ.AnimationActors(IncludeOrphans:Boolean):TAQ;
 var
-	AnimatorAQ:TAQ;
+	Actors:TAQ;
 begin
-	AnimatorAQ:=nil;
-	{**
-	 * Der GarbageCollector enthält ja bekanntlich alle TAQ-Instanzen
-	 *}
-	GarbageCollector.Each(
+	if IncludeOrphans then
+		Exit(TimerActors);
+
+	Actors:=Managed;
+
+	TimerActors(FALSE).Each(
+		{**
+		 * @param AQ Enthält stets das TAQ-Object von TimerActors
+		 * @param O Ist ein TAQ-Objekt, welches schonmal mind. einen Timer laufen hat und somit
+		 *        ein Animator sein könnte.
+		 *}
 		function(AQ:TAQ; O:TObject):Boolean
 		begin
-			{**
-			 * Um spätere Verwirrungen vorzubeugen: In AQ befindet sich der GarbageCollector und
-			 * in O eine reguläre TAQ-Instanz
-			 *}
-			Result:=TAQ(O).IndexOf(SO) = - 1;
-			{**
-			 * Folgende if bedeutet, ich habe die entsprechende Instanz gefunden und die ausführende
-			 * Each wird damit beendet.
-			 *}
-			if not Result and TAQ(O).Animating then
-				AnimatorAQ:=TAQ(O);
+			Result:=TRUE; // Each soll komplett durchlaufen
+			if TAQ(O).Animating then
+				Actors.Add(O);
 		end);
 
-	if Assigned(AnimatorAQ) then
-		Result:=AnimatorAQ
-	else
-		Result:=TAQ.Take(SO);
+	Result:=Actors;
 end;
 
 {**
@@ -460,16 +475,32 @@ end;
  *}
 function TAQ.CancelIntervals:TAQ;
 var
-	cc:Integer;
+	CancelInterval:TEachFunction;
 begin
 	Result:=Self;
-	if not Assigned(FIntervals) then
-		Exit;
-	FCurrentInterval:=nil;
-	for cc:=FIntervals.Count - 1 downto 0 do
-		with TInterval(FIntervals[cc]) do
-			if not IsFinite then
-				FIntervals.Delete(cc);
+
+	CancelInterval:=function(AQ:TAQ; O:TObject):Boolean
+	var
+		cc:Integer;
+	begin
+		Result:=TRUE; // Each soll komplett durchlaufen
+		if not (O is TAQ) then
+			Exit;
+		with TAQ(O) do
+		begin
+			if not Assigned(FIntervals) then
+				Exit;
+			FCurrentInterval:=nil;
+			for cc:=FIntervals.Count - 1 downto 0 do
+				with TInterval(FIntervals[cc]) do
+					if not IsFinite then
+						FIntervals.Delete(cc);
+		end;
+	end;
+
+	Each(CancelInterval);
+	CancelInterval(Self, Self);
+
 	UpdateActiveIntervalAQs;
 end;
 
@@ -482,16 +513,30 @@ end;
  *}
 function TAQ.CancelTimers:TAQ;
 var
-	cc:Integer;
+	CancelTimer:TEachFunction;
 begin
 	Result:=Self;
-	if not Assigned(FIntervals) then
-		Exit;
-	FCurrentInterval:=nil;
-	for cc:=FIntervals.Count - 1 downto 0 do
-		with TInterval(FIntervals[cc]) do
-			if IsFinite then
-				FIntervals.Delete(cc);
+
+	CancelTimer:=function(AQ:TAQ; O:TObject):Boolean
+	var
+		cc:Integer;
+		TempAQ:TAQ;
+	begin
+		Result:=TRUE; // Each soll komplett durchlaufen
+		if not (O is TAQ) then
+			Exit;
+		TempAQ:=TAQ(O);
+		if not Assigned(TempAQ.FIntervals) then
+			Exit;
+		TempAQ.FCurrentInterval:=nil;
+		for cc:=TempAQ.FIntervals.Count - 1 downto 0 do
+			with TInterval(TempAQ.FIntervals[cc]) do
+				if IsFinite then
+					TempAQ.FIntervals.Delete(cc);
+	end;
+
+	Each(CancelTimer);
+	CancelTimer(Self, Self);
 	UpdateActiveIntervalAQs;
 end;
 
@@ -520,17 +565,23 @@ end;
 {**
  * Führt die übergebene Funktion für jedes Objekt aus
  *
- * Das ist die Kernfunktion der gesamten Klasse.
+ * Das ist die Kernfunktion der gesamten Klasse, auch wenn sie nicht danach aussieht.
  *}
 function TAQ.Each(EachFunction:TEachFunction):TAQ;
 var
 	cc:Integer;
+	O:TObject;
 begin
 	Result:=Self;
 	for cc:=Count - 1 downto 0 do
 	begin
-		if not EachFunction(Self, Items[cc]) or (cc >= Count) then
+		O:=Items[cc];
+		if not EachFunction(Self, O) then
+			Break
+		else if cc >= Count then
 			Break;
+		if Recurse and (O is TAQ) then
+			TAQ(O).Each(EachFunction);
 	end;
 	HeartBeat;
 end;
@@ -683,16 +734,31 @@ end;
  *}
 function TAQ.FinishTimers:TAQ;
 var
-	cc:Integer;
+	FinishTimer:TEachFunction;
 begin
 	Result:=Self;
-	if not Assigned(FIntervals) then
-		Exit;
-	for cc:=0 to FIntervals.Count - 1 do
-		{**
-		 * TInterval.Finish beendet nur die endlichen Intervale
-		 *}
-		TInterval(FIntervals[cc]).Finish;
+
+	FinishTimer:=function(AQ:TAQ; O:TObject):Boolean
+	var
+		cc:Integer;
+	begin
+		Result:=TRUE;
+		if not (O is TAQ) then
+			Exit;
+		with TAQ(O) do
+		begin
+			if not Assigned(FIntervals) then
+				Exit;
+			for cc:=0 to FIntervals.Count - 1 do
+				{**
+				 * TInterval.Finish beendet nur die endlichen Intervale
+				 *}
+				TInterval(FIntervals[cc]).Finish;
+		end;
+	end;
+
+	Each(FinishTimer);
+	FinishTimer(Self, Self);
 end;
 
 {**
@@ -710,7 +776,7 @@ begin
 		Exit(FGarbageCollector);
 
 	{**
-	 * Ab hier fängt quasi die Instanzierung der gesamten Klasse an
+	 * Ab hier fängt die Instanzierung der gesamten Klasse an
 	 *}
 
 	FIntervalTimer:=TTimer.Create(nil);
@@ -722,6 +788,7 @@ begin
 	end;
 
 	FActiveIntervalAQs:=TAQ.Create;
+	FActiveIntervalAQs.FRecurse:=FALSE;
 
 	FGarbageCollector:=TAQ.Create;
 	FGarbageCollector.OwnsObjects:=TRUE;
@@ -778,6 +845,61 @@ begin
 end;
 
 {**
+ * Ermittelt, ob mind. ein Interval definiert ist
+ *
+ * Intervalle werden stets mittels TAQ.EachInterval gestartet.
+ *
+ * @see TAQ.EachInterval
+ *}
+function TAQ.HasInterval:Boolean;
+var
+	AnyIntervals:Boolean;
+begin
+	Result:=FALSE;
+	if not (Assigned(FIntervals) and (FIntervals.Count > 0)) then
+		Exit;
+	AnyIntervals:=FALSE;
+	TAQ.Take(FIntervals).Each(
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			AnyIntervals:=not TInterval(O).IsFinite;
+			{**
+			 * Die Each soll nur laufen, bis das erste Interval gefunden wird
+			 *}
+			Result:=not AnyIntervals;
+		end);
+	Result:=AnyIntervals;
+end;
+
+{**
+ * Ermittelt, ob mind. ein Timer definiert ist
+ *
+ * Timer werden stets mittels TAQ.EachTimer gestartet.
+ *
+ * @see TAQ.EachTimer
+ *}
+function TAQ.HasTimer:Boolean;
+var
+	AnyTimers:Boolean;
+begin
+	Result:=FALSE;
+	if not (Assigned(FIntervals) and (FIntervals.Count > 0)) then
+		Exit;
+	AnyTimers:=FALSE;
+	TAQ.Take(FIntervals).Each(
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			with TInterval(O) do
+				AnyTimers:=IsFinite and not IsFinished;
+			{**
+			 * Die Each soll nur laufen, bis der erste Timer gefunden wird
+			 *}
+			Result:=not AnyTimers;
+		end);
+	Result:=AnyTimers;
+end;
+
+{**
  * Macht einen "Herzschlag"
  *
  * Dies bedeutet: FLifeTick wird aktualisiert. Diese Instanz wird dann erst nach Ablauf von
@@ -786,6 +908,54 @@ end;
 procedure TAQ.HeartBeat;
 begin
 	FLifeTick:=GetTickCount;
+end;
+
+{**
+ * Liefert ein neues TAQ-Objekt mit TAQ-Instanzen, die gerade ein Interval, für die in dieser
+ * Instanz enthaltene Objekte, haben.
+ *
+ * Da die Each-Methode rekursiv mit den enthaltenen TAQ-Objekten arbeitet, laufen weitere Aktionen
+ * transparent ab.
+ *}
+function TAQ.IntervalActors(IncludeOrphans:Boolean):TAQ;
+var
+	Actors:TAQ;
+begin
+	Actors:=Managed;
+
+	Each(
+		{**
+		 * @param SAQ Synonym für SourceAccessQuery und ist Self von TimerActors
+		 * @param SO Synonym für SourceObject und beinhaltet das Objekt für das die passenden
+		 *        TAQ-Instanzen gesucht werden
+		 *}
+		function(SAQ:TAQ; SO:TObject):Boolean
+		var
+			SOFound:Boolean;
+		begin
+			Result:=TRUE; // Each soll stets komplett durchlaufen
+			SOFound:=FALSE;
+			GarbageCollector.Each(
+				{**
+				 * @param AQ Enthält den GarbageCollector
+				 * @param O Enthält eine TAQ-Instanz, die darauf untersucht wird, ob sie SO enthält
+				 *        und einen aktiven Timer hat
+				 *}
+				function(AQ:TAQ; O:TObject):Boolean
+				begin
+					Result:=TRUE; // Each soll stets komplett durchlaufen
+					with TAQ(O) do
+						if (IndexOf(SO) >= 0) and HasInterval then
+						begin
+							Actors.Add(O);
+							SOFound:=TRUE;
+						end;
+				end);
+			if IncludeOrphans and not SOFound then
+				Actors.Add(SO);
+		end);
+
+	Result:=Actors;
 end;
 
 {**
@@ -833,12 +1003,12 @@ end;
  *}
 class function TAQ.Managed:TAQ;
 begin
-	Result:=TAQ.Create;
+	Result:=Unmanaged;
 	GarbageCollector.Add(Result);
 end;
 
 {**
- * Startet eine Schüttel-Animation
+ * Führt eine Schüttel-Animation mit allen enthaltenen TControl-Objekten durch
  *
  * @param XTimes Bestimmt, wie oft das Objekt rechts und links geschüttelt werden soll
  *        Wird 0 angegeben, so wird es nicht in der X-Achse geschüttelt.
@@ -931,6 +1101,64 @@ end;
 class function TAQ.Take(AObject:TObject):TAQ;
 begin
 	Result:=Managed.Append(AObject);
+end;
+
+{**
+ * Liefert ein neues TAQ-Objekt mit TAQ-Instanzen, die gerade einen Timer, für die in dieser
+ * Instanz enthaltene Objekte, haben.
+ *
+ * Da die Each-Methode rekursiv mit den enthaltenen TAQ-Objekten arbeitet, laufen weitere Aktionen
+ * transparent ab.
+ *}
+function TAQ.TimerActors(IncludeOrphans:Boolean):TAQ;
+var
+	Actors:TAQ;
+begin
+	Actors:=Managed;
+
+	Each(
+		{**
+		 * @param SAQ Synonym für SourceAccessQuery und ist Self von TimerActors
+		 * @param SO Synonym für SourceObject und beinhaltet das Objekt für das die passenden
+		 *        TAQ-Instanzen gesucht werden
+		 *}
+		function(SAQ:TAQ; SO:TObject):Boolean
+		var
+			SOFound:Boolean;
+		begin
+			Result:=TRUE; // Each soll stets komplett durchlaufen
+			SOFound:=FALSE;
+			GarbageCollector.Each(
+				{**
+				 * @param AQ Enthält den GarbageCollector
+				 * @param O Enthält eine TAQ-Instanz, die darauf untersucht wird, ob sie SO enthält
+				 *        und einen aktiven Timer hat
+				 *}
+				function(AQ:TAQ; O:TObject):Boolean
+				begin
+					Result:=TRUE; // Each soll stets komplett durchlaufen
+					with TAQ(O) do
+						if (IndexOf(SO) >= 0) and HasTimer then
+						begin
+							Actors.Add(O);
+							SOFound:=TRUE;
+						end;
+				end);
+			if IncludeOrphans and not SOFound then
+				Actors.Add(SO);
+		end);
+
+	Result:=Actors;
+end;
+
+{**
+ * Liefert eine neue !nicht! gemanagete TAQ-Instanz
+ *
+ * Sie muss manuell freigegeben werden.
+ *}
+class function TAQ.Unmanaged:TAQ;
+begin
+	Result:=TAQ.Create;
 end;
 
 {**
@@ -1068,6 +1296,9 @@ end;
 
 {**
  * Sagt aus, ob das Interval endlich ist
+ *
+ * In TAQ wird TRUE als Timer behandlet und FALSE als Interval, doch in diesem Kontext ist beides
+ * ein Interval ;)
  *}
 function TInterval.IsFinite:Boolean;
 begin
