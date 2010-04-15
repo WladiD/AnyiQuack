@@ -40,14 +40,63 @@ type
 	TAQ = class(TObjectList)
 	private
 	class var
+		{**
+		 * Nimmt alle gemanagete TAQ-Instanzen auf
+		 *
+		 * Hierrüber wird, unter anderem, die Freigabe von nicht mehr verwendeten TAQ-Objekten
+		 * abgewickelt.
+		 *
+		 * Wird von der Klassenmethode GarbageCollector instanziert
+		 *
+		 * @see TAQ.GarbageCollector
+		 * @see TAQ.Managed
+		 *}
 		FGarbageCollector:TAQ;
+		{**
+		 * Der globale Timer
+		 *
+		 * Wird von der Klassenmethode GarbageCollector instanziert
+		 *
+		 * @see TAQ.GarbageCollector
+		 *}
 		FIntervalTimer:TTimer;
+		{**
+		 * Nimmt alle gemanagete TAQ-Instanzen auf, die mind. ein Interval verwenden
+		 *
+		 * Wird von der Klassenmethode GarbageCollector instanziert.
+		 *
+		 * @see TAQ.GarbageCollector
+		 * @see TAQ.UpdateActiveIntervalAQs
+		 *}
 		FActiveIntervalAQs:TAQ;
 	protected
+		{**
+		 * Der letzte Tick, der als Lebenszeichen ausgewertet wird
+		 *
+		 * @see MaxLifeTime
+		 * @see TAQ.HeartBeat
+		 *}
 		FLifeTick:Cardinal;
+		{**
+		 * Nimmt mehrere TInterval-Objekte auf
+		 *
+		 * Wird von GetIntervals instanziert.
+		 *
+		 * @see TInterval
+		 * @see TAQ.GetIntervals
+		 *}
 		FIntervals:TObjectList;
+		{**
+		 * @see TAQ.CurrentInterval
+		 *}
 		FCurrentInterval:TInterval;
+		{**
+		 * @see TAQ.Animating
+		 *}
 		FAnimating:Boolean;
+		{**
+		 * @see TAQ.Recurse
+		 *}
 		FRecurse:Boolean;
 
 		class function GarbageCollector:TAQ;
@@ -62,11 +111,30 @@ type
 			LastEach:TEachFunction = nil);
 
 		procedure HeartBeat;
+
+		{**
+		 * Bestimmt, ob TAQ.Each ggf. andere enthaltene TAQ-Instanzen rekursiv mit der übergebenen
+		 * Each-Funktion durchlaufen soll.
+		 *
+		 * Standard ist TRUE. Beim GarbageCollector aber FALSE.
+		 *}
+		property Recurse:Boolean read FRecurse;
 	public
 		constructor Create; reintroduce;
 		destructor Destroy; override;
 
-		class function EaseFunction(EaseType:TEaseType):TEaseFunction;
+		class function Ease(EaseType:TEaseType):TEaseFunction; overload;
+		class function Ease(EaseFunction:TEaseFunction = nil):TEaseFunction; overload;
+
+		function Append(Objects:TObjectArray):TAQ; overload;
+		function Append(Objects:TObjectList):TAQ; overload;
+		function Append(AObject:TObject):TAQ; overload;
+
+		class function Take(Objects:TObjectArray):TAQ; overload;
+		class function Take(Objects:TObjectList):TAQ; overload;
+		class function Take(AObject:TObject):TAQ; overload;
+
+		class function Animator(SO:TObject):TAQ;
 
 		function Each(EachFunction:TEachFunction):TAQ;
 		function EachInterval(Interval:Integer; Each:TEachFunction):TAQ;
@@ -80,19 +148,11 @@ type
 		function Filter(FilterEach:TEachFunction):TAQ; overload;
 
 		function BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Duration:Integer;
-			EaseType:TEaseType = etLinear; OnComplete:TAnonymNotifyEvent = nil):TAQ;
+			EaseFunction:TEaseFunction = nil; OnComplete:TAnonymNotifyEvent = nil):TAQ;
 		function ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration:Integer;
 			OnComplete:TAnonymNotifyEvent = nil):TAQ;
 
-		function Append(Objects:TObjectArray):TAQ; overload;
-		function Append(Objects:TObjectList):TAQ; overload;
-		function Append(AObject:TObject):TAQ; overload;
 
-		class function Take(Objects:TObjectArray):TAQ; overload;
-		class function Take(Objects:TObjectList):TAQ; overload;
-		class function Take(AObject:TObject):TAQ; overload;
-
-		class function Animator(SO:TObject):TAQ;
 
 		{**
 		 * Diese Eigenschaft ist für jene TEachFunction-Funktionen gedacht, die aus dem Kontext der
@@ -219,6 +279,9 @@ var
 	cc:Integer;
 begin
 	Result:=Self;
+	{**
+	 * Stack-Overflows vermeiden
+	 *}
 	if Objects = Self then
 		Exit;
 	for cc:=0 to Objects.Count - 1 do
@@ -325,12 +388,14 @@ end;
  * @param NewWidth Neue absolute Breite. Soll die Breite nicht verändert werden, ist -1 anzugeben.
  * @param NewHeight Neue absolute Höhe. Soll die Höhe nicht verändert werden, ist -1 anzugeben.
  * @param Duration Die Dauer der Animation in Millisekunden.
- * @param EaseType Standard ist etLinear. Die Art der Beschleunigung.
+ * @param EaseFunction Optional. Eine Beschleunigungsfunktion. Siehe TAQ.Ease, um vordefinierte
+ *        Beschleunigungsfunktion zu verwenden. Wird keine (nil) angegeben, so kommt eine lineare
+ *        Beschleunigungsfunktion zum Einsatz.
  * @param OnComplete Stanadrd ist nil. Event-Handler, der ausgelöst wird, wenn die Animation
  *        beendet ist. Das Ereignis wird übrigens für jedes Objekt, das animiert wird, ausgelöst.
  *}
 function TAQ.BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Duration:Integer;
-	EaseType:TEaseType; OnComplete:TAnonymNotifyEvent):TAQ;
+	EaseFunction:TEaseFunction; OnComplete:TAnonymNotifyEvent):TAQ;
 var
 	WholeEach:TEachFunction;
 begin
@@ -359,14 +424,14 @@ begin
 			Result:=TRUE;
 			Progress:=AQ.CurrentInterval.Progress;
 
-			AniLeft:=Ceil(EaseFunction(EaseType)(PrevLeft, NewLeft, Progress));
-			AniTop:=Ceil(EaseFunction(EaseType)(PrevTop, NewTop, Progress));
+			AniLeft:=Ceil(Ease(EaseFunction)(PrevLeft, NewLeft, Progress));
+			AniTop:=Ceil(Ease(EaseFunction)(PrevTop, NewTop, Progress));
 			if NewWidth >= 0 then
-				AniWidth:=Ceil(EaseFunction(EaseType)(PrevWidth, NewWidth, Progress))
+				AniWidth:=Ceil(Ease(EaseFunction)(PrevWidth, NewWidth, Progress))
 			else
 				AniWidth:=TControl(O).Width;
 			if NewHeight >= 0 then
-				AniHeight:=Ceil(EaseFunction(EaseType)(PrevHeight, NewHeight, Progress))
+				AniHeight:=Ceil(Ease(EaseFunction)(PrevHeight, NewHeight, Progress))
 			else
 				AniHeight:=TControl(O).Height;
 
@@ -438,6 +503,7 @@ end;
 constructor TAQ.Create;
 begin
 	inherited Create(FALSE);
+	FRecurse:=TRUE;
 	HeartBeat;
 end;
 
@@ -493,9 +559,20 @@ begin
 end;
 
 {**
+ * Stellt sicher, dass eine Beschleunigungsfunktion geliefert wird
+ *}
+class function TAQ.Ease(EaseFunction:TEaseFunction):TEaseFunction;
+begin
+	if Assigned(EaseFunction) then
+		Result:=EaseFunction
+	else
+		Result:=LinearEase;
+end;
+
+{**
  * Liefert eine Beschleunigungsfunktion anhand eines TEaseType
  *}
-class function TAQ.EaseFunction(EaseType:TEaseType):TEaseFunction;
+class function TAQ.Ease(EaseType:TEaseType):TEaseFunction;
 begin
 	case EaseType of
 		etQuadratic:
@@ -664,6 +741,13 @@ begin
 	FLifeTick:=GetTickCount;
 end;
 
+{**
+ * Lokaler OnTimer-Event-Handler
+ *
+ * Das ursprüngliche Ereignis kommt von der Klassenmethode GlobalIntervalTimerEvent
+ *
+ * @see TAQ.GlobalIntervalTimerEvent
+ *}
 procedure TAQ.LocalIntervalTimerEvent(Sender:TObject);
 var
 	EachFunction:TEachFunction;
@@ -706,6 +790,20 @@ begin
 	GarbageCollector.Add(Result);
 end;
 
+{**
+ * Startet eine Schüttel-Animation
+ *
+ * @param XTimes Bestimmt, wie oft das Objekt rechts und links geschüttelt werden soll
+ *        Wird 0 angegeben, so wird es nicht in der X-Achse geschüttelt.
+ * @param XDiff Bestimmt, wie weit nach rechts bzw. nach links geschüttelt werden soll
+ * @param YTimes Bestimmt, wie oft das Objekt runter und hoch geschüttelt werden soll
+ *        Wird 0 angegeben, so wird es nicht in der Y-Achse geschüttelt.
+ * @param YDiff Bestimmt, wie weit nach unten bzw. nach oben geschüttelt werden soll
+ * @param Duration Die Dauer der Animation in Millisekunden
+ * @param OnComplete Event-Handler, der aufgerufen wird, wenn die Animation beendet ist.
+ *        Das Ereignis wird für jedes animierte Objekt, welches im Sender übergeben wird,
+ *        ausgelöst.
+ *}
 function TAQ.ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration:Integer;
 	OnComplete:TAnonymNotifyEvent):TAQ;
 var
@@ -818,7 +916,9 @@ begin
 end;
 
 {**
- * Erstellt eine neue gemanagete TAQ-Instanz, mit Objekten aus einer anderen TAQ-Instanz
+ * Erstellt eine neue gemanagete TAQ-Instanz, mit Objekten aus einer TObjectList
+ *
+ * Anmerkung: TAQ ist von TObjectList abgeleitet und kann somait auch hier übergeben werden
  *}
 class function TAQ.Take(Objects:TObjectList):TAQ;
 begin
@@ -827,6 +927,9 @@ end;
 
 {** TInterval **}
 
+{**
+ * Liefert die entsprechenden Each-Funktion, wenn der Zeitpunkt erreicht ist oder nil
+ *}
 function TInterval.Each:TEachFunction;
 var
 	CurrentTick:Cardinal;
