@@ -7,6 +7,7 @@ uses
 
 type
 	TAQ = class;
+	TInterval = class;
 
 	TObjectArray = array of TObject;
 	{**
@@ -14,7 +15,7 @@ type
 	 *
 	 * @param AQ Die TAQ-Instanz, die die Each-Funktion aufruft
 	 * @param O Das Objekt, welches durch die Each-Funktion bearbeitet werden soll
-	 * @return Boolean Sobald die Funktion FALSE liefert, wird die Ausführung der Each-Prozedur
+	 * @return Boolean Sobald die Funktion FALSE liefert, wird die Ausführung der Each-Methode
 	 *         angehalten
 	 *}
 	TEachFunction = reference to function(AQ:TAQ; O:TObject):Boolean;
@@ -23,7 +24,7 @@ type
 	 *}
 	TAnonymNotifyEvent = reference to procedure(Sender:TObject);
 	{**
-	 * Typ für nicht lineare Beschleunigungsfunktionen
+	 * Typ für Beschleunigungsfunktionen
 	 *
 	 * @param StartValue Der Wert, ab dem gestartet wird
 	 * @param EndValue Der Endwert, der erreicht werden sollte, wenn Progress = 1 ist
@@ -31,8 +32,80 @@ type
 	 * @return Real
 	 *}
 	TEaseFunction = function(StartValue, EndValue, Progress:Real):Real;
-
+	{**
+	 * Vordefinierte Arten von Beschleunigungsfunktionen
+	 *}
 	TEaseType = (etLinear, etQuadratic, etMassiveQuadratic);
+
+	TAQ = class(TObjectList)
+	private
+	class var
+		FGarbageCollector:TAQ;
+		FIntervalTimer:TTimer;
+		FActiveIntervalAQs:TAQ;
+	protected
+		FLifeTick:Cardinal;
+		FIntervals:TObjectList;
+		FCurrentInterval:TInterval;
+		FAnimating:Boolean;
+		FRecurse:Boolean;
+
+		class function GarbageCollector:TAQ;
+		class function Managed:TAQ;
+		class procedure GlobalIntervalTimerEvent(Sender:TObject);
+		class procedure UpdateActiveIntervalAQs;
+
+		function GetIntervals:TObjectList;
+
+		procedure LocalIntervalTimerEvent(Sender:TObject);
+		procedure AnimateObject(O:TObject; Duration:Integer; Each:TEachFunction;
+			LastEach:TEachFunction = nil);
+
+		procedure HeartBeat;
+	public
+		constructor Create; reintroduce;
+		destructor Destroy; override;
+
+		class function EaseFunction(EaseType:TEaseType):TEaseFunction;
+
+		function Each(EachFunction:TEachFunction):TAQ;
+		function EachInterval(Interval:Integer; Each:TEachFunction):TAQ;
+		function EachTimer(Duration:Integer; Each:TEachFunction; LastEach:TEachFunction = nil):TAQ;
+
+		function FinishTimers:TAQ;
+		function CancelTimers:TAQ;
+		function CancelIntervals:TAQ;
+
+		function Filter(ByClass:TClass):TAQ; overload;
+		function Filter(FilterEach:TEachFunction):TAQ; overload;
+
+		function BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Duration:Integer;
+			EaseType:TEaseType = etLinear; OnComplete:TAnonymNotifyEvent = nil):TAQ;
+		function ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration:Integer;
+			OnComplete:TAnonymNotifyEvent = nil):TAQ;
+
+		function Append(Objects:TObjectArray):TAQ; overload;
+		function Append(Objects:TObjectList):TAQ; overload;
+		function Append(AObject:TObject):TAQ; overload;
+
+		class function Take(Objects:TObjectArray):TAQ; overload;
+		class function Take(Objects:TObjectList):TAQ; overload;
+		class function Take(AObject:TObject):TAQ; overload;
+
+		class function Animator(SO:TObject):TAQ;
+
+		{**
+		 * Diese Eigenschaft ist für jene TEachFunction-Funktionen gedacht, die aus dem Kontext der
+		 * EachInterval- und EachTimer-Methoden aufgerufen werden.
+		 *}
+		property CurrentInterval:TInterval read FCurrentInterval;
+		{**
+		 * Sagt aus, ob die aktuelle Instanz eine Animation durchführt. Sie wird nur von
+		 * internen XAnimation-Methoden gesetzt. Manuelle Animationen mittels EachTimer können
+		 * das hier nicht setzen.
+		 *}
+		property Animating:Boolean read FAnimating;
+	end;
 
 	TInterval = class
 	private
@@ -78,78 +151,6 @@ type
 		procedure Finish;
 	end;
 
-	TAQ = class(Contnrs.TObjectList)
-	private
-	class var
-		FGarbageCollector:TAQ;
-	protected
-		FLifeTick:Cardinal;
-		FIntervals:TObjectList;
-		FIntervalTimer:TTimer;
-		FCurrentInterval:TInterval;
-		FAnimating:Boolean;
-		FRecurse:Boolean;
-
-		class function GarbageCollector:TAQ;
-		class function Managed:TAQ;
-
-		function GetIntervals:TObjectList;
-		procedure CheckIntervalTimer;
-		procedure IntervalTimerEvent(Sender:TObject);
-		procedure AnimateObject(O:TObject; Duration:Integer; Each:TEachFunction;
-			LastEach:TEachFunction = nil);
-
-		procedure HeartBeat;
-	public
-		constructor Create; reintroduce;
-		destructor Destroy; override;
-
-		class function EaseFunction(EaseType:TEaseType):TEaseFunction;
-
-		function Each(EachFunction:TEachFunction):TAQ;
-		function EachInterval(Interval:Integer; Each:TEachFunction):TAQ;
-		function EachTimer(Duration:Integer; Each:TEachFunction; LastEach:TEachFunction = nil):TAQ;
-
-		function FinishTimers:TAQ;
-		function CancelTimers:TAQ;
-		function CancelIntervals:TAQ;
-
-		function Filter(ByClass:TClass):TAQ; overload;
-		function Filter(FilterEach:TEachFunction):TAQ; overload;
-
-		function BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Duration:Integer;
-			EaseType:TEaseType = etLinear; OnComplete:TAnonymNotifyEvent = nil):TAQ;
-
-		function ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration:Integer;
-			OnComplete:TAnonymNotifyEvent = nil):TAQ;
-
-		function Append(Objects:TObjectArray):TAQ; overload;
-		function Append(Objects:TObjectList):TAQ; overload;
-		function Append(AObject:TObject):TAQ; overload;
-
-		class function Take(Objects:TObjectArray):TAQ; overload;
-		class function Take(Objects:TObjectList):TAQ; overload;
-		class function Take(AObject:TObject):TAQ; overload;
-
-		class function Animator(SO:TObject):TAQ;
-
-		{**
-		 * Diese Eigenschaft ist für jene TEachFunction-Funktionen gedacht, die aus dem Kontext der
-		 * EachInterval- und EachTimer-Methoden aufgerufen werden.
-		 *}
-		property CurrentInterval:TInterval read FCurrentInterval;
-		{**
-		 * Sagt aus, ob die aktuelle Instanz eine Animation durchführt. Sie wird nur von
-		 * internen XAnimation-Methoden gesetzt. Manuelle Animationen mittels EachTimer können
-		 * das hier nicht setzen.
-		 *}
-		property Animating:Boolean read FAnimating;
-	end;
-
-//	function LinearEase(StartValue, EndValue, Progress:Real):Real;
-//	function QuadraticEase(StartValue, EndValue, Progress:Real):Real;
-//	function MassiveQuadraticEase(StartValue, EndValue, Progress:Real):Real;
-
 implementation
 
 const
@@ -165,7 +166,6 @@ const
 	 * Interval für GarbageCollector in msec
 	 *}
 	GarbageCleanInterval = 1000;
-
 
 function LinearEase(StartValue, EndValue, Progress:Real):Real;
 var
@@ -302,7 +302,7 @@ begin
 			 * Um spätere Verwirrungen vorzubeugen: In AQ befindet sich der GarbageCollector und
 			 * in O eine reguläre TAQ-Instanz
 			 *}
-			Result:=TAQ(O).IndexOf(SO) = -1;
+			Result:=TAQ(O).IndexOf(SO) = - 1;
 			{**
 			 * Folgende if bedeutet, ich habe die entsprechende Instanz gefunden und die ausführende
 			 * Each wird damit beendet.
@@ -372,10 +372,12 @@ begin
 
 			if Progress = 1 then
 			begin
+
 				{$IFDEF DEBUG}
-				OutputDebugString(PWideChar('BoundsAnimation beendet für $' + IntToHex(Integer(O),
-					SizeOf(Integer) * 2)));
+				OutputDebugString(PWideChar('BoundsAnimation beendet für $' +
+					IntToHex(Integer(O), SizeOf(Integer) * 2)));
 				{$ENDIF}
+
 				if Assigned(OnComplete) then
 					OnComplete(O);
 			end;
@@ -404,6 +406,7 @@ begin
 		with TInterval(FIntervals[cc]) do
 			if not IsFinite then
 				FIntervals.Delete(cc);
+	UpdateActiveIntervalAQs;
 end;
 
 {**
@@ -425,28 +428,12 @@ begin
 		with TInterval(FIntervals[cc]) do
 			if IsFinite then
 				FIntervals.Delete(cc);
+	UpdateActiveIntervalAQs;
 end;
 
 {**
  * Überprüft, ob FIntervalTimer erstellt werden muss, oder ob er freigegeben werden kann
  *}
-procedure TAQ.CheckIntervalTimer;
-begin
-	if not Assigned(FIntervals) then
-		Exit;
-	if (FIntervals.Count > 0) and not Assigned(FIntervalTimer) then
-	begin
-		FIntervalTimer:=TTimer.Create(nil);
-		with FIntervalTimer do
-		begin
-			Enabled:=TRUE;
-			Interval:=IntervalResolution;
-			OnTimer:=IntervalTimerEvent;
-		end;
-	end
-	else if (FIntervals.Count = 0) and Assigned(FIntervalTimer) then
-		FreeAndNil(FIntervalTimer);
-end;
 
 constructor TAQ.Create;
 begin
@@ -460,8 +447,6 @@ end;
  *}
 destructor TAQ.Destroy;
 begin
-	if Assigned(FIntervalTimer) then
-		FreeAndNil(FIntervalTimer);
 	if Assigned(FIntervals) then
 		FIntervals.Free;
 	inherited;
@@ -492,7 +477,7 @@ function TAQ.EachInterval(Interval:Integer; Each:TEachFunction):TAQ;
 begin
 	Result:=Self;
 	GetIntervals.Add(TInterval.Infinite(Interval, Each));
-	CheckIntervalTimer;
+	UpdateActiveIntervalAQs;
 	HeartBeat;
 end;
 
@@ -503,7 +488,7 @@ function TAQ.EachTimer(Duration:Integer; Each, LastEach:TEachFunction):TAQ;
 begin
 	Result:=Self;
 	GetIntervals.Add(TInterval.Finite(Duration, Each, LastEach));
-	CheckIntervalTimer;
+	UpdateActiveIntervalAQs;
 	HeartBeat;
 end;
 
@@ -517,8 +502,8 @@ begin
 			Result:=QuadraticEase;
 		etMassiveQuadratic:
 			Result:=MassiveQuadraticEase;
-		else
-			Result:=LinearEase;
+	else
+		Result:=LinearEase;
 	end;
 end;
 
@@ -533,12 +518,12 @@ begin
 	NewAQ:=Managed;
 
 	Each(
-	function(AQ:TAQ; O:TObject):Boolean
-	begin
-		Result:=TRUE;
-		if O is ByClass then
-			NewAQ.Add(O);
-	end);
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			Result:=TRUE;
+			if O is ByClass then
+				NewAQ.Add(O);
+		end);
 
 	Result:=NewAQ;
 end;
@@ -553,12 +538,12 @@ var
 begin
 	NewAQ:=Managed;
 	Each(
-	function(OAQ:TAQ; OO:TObject):Boolean
-	begin
-		Result:=TRUE;
-		if FilterEach(OAQ, OO) then
-			NewAQ.Add(OO);
-	end);
+		function(OAQ:TAQ; OO:TObject):Boolean
+		begin
+			Result:=TRUE;
+			if FilterEach(OAQ, OO) then
+				NewAQ.Add(OO);
+		end);
 	Result:=NewAQ;
 end;
 
@@ -587,40 +572,58 @@ begin
 end;
 
 {**
- * Liefert eine Instanz des GarbageCollector, der die Aufgabe hat, nicht verwendete TAQ-Instanzen
- * freizugeben.
+ * Liefert eine Instanz des GarbageCollector, der unter anderem die Aufgabe hat, nicht verwendete
+ * TAQ-Instanzen freizugeben.
  *
- * Es wird nach dem Singleton-Pattern instanziert. Wenn das letzte Lebenszeichen (TAQ.FLifeTick)
- * länger als MaxLifeTime her ist, wird es freigegeben.
+ * Es wird nach dem Singleton-Pattern instanziert.
+ *
+ * Der GarbageCollector gibt die von ihm verwaltete TAQ-Instanzen frei, wenn das letzte
+ * Lebenszeichen (TAQ.FLifeTick) länger als MaxLifeTime her ist.
  *}
 class function TAQ.GarbageCollector:TAQ;
 begin
-	if not Assigned(FGarbageCollector) then
+	if Assigned(FGarbageCollector) then
+		Exit(FGarbageCollector);
+
+	{**
+	 * Ab hier fängt quasi die Instanzierung der gesamten Klasse an
+	 *}
+
+	FIntervalTimer:=TTimer.Create(nil);
+	with FIntervalTimer do
 	begin
-		FGarbageCollector:=TAQ.Create;
-		FGarbageCollector.OwnsObjects:=TRUE;
-		FGarbageCollector.EachInterval(GarbageCleanInterval,
-			{**
-			 * In GarbageCollector befindet sich der FGarbageCollector selbst und
-			 * in O eine TAQ-Instanz die auf ihre Lebenszeichen untersucht werden muss.
-			 *}
-			function(GarbageCollector:TAQ; O:TObject):Boolean
-			var
-				CheckAQ:TAQ;
-			begin
-				CheckAQ:=TAQ(O);
-				if GetTickCount > (CheckAQ.FLifeTick + MaxLifeTime) then
-				begin
-					GarbageCollector.Remove(CheckAQ);
-					{$IFDEF DEBUG}
-					OutputDebugString(
-						PWideChar(Format('Verbleibende TAQ-Instanzen im GarbageCollector: %d',
-						[GarbageCollector.Count])));
-					{$ENDIF}
-				end;
-				Result:=TRUE;
-			end);
+		Enabled:=TRUE;
+		Interval:=IntervalResolution;
+		OnTimer:=GlobalIntervalTimerEvent;
 	end;
+
+	FActiveIntervalAQs:=TAQ.Create;
+
+	FGarbageCollector:=TAQ.Create;
+	FGarbageCollector.OwnsObjects:=TRUE;
+	FGarbageCollector.FRecurse:=FALSE;
+	FGarbageCollector.EachInterval(GarbageCleanInterval,
+		{**
+		 * In GarbageCollector befindet sich der FGarbageCollector selbst und
+		 * in O eine TAQ-Instanz die auf ihre Lebenszeichen untersucht werden muss.
+		 *}
+		function(GarbageCollector:TAQ; O:TObject):Boolean
+		var
+			CheckAQ:TAQ;
+		begin
+			CheckAQ:=TAQ(O);
+			if GetTickCount > (CheckAQ.FLifeTick + MaxLifeTime) then
+			begin
+				GarbageCollector.Remove(CheckAQ);
+
+				{$IFDEF DEBUG}
+				OutputDebugString(PWideChar(Format('Verbleibende TAQ-Instanzen im GarbageCollector: %d',
+					[GarbageCollector.Count])));
+				{$ENDIF}
+			end;
+			Result:=TRUE;
+		end);
+
 	Result:=FGarbageCollector;
 end;
 
@@ -635,6 +638,22 @@ begin
 end;
 
 {**
+ * Der globale OnTimer-Event-Handler von FIntervalTimer
+ *
+ * Um Speicher zu sparen, wird nur ein TTimer verwendet, der mit einem festen Interval läuft. Um
+ * nun das Event an die richtigen TAQ-Instanzen zu leiten, wird FActiveIntervalAQs verwendet.
+ *}
+class procedure TAQ.GlobalIntervalTimerEvent(Sender:TObject);
+begin
+	FActiveIntervalAQs.Each(
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			TAQ(O).LocalIntervalTimerEvent(Sender);
+			Result:=TRUE; // Die Each soll komplett durchlaufen
+		end);
+end;
+
+{**
  * Macht einen "Herzschlag"
  *
  * Dies bedeutet: FLifeTick wird aktualisiert. Diese Instanz wird dann erst nach Ablauf von
@@ -645,18 +664,18 @@ begin
 	FLifeTick:=GetTickCount;
 end;
 
-procedure TAQ.IntervalTimerEvent(Sender:TObject);
+procedure TAQ.LocalIntervalTimerEvent(Sender:TObject);
 var
 	EachFunction:TEachFunction;
 	AnyRemoved:Boolean;
 	cc:Integer;
 begin
-	if not (Assigned(FIntervalTimer) and Assigned(FIntervals)) then
+	if not (Assigned(FIntervals) and (FIntervals.Count > 0)) then
 		Exit;
 
 	AnyRemoved:=FALSE;
 
-	for cc := FIntervals.Count - 1 downto 0 do
+	for cc:=FIntervals.Count - 1 downto 0 do
 	begin
 		FCurrentInterval:=TInterval(FIntervals[cc]);
 		EachFunction:=(CurrentInterval.Each);
@@ -672,12 +691,14 @@ begin
 		end;
 	end;
 	if AnyRemoved then
-		CheckIntervalTimer;
+		UpdateActiveIntervalAQs;
 end;
 
 {**
  * Liefert eine neue gemanagete TAQ-Instanz, die automatisch freigegeben wird, wenn sie nicht
  * mehr verwendet wird.
+ *
+ * Auch kann nur eine gemanagete TAQ-Instanz von Intervallen profitieren.
  *}
 class function TAQ.Managed:TAQ;
 begin
@@ -729,10 +750,14 @@ begin
 			end
 			else if Progress = 1 then
 			begin
+
 				{$IFDEF DEBUG}
+
 				OutputDebugString(PWideChar('ShakeAnimation beendet für $' + IntToHex(Integer(O),
-					SizeOf(Integer) * 2)));
+							SizeOf(Integer) * 2)));
+
 				{$ENDIF}
+
 				if Assigned(OnComplete) then
 					OnComplete(O);
 			end;
@@ -761,6 +786,35 @@ end;
 class function TAQ.Take(AObject:TObject):TAQ;
 begin
 	Result:=Managed.Append(AObject);
+end;
+
+{**
+ * Aktualisiert FActiveIntervalAQs, die TAQ-Objekte enthält, die wiederrum mindestens ein aktives
+ * Interval besitzen.
+ *}
+class procedure TAQ.UpdateActiveIntervalAQs;
+begin
+	FActiveIntervalAQs.Clear;
+	GarbageCollector.Each(
+		{**
+		 * @param AQ Ist der GarbageCollector
+		 * @param O Ist ein vom GarbageCollector verwaltetes TAQ-Objekt
+		 *}
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			Result:=TRUE; // Die Each soll komplett durchlaufen
+			with TAQ(O) do
+				if Assigned(FIntervals) and (FIntervals.Count > 0) then
+					FActiveIntervalAQs.Add(O);
+		end);
+	{**
+	 * Der GarbageCollector ist immer mit dabei
+	 *}
+	FActiveIntervalAQs.Add(GarbageCollector);
+	{$IFDEF DEBUG}
+		OutputDebugString(PWideChar('TAQ-Instanzen mit Intervallen: ' +
+			IntToStr(FActiveIntervalAQs.Count)));
+	{$ENDIF}
 end;
 
 {**
@@ -889,11 +943,23 @@ end;
 initialization
 
 finalization
-{**
- * Alle offenen TAQ-Instanzen freigeben
- *}
-if Assigned(TAQ.FGarbageCollector) then
-	TAQ.FGarbageCollector.Free;
 
+if Assigned(TAQ.FGarbageCollector) then
+begin
+	{**
+	 * Alle offenen TAQ-Instanzen freigeben
+	 *}
+	TAQ.FGarbageCollector.Free;
+	{**
+	 * Dieser Timer wird zusammen mit FGarbageCollector erstellt, muss auch dementsprechend zusammen
+	 * freigegeben werden.
+	 *}
+	TAQ.FIntervalTimer.Free;
+	{**
+	 * Diese unverwaltete TAQ-Instanz wird ebenfalls mit dem FGarbageCollector erstellt und muss
+	 * hier manuell freigegeben werden.
+	 *}
+	TAQ.FActiveIntervalAQs.Free;
+end;
 
 end.
