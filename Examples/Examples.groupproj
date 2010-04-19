@@ -1,0 +1,48 @@
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{4EA62AC1-4F1B-473A-A6F3-5CF9BFCD81ED}</ProjectGuid>
+		</PropertyGroup>
+		<ItemGroup>
+			<Projects Include="PulsateEdits\PulsateEdits.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="SyncScroll\SyncScroll.dproj">
+				<Dependencies/>
+			</Projects>
+		</ItemGroup>
+		<ProjectExtensions>
+			<Borland.Personality>Default.Personality.12</Borland.Personality>
+			<Borland.ProjectType/>
+			<BorlandProject>
+				<Default.Personality/>
+			</BorlandProject>
+		</ProjectExtensions>
+		<Target Name="PulsateEdits">
+			<MSBuild Projects="PulsateEdits\PulsateEdits.dproj"/>
+		</Target>
+		<Target Name="PulsateEdits:Clean">
+			<MSBuild Targets="Clean" Projects="PulsateEdits\PulsateEdits.dproj"/>
+		</Target>
+		<Target Name="PulsateEdits:Make">
+			<MSBuild Targets="Make" Projects="PulsateEdits\PulsateEdits.dproj"/>
+		</Target>
+		<Target Name="SyncScroll">
+			<MSBuild Projects="SyncScroll\SyncScroll.dproj"/>
+		</Target>
+		<Target Name="SyncScroll:Clean">
+			<MSBuild Targets="Clean" Projects="SyncScroll\SyncScroll.dproj"/>
+		</Target>
+		<Target Name="SyncScroll:Make">
+			<MSBuild Targets="Make" Projects="SyncScroll\SyncScroll.dproj"/>
+		</Target>
+		<Target Name="Build">
+			<CallTarget Targets="PulsateEdits;SyncScroll"/>
+		</Target>
+		<Target Name="Clean">
+			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean"/>
+		</Target>
+		<Target Name="Make">
+			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make"/>
+		</Target>
+		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+	</Project>
