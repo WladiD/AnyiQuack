@@ -1,23 +1,57 @@
-﻿unit AccessQuery;
+﻿{**
+ * "The contents of this file are subject to the Mozilla Public License
+ * Version 1.1 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+ * License for the specific language governing rights and limitations
+ * under the License.
+ *
+ * The Original Code is AccessQuery.pas.
+ *
+ * The Initial Developer of the Original Code is Waldemar Derr.
+ * Portions created by Waldemar Derr are Copyright (C) Waldemar Derr.
+ * All Rights Reserved.
+ *
+ * @author Waldemar Derr <mail@wladid.de>
+ * @version $Id$
+ *}
+
+unit AccessQuery;
 
 interface
 
 uses
 	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Math;
 
-
 {$IFDEF DEBUG}
 	{**
 	 * Gibt diverse Meldungen auf der Debug-Konsole aus
 	 *}
-	{.$DEFINE OutputDebugString}
+	{$DEFINE OutputDebugString}
+
+	{$IFDEF OutputDebugString}
+		{**
+		 * Meldungen über beendete Animationen
+		 *}
+		{.$DEFINE OutputDebugAnimation}
+		{**
+		 * Meldungen über aktive Intervalle
+		 *}
+		{.$DEFINE OutputDebugActiveIntervals}
+		{$DEFINE OutputDebugGarbageCollector}
+	{$ENDIF}
 {$ENDIF}
 
 type
 	EAQ = class(Exception);
 	TAQ = class;
 	TInterval = class;
-
+	{**
+	 * Dynamisches Array für Objekte
+	 *}
 	TObjectArray = array of TObject;
 	{**
 	 * Typ für anonyme Each-Funktionen
@@ -46,6 +80,9 @@ type
 	 *}
 	TEaseType = (etLinear, etQuadratic, etMassiveQuadratic);
 
+	{**
+	 * AQ ist das Kürzel für AccessQuery und ist die Kernklasse dieser Unit.
+	 *}
 	TAQ = class(TObjectList)
 	private
 	class var
@@ -160,6 +197,9 @@ type
 		function Parents(Append:Boolean = FALSE; Recurse:Boolean = FALSE;
 			ParentsFiller:TEachFunction = nil):TAQ;
 
+		function Multiplex:TAQ;
+		function Demultiplex:TAQ;
+
 		function AnimationActors(IncludeOrphans:Boolean = TRUE):TAQ;
 		function IntervalActors(IncludeOrphans:Boolean = TRUE):TAQ;
 		function TimerActors(IncludeOrphans:Boolean = TRUE):TAQ;
@@ -184,6 +224,8 @@ type
 			EaseFunction:TEaseFunction = nil; OnComplete:TAnonymNotifyEvent = nil):TAQ;
 		function ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration:Integer;
 			OnComplete:TAnonymNotifyEvent = nil):TAQ;
+
+		function Contains(AObject:TObject):Boolean;
 
 		{**
 		 * Diese Eigenschaft ist für jene TEachFunction-Funktionen gedacht, die aus dem Kontext der
@@ -334,6 +376,8 @@ end;
 
 {**
  * Fügt ein einzelnes Objekt hinzu
+ *
+ * Es ist eine Chain-Kompatible Add-Methode.
  *}
 function TAQ.Append(AObject:TObject):TAQ;
 begin
@@ -405,6 +449,9 @@ end;
  *
  * Da die Each-Methode rekursiv mit den enthaltenen TAQ-Objekten arbeitet, laufen weitere Aktionen
  * transparent ab.
+ *
+ * @param IncludeOrphans Optional. Standard ist TRUE. Bestimmt, ob die neue Instanz auch die Objekte
+ *        in sich vereint, für die keine passende TAQ-Instanz gefunden wurde.
  *}
 function TAQ.AnimationActors(IncludeOrphans:Boolean):TAQ;
 var
@@ -434,7 +481,7 @@ begin
 				begin
 					Result:=TRUE; // Each soll stets komplett durchlaufen
 					with TAQ(O) do
-						if (IndexOf(SO) >= 0) and Animating then
+						if Contains(SO) and Animating then
 						begin
 							Actors.Add(O);
 							SOFound:=TRUE;
@@ -507,7 +554,7 @@ begin
 			if Progress = 1 then
 			begin
 
-				{$IFDEF OutputDebugString}
+				{$IFDEF OutputDebugAnimation}
 				OutputDebugString(PWideChar('BoundsAnimation beendet für $' +
 					IntToHex(Integer(O), SizeOf(Integer) * 2)));
 				{$ENDIF}
@@ -535,7 +582,7 @@ end;
  *}
 function TAQ.CancelAnimations:TAQ;
 begin
-	CancelTimers;
+	Result:=CancelTimers;
 end;
 
 {**
@@ -545,7 +592,7 @@ end;
  *}
 function TAQ.CancelDelays:TAQ;
 begin
-	CancelTimers;
+	Result:=CancelTimers;
 end;
 
 {**
@@ -568,7 +615,6 @@ begin
 		TempAQ:=TAQ(O);
 		if not Assigned(TempAQ.FIntervals) then
 			Exit;
-		FCurrentInterval:=nil;
 		for cc:=TempAQ.FIntervals.Count - 1 downto 0 do
 			if not TInterval(TempAQ.FIntervals[cc]).IsFinite then
 			begin
@@ -608,6 +654,7 @@ begin
 		TempAQ:=TAQ(O);
 		if not Assigned(TempAQ.FIntervals) then
 			Exit;
+
 		for cc:=TempAQ.FIntervals.Count - 1 downto 0 do
 			if TInterval(TempAQ.FIntervals[cc]).IsFinite then
 			begin
@@ -671,6 +718,28 @@ begin
 end;
 
 {**
+ * Sagt aus, ob das übergebene Objekt enthalten ist
+ *
+ * Diese Funktion arbeitet per TAQ.Each und berücksichtigt daher die Eigenschaft TAQ.Recurse,
+ * das heisst: Wenn diese Instanz Recurse = TRUE ist, so wird rekursiv in allen ggf. hier
+ * enthaltenen TAQ-Instanzen gesucht
+ *
+ *}
+function TAQ.Contains(AObject:TObject):Boolean;
+var
+	Found:Boolean;
+begin
+	Found:=FALSE;
+	Each(
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			Found:=Found or (O = AObject) or (AQ.IndexOf(AObject) >= 0);
+			Result:=not Found;
+		end);
+	Result:=Found;
+end;
+
+{**
  * Überprüft, ob FIntervalTimer erstellt werden muss, oder ob er freigegeben werden kann
  *}
 
@@ -678,7 +747,6 @@ constructor TAQ.Create;
 begin
 	inherited Create(FALSE);
 	FRecurse:=TRUE;
-	HeartBeat;
 end;
 
 function TAQ.CustomFiller(Filler:TEachFunction; Append, Recurse:Boolean):TAQ;
@@ -718,14 +786,42 @@ begin
 end;
 
 {**
+ * Erstellt eine neue TAQ-Instanz mit allen Nicht-TAQ-Objekten
+ *
+ * Diverse Methoden liefern verschachtelte TAQ-Objekte, die wiederrum TAQ-Objekte enthalten können.
+ * Viele Methoden können mit verschachtelten TAQ-Objekten problemlos und vorallem für den Anwender
+ * transparent arbeiten, doch kann die Performance stark einbrechen, wenn damit intensive Aktionen
+ * durchgeführt werden. Genau für solche Fälle existiert diese Methode, die wieder aus einem
+ * komplexen ein einfaches TAQ-Objekt erstellt, mit dem Operationen deutlich performanter sind.
+ *
+ * @see TAQ.Multiplex
+ *}
+function TAQ.Demultiplex:TAQ;
+var
+	SimpleAQ:TAQ;
+begin
+	SimpleAQ:=Managed;
+	Result:=SimpleAQ;
+	Each(
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			Result:=TRUE;
+			if O is TAQ then
+				Exit;
+			SimpleAQ.Add(O);
+		end);
+end;
+
+{**
  * Wichtig:
- * TAQ-Instanzen sollten nie außerhalb freigegeben werden, das ist Aufgabe des GarbageCollectors!
+ * Gemeanagete TAQ-Instanzen sollten !nie! außerhalb freigegeben werden, das ist Aufgabe des
+ * GarbageCollectors!
  *}
 destructor TAQ.Destroy;
 begin
 	if Assigned(FIntervals) then
 		FIntervals.Free;
-	inherited;
+	inherited Destroy;
 end;
 
 {**
@@ -781,15 +877,17 @@ var
 	O:TObject;
 begin
 	Result:=Self;
-	for cc:=Count - 1 downto 0 do
+	cc:=Count;
+	while cc > 0 do
 	begin
+		Dec(cc);
 		O:=Items[cc];
 		if Recurse and (O is TAQ) then
 			TAQ(O).Each(EachFunction);
 		if not EachFunction(Self, O) then
 			Break
-		else if cc >= Count then
-			Break;
+		else if cc > Count then
+			cc:=Count;
 	end;
 	HeartBeat;
 end;
@@ -848,7 +946,7 @@ var
 	cc:Integer;
 begin
 	Result:=Self;
-	for cc:=0 to Times - 1 do
+	for cc:=1 to Times do
 		Each(EachFunction);
 end;
 
@@ -976,7 +1074,7 @@ end;
  *}
 function TAQ.FinishAnimations:TAQ;
 begin
-	FinishTimers;
+	Result:=FinishTimers;
 end;
 
 {**
@@ -1068,7 +1166,7 @@ begin
 			begin
 				GarbageCollector.Remove(CheckAQ);
 
-				{$IFDEF OutputDebugString}
+				{$IFDEF OutputDebugGarbageCollector}
 				OutputDebugString(PWideChar(Format('Verbleibende TAQ-Instanzen im GarbageCollector: %d',
 					[GarbageCollector.Count])));
 				{$ENDIF}
@@ -1098,6 +1196,10 @@ end;
 class procedure TAQ.GlobalIntervalTimerEvent(Sender:TObject);
 begin
 	FActiveIntervalAQs.Each(
+		{**
+		 * @param AQ Enthält FActiveIntervalAQs
+		 * @param O Enthält ein TAQ-Objekt, welches mind. ein Interval besitzt
+		 *}
 		function(AQ:TAQ; O:TObject):Boolean
 		begin
 			TAQ(O).LocalIntervalTimerEvent(Sender);
@@ -1170,8 +1272,32 @@ end;
  * @see TAQ.IsAlive
  *}
 procedure TAQ.HeartBeat;
+	{**
+	 * Leitet den Herzschlag an ggf. enthaltene TAQ-Instanzen rekursiv weiter
+	 *
+	 * Eigentlich bietet sich die Echo-Methode hierfür an, doch die macht auch einen Herzschlag...
+	 * ...und man hätte einen Stack-Überlauf.
+	 *}
+	procedure HeartBeatEcho(AQ:TAQ);
+	var
+		cc:Integer;
+	begin
+		for cc:=0 to AQ.Count - 1 do
+			if AQ[cc] is TAQ then
+			begin
+				TAQ(AQ[cc]).HeartBeat;
+				HeartBeatEcho(TAQ(AQ[cc]));
+			end;
+	end;
 begin
 	FLifeTick:=GetTickCount;
+	{**
+	 * Der Herzschlag muss an enthaltene TAQ-Instanzen weitergereicht werden, wenn diese Instanz
+	 * Rekursiv (TAQ.Recurse) ist. Standardmäßig sind alle TAQ-Instanzen rekursiv.
+	 * Ausnahmen: TAQ.FGarbageCollector
+	 *}
+//	if Recurse then
+//		HeartBeatEcho(Self);
 end;
 
 {**
@@ -1180,6 +1306,9 @@ end;
  *
  * Da die Each-Methode rekursiv mit den enthaltenen TAQ-Objekten arbeitet, laufen weitere Aktionen
  * transparent ab.
+ *
+ * @param IncludeOrphans Optional. Standard ist TRUE. Bestimmt, ob die neue Instanz auch die Objekte
+ *        in sich vereint, für die keine passende TAQ-Instanz gefunden wurde.
  *}
 function TAQ.IntervalActors(IncludeOrphans:Boolean):TAQ;
 var
@@ -1209,7 +1338,7 @@ begin
 				begin
 					Result:=TRUE; // Each soll stets komplett durchlaufen
 					with TAQ(O) do
-						if (IndexOf(SO) >= 0) and HasInterval then
+						if Contains(SO) and HasInterval then
 						begin
 							Actors.Add(O);
 							SOFound:=TRUE;
@@ -1293,6 +1422,10 @@ begin
 				ManagedAQ:=CheckAQ;
 				ManagedAQ.Clean;
 				UpdateActiveIntervalAQs;
+				{$IFDEF OutputDebugGarbageCollector}
+				OutputDebugString(PWideChar(Format('TAQ %p am Index #%d wiederverwendet,',
+					[@O, AQ.IndexOf(O)])));
+				{$ENDIF}
 			end;
 			{**
 			 * Die Each soll solange laufen, bis eine abgelaufene Instanz gefunden wurde
@@ -1304,12 +1437,58 @@ begin
 		Exit(ManagedAQ);
 
 	Result:=TAQ.Create;
+	Result.HeartBeat;
 	{**
 	 * Das ist das ganze Geheimnis des TAQ-Objekt-Managing ;)
 	 *}
 	GarbageCollector.Add(Result);
 end;
 
+{**
+ * Erstellt eine neue komplexe TAQ-Instanz, die jedes enthaltene Nicht-TAQ-Objekt in eine separate
+ * TAQ-Instanz verpackt und der neuen Instanz unterordnet.
+ *
+ * Wenn untergeordnete TAQ-Instanzen enthalten sind, so werden diese verworfen, aber ihre Objekte
+ * übernommen.
+ *
+ * Dieses Verfahren wird z.B. bei den internen Animationsmethoden angewendet.
+ *
+ * Die verschachtelten TAQ-Objekte können mittels TAQ.Demultiplex wieder in ein einfaches TAQ-Objekt
+ * umgewandelt werden.
+ *
+ * @see TAQ.Demultiplex
+ *}
+function TAQ.Multiplex:TAQ;
+var
+	MultiAQ:TAQ;
+begin
+	MultiAQ:=Managed;
+	Result:=MultiAQ;
+	Each(
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			Result:=TRUE;
+			if O is TAQ then
+				Exit;
+			MultiAQ.AppendAQ(TAQ.Take(O));
+		end);
+end;
+
+{**
+ * Ermittelt die Elternobjekte für die enthaltenen Objekte
+ *
+ * @param Append Optional. Standard ist FALSE. Bestimmt, ob die Elternobjekte der aktuellen
+ *        TAQ-Instanz hinzugefügt werden sollen (TRUE) oder ob eine neue Instanz erstellt
+ *        werden soll (FALSE), die zurückgeliefert wird.
+ * @param Recurse Optional. Standard ist FALSE. Bestimmt, ob die ermittelten Elternobjekte wiederrum
+ *        auf Elternobjekte untersucht werden sollen.
+ * @param ParentsFiller Optional. Standard ist nil. Wie der Name schon vermuten lässt, hat die
+ *        Funktion die Aufgabe, dem übergebenen TAQ-Objekt die Elternobjekte hinzuzufügen. Wird der
+ *        Parameter nicht angegeben (nil), so wird eine interne Funktion verwendet, die nur
+ *        von TComponent abgeleitete Objekte akzeptiert.
+ *        Die interne Funktion verwendet die Eigenschaft TComponent.HasParent und die Methode
+ *        TComponent.GetParentComponent für die Objektfindung.
+ *}
 function TAQ.Parents(Append, Recurse:Boolean; ParentsFiller:TEachFunction):TAQ;
 begin
 	if not Assigned(ParentsFiller) then
@@ -1386,7 +1565,7 @@ begin
 			if Progress = 1 then
 			begin
 
-				{$IFDEF OutputDebugString}
+				{$IFDEF OutputDebugAnimation}
 
 				OutputDebugString(PWideChar('ShakeAnimation beendet für $' + IntToHex(Integer(O),
 							SizeOf(Integer) * 2)));
@@ -1426,12 +1605,16 @@ end;
  *
  * Da die Each-Methode rekursiv mit den enthaltenen TAQ-Objekten arbeitet, laufen weitere Aktionen
  * transparent ab.
+ *
+ * @param IncludeOrphans Optional. Standard ist TRUE. Bestimmt, ob die neue Instanz auch die Objekte
+ *        in sich vereint, für die keine passende TAQ-Instanz gefunden wurde.
  *}
 function TAQ.TimerActors(IncludeOrphans:Boolean):TAQ;
 var
 	Actors:TAQ;
 begin
 	Actors:=Managed;
+	Result:=Actors;
 
 	Each(
 		{**
@@ -1455,7 +1638,7 @@ begin
 				begin
 					Result:=TRUE; // Each soll stets komplett durchlaufen
 					with TAQ(O) do
-						if (IndexOf(SO) >= 0) and HasTimer then
+						if Contains(SO) and HasTimer then
 						begin
 							Actors.Add(O);
 							SOFound:=TRUE;
@@ -1464,8 +1647,6 @@ begin
 			if IncludeOrphans and not SOFound then
 				Actors.Add(SO);
 		end);
-
-	Result:=Actors;
 end;
 
 {**
@@ -1498,7 +1679,7 @@ begin
 	GarbageCollector.Each(
 		{**
 		 * @param AQ Ist der GarbageCollector
-		 * @param O Ist ein vom GarbageCollector verwaltetes TAQ-Objekt
+		 * @param O Ist ein vom GarbageCollector verwaltetes TAQ-Objekt, also alle gemanageten TAQs
 		 *}
 		function(AQ:TAQ; O:TObject):Boolean
 		begin
@@ -1512,7 +1693,7 @@ begin
 	 *}
 	FActiveIntervalAQs.Add(GarbageCollector);
 
-	{$IFDEF OutputDebugString}
+	{$IFDEF OutputDebugActiveIntervals}
 		OutputDebugString(PWideChar('TAQ-Instanzen mit Intervallen: ' +
 			IntToStr(FActiveIntervalAQs.Count)));
 	{$ENDIF}
@@ -1533,7 +1714,11 @@ end;
 {**
  * Bricht das Interval ab
  *
- * TInterval.Each wird keine Funktion zurückliefern
+ * Auswirkungen:
+ * - TInterval.Each wird keine Funktion (nil) zurückliefern.
+ * - TInterval.IsFinished liefert TRUE
+ *
+ * @see TInterval.Finish
  *}
 procedure TInterval.Cancel;
 begin
@@ -1547,10 +1732,10 @@ function TInterval.Each:TEachFunction;
 var
 	CurrentTick:Cardinal;
 begin
-	CurrentTick:=GetTickCount;
 	Result:=nil;
 	if IsCanceled then
 		Exit;
+	CurrentTick:=GetTickCount;
 	{**
 	 * Unendlicher Interval
 	 *}
@@ -1579,6 +1764,10 @@ end;
 
 {**
  * Manuelle Beendigung eines endlichen Intervals
+ *
+ * Der nächste Aufruf von TInterval.Each liefert die letzte Each-Funktion.
+ *
+ * @see TInterval.Cancel
  *}
 procedure TInterval.Finish;
 begin
