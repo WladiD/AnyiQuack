@@ -154,8 +154,7 @@ type
 		function HasInterval:Boolean;
 
 		procedure LocalIntervalTimerEvent(Sender:TObject);
-		procedure AnimateObject(O:TObject; Duration:Integer; Each:TEachFunction;
-			LastEach:TEachFunction = nil);
+		procedure Animate(Duration:Integer; Each:TEachFunction; LastEach:TEachFunction = nil);
 
 		function CustomFiller(Filler:TEachFunction; Append, Recurse:Boolean):TAQ;
 
@@ -412,7 +411,7 @@ end;
  * uns machen. Durch die gemanagte Instanzierung brauche ich mir keine Gedanken über zuviele
  * Instanzen machen...
  *}
-procedure TAQ.AnimateObject(O:TObject; Duration:Integer; Each, LastEach:TEachFunction);
+procedure TAQ.Animate(Duration:Integer; Each, LastEach:TEachFunction);
 var
 	CustomLastEach:TEachFunction;
 begin
@@ -425,21 +424,7 @@ begin
 		else
 			Each(AQ, O);
 	end;
-	{**
-	 * Wenn es nur ein Objekt ist, welches sich in der aktuellen TAQ-Instanz befindet, dann kann
-	 * man die aktuelle TAQ auch nehmen...
-	 *}
-	if (Count = 1) and (Items[0] = O) then
-	begin
-		EachTimer(Duration, Each, CustomLastEach).FAnimating:=TRUE;
-	end
-	{**
-	 * ...andernfalls muss ein neues her.
-	 *}
-	else
-	begin
-		TAQ.Take(O).EachTimer(Duration, Each, CustomLastEach).FAnimating:=TRUE;
-	end;
+	EachTimer(Duration, Each, CustomLastEach).FAnimating:=TRUE;
 end;
 
 
@@ -513,7 +498,11 @@ function TAQ.BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Durat
 var
 	WholeEach:TEachFunction;
 begin
-	Result:=Self.Filter(TControl);
+	with Self.Filter(TControl) do
+	begin
+		Result:=Multiplex;
+		Die; // Die gefilterte TAQ sterben lassen
+	end;
 
 	WholeEach:=function(AQ:TAQ; O:TObject):Boolean
 	var
@@ -521,6 +510,8 @@ begin
 		PrevLeft, PrevTop, PrevWidth, PrevHeight:Integer;
 	begin
 		Result:=TRUE;
+		if not (O is TControl) then
+			Exit;
 
 		with TControl(O) do
 		begin
@@ -564,7 +555,7 @@ begin
 			end;
 		end;
 
-		AQ.AnimateObject(O, Duration, EachF);
+		AQ.Animate(Duration, EachF);
 	end;
 
 	Result.Each(WholeEach);
@@ -1521,7 +1512,11 @@ function TAQ.ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration:Integer;
 var
 	WholeEach:TEachFunction;
 begin
-	Result:=Self.Filter(TControl);
+	with Self.Filter(TControl) do
+	begin
+		Result:=Multiplex;
+		Die; // Die gefilterte TAQ sterben lassen
+	end;
 
 	WholeEach:=function(AQ:TAQ; O:TObject):Boolean
 	var
@@ -1529,6 +1524,8 @@ begin
 		PrevLeft, PrevTop:Integer;
 	begin
 		Result:=TRUE;
+		if not (O is TControl) then
+			Exit;
 
 		with TControl(O) do
 		begin
@@ -1577,7 +1574,7 @@ begin
 			end;
 		end;
 
-		AQ.AnimateObject(O, Duration, EachF);
+		AQ.Animate(Duration, EachF);
 	end;
 
 	Result.Each(WholeEach);
