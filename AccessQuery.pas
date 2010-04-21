@@ -12,7 +12,7 @@
  * The Original Code is AccessQuery.pas.
  *
  * The Initial Developer of the Original Code is Waldemar Derr.
- * Portions created by Waldemar Derr are Copyright (C) Waldemar Derr.
+ * Portions created by Waldemar Derr are Copyright (C) 2010 Waldemar Derr.
  * All Rights Reserved.
  *
  * @author Waldemar Derr <mail@wladid.de>
@@ -27,22 +27,7 @@ uses
 	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Math;
 
 {$IFDEF DEBUG}
-	{**
-	 * Gibt diverse Meldungen auf der Debug-Konsole aus
-	 *}
-	{$DEFINE OutputDebugString}
-
-	{$IFDEF OutputDebugString}
-		{**
-		 * Meldungen über beendete Animationen
-		 *}
-		{.$DEFINE OutputDebugAnimation}
-		{**
-		 * Meldungen über aktive Intervalle
-		 *}
-		{.$DEFINE OutputDebugActiveIntervals}
-		{$DEFINE OutputDebugGarbageCollector}
-	{$ENDIF}
+	{$INCLUDE Debug.inc}
 {$ENDIF}
 
 type
@@ -81,7 +66,64 @@ type
 	TEaseType = (etLinear, etQuadratic, etMassiveQuadratic);
 
 	{**
-	 * AQ ist das Kürzel für AccessQuery und ist die Kernklasse dieser Unit.
+	 * AQ ist das Kürzel für AccessQuery und bildet die Kernklasse der AccessQuery-Unit
+	 *
+	 * TAQ greift ein oder beliebig viele Objekte und bietet Methoden, diese mittels anonymer
+	 * Funktionen zu verarbeiten.
+	 *
+	 * Die Verarbeitung kann...
+	 *
+	 * - sofort (TAQ.Each),
+	 * - wiederholt (TAQ.EachRepeat),
+	 * - zeitversetzt (TAQ.EachDelay),
+	 * - zeitbegrenzt (TAQ.EachTimer)
+	 * - oder in Zeit-Intervallen (TAQ.EachInterval)
+	 *
+	 * durchgeführt werden.
+	 *
+	 * Chain-Pattern
+	 * -------------
+	 * TAQ wurde mit Hinblick auf das äußerst produktive Chain-Pattern entwickelt. Das Chain-Pattern
+	 * ist nichts weiteres, als die Verwendung von mehreren Objekt-Methoden in einer Anweisung.
+	 * Alle Methoden, die ein TAQ-Objekt zurückliefern sind zu diesem Entwurfsmuster kompatibel.
+	 *
+	 * Beispiel:
+	 * TAQ.Take(Form1).Children(FALSE, TRUE).Filter(TButton).Each(EachFunction).Die;
+	 *
+	 * Beispiel-Erläuterung:
+	 * - TAQ.Take(Form1) ist eine Klassenmethode und liefert uns eine neue gemanagete TAQ-Instanz,
+	 *   welche die Form1 aufnimmt.
+	 * - Children(FALSE, TRUE) ermittels rekursiv alle Kindsobjekte von Form1 und liefert wieder
+	 *   eine neue TAQ-Instanz. Wenn der 1. Parameter TRUE wäre, würde es die aktuelle Instanz
+	 *   beibehalten.
+	 * - Filter(TButton) läuft nun alle von Children ermittelten Objekte durch und nimmt nur die
+	 *   Objekte auf, die vom Typ/Klasse TButton sind und packt sie wieder in ein neues TAQ-Objekt.
+	 * - Each(EachFunction) hier kann man nun bequem mittels einer anonymen Funktion vom Typ
+	 *   TEachFunction, alle Buttons verarbeiten.
+	 * - Die Die-Methode ist absolut freiwillig und bedeutet lediglich, dass wir die letzte
+	 *   TAQ-Instanz nicht brauchen. Auf diese Weise kann der GarbageCollector sie schneller
+	 *   freigeben oder wiederverwenden.
+	 *
+	 * Gemanagete TAQ-Instanzen
+	 * ------------------------
+	 * TAQ beherbergt einen klassenweit aktiven GarbageCollector, der instanzierte TAQ-Objekte
+	 * verwaltet und sich (unter anderem) um dessen freigabe kümmert. Jede TAQ-Instanz hat eine
+	 * begrenzte Lebensdauer, die von der Konstante MaxLifeTime bestimmt wird, wird es nun für die
+	 * definierte Zeitspanne inaktiv, wird es freigegeben oder wiederverwendet.
+	 *
+	 * Ungemanagete TAQ-Instanzen
+	 * --------------------------
+	 * Eine TAQ-Instanz gilt als nicht verwaltet, wenn sie über den TAQ-Konstruktor oder mittels
+	 * der Klassenmethode TAQ.Unmanaged erzeugt wird. Diese werden nicht automatisch freigegeben.
+	 * Auch können solche Instanzen nicht von den Methoden gebrauch nehmen, die in irgendeiner Art
+	 * auf der Basis von Timern realisiert werden, wie z.B. TAQ.EachDelay, TAQ.EachTimer,
+	 * TAQ.XAnimation etc...
+	 *
+	 * Globaler TTimer
+	 * ---------------
+	 * Beliebig viele TAQ-Objekte können von Timer-Funktionalität gebrauch nehmen, doch es wird nur
+	 * ein klassenweit gültiges TTimer-Objekt verwendet. Dieses läuft in einer festen Auflösung, die
+	 * in der Konstante IntervalResolution definiert ist.
 	 *}
 	TAQ = class(TObjectList)
 	private
@@ -116,6 +158,9 @@ type
 		 *}
 		FActiveIntervalAQs:TAQ;
 	protected
+		type
+			TCancelType = (ctInterval, ctTimer, ctTimerFinish, ctAnimation, ctAnimationFinish);
+		var
 		{**
 		 * Der letzte Tick, der als Lebenszeichen ausgewertet wird
 		 *
@@ -157,6 +202,7 @@ type
 		procedure Animate(Duration:Integer; Each:TEachFunction; LastEach:TEachFunction = nil);
 
 		function CustomFiller(Filler:TEachFunction; Append, Recurse:Boolean):TAQ;
+		procedure CustomCancel(Local:Boolean; CancelType:TCancelType);
 
 		function IsAlive:Boolean;
 		procedure HeartBeat;
@@ -209,15 +255,17 @@ type
 		function EachDelay(Delay:Integer; Each:TEachFunction):TAQ;
 		function EachRepeat(Times:Integer; EachFunction:TEachFunction):TAQ;
 
-		function FinishAnimations:TAQ;
-		function CancelAnimations:TAQ;
-		function FinishTimers:TAQ;
-		function CancelTimers:TAQ;
-		function CancelDelays:TAQ;
-		function CancelIntervals:TAQ;
+		function FinishAnimations(Local:Boolean = FALSE):TAQ;
+		function CancelAnimations(Local:Boolean = FALSE):TAQ;
+		function FinishTimers(Local:Boolean = FALSE):TAQ;
+		function CancelTimers(Local:Boolean = FALSE):TAQ;
+		function CancelDelays(Local:Boolean = FALSE):TAQ;
+		function CancelIntervals(Local:Boolean = FALSE):TAQ;
 
 		function Filter(ByClass:TClass):TAQ; overload;
 		function Filter(FilterEach:TEachFunction):TAQ; overload;
+		function First:TAQ;
+		function Last:TAQ;
 
 		function BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Duration:Integer;
 			EaseFunction:TEaseFunction = nil; OnComplete:TAnonymNotifyEvent = nil):TAQ;
@@ -571,9 +619,10 @@ end;
  *
  * @see TAQ.FinishAnimations
  *}
-function TAQ.CancelAnimations:TAQ;
+function TAQ.CancelAnimations(Local:Boolean):TAQ;
 begin
-	Result:=CancelTimers;
+	Result:=Self;
+	CustomCancel(Local, ctAnimation);
 end;
 
 {**
@@ -581,7 +630,7 @@ end;
  *
  * Zur Zeit ist es lediglich ein Wrapper zu TAQ.CancelTimers
  *}
-function TAQ.CancelDelays:TAQ;
+function TAQ.CancelDelays(Local:Boolean):TAQ;
 begin
 	Result:=CancelTimers;
 end;
@@ -589,7 +638,7 @@ end;
 {**
  * Bricht alle, mittels EachInterval erstellte, Intervale ab
  *}
-function TAQ.CancelIntervals:TAQ;
+function TAQ.CancelIntervals(Local:Boolean):TAQ;
 var
 	CancelInterval:TEachFunction;
 begin
@@ -628,36 +677,10 @@ end;
  *
  * @see TAQ.FinishTimers
  *}
-function TAQ.CancelTimers:TAQ;
-var
-	CancelTimer:TEachFunction;
+function TAQ.CancelTimers(Local:Boolean):TAQ;
 begin
 	Result:=Self;
-
-	CancelTimer:=function(AQ:TAQ; O:TObject):Boolean
-	var
-		cc:Integer;
-		TempAQ:TAQ;
-	begin
-		Result:=TRUE; // Each soll komplett durchlaufen
-		if not (O is TAQ) then
-			Exit;
-		TempAQ:=TAQ(O);
-		if not Assigned(TempAQ.FIntervals) then
-			Exit;
-
-		for cc:=TempAQ.FIntervals.Count - 1 downto 0 do
-			if TInterval(TempAQ.FIntervals[cc]).IsFinite then
-			begin
-				if TempAQ.FIntervals[cc] = TempAQ.FCurrentInterval then
-					TempAQ.FCurrentInterval:=nil;
-				TempAQ.FIntervals.Delete(cc);
-			end;
-	end;
-
-	Each(CancelTimer);
-	CancelTimer(Self, Self);
-	UpdateActiveIntervalAQs;
+	CustomCancel(Local, ctTimer);
 end;
 
 {**
@@ -705,7 +728,6 @@ begin
 	FCurrentInterval:=nil;
 	if Assigned(FIntervals) then
 		FreeAndNil(FIntervals);
-	HeartBeat;
 end;
 
 {**
@@ -730,14 +752,123 @@ begin
 	Result:=Found;
 end;
 
-{**
- * Überprüft, ob FIntervalTimer erstellt werden muss, oder ob er freigegeben werden kann
- *}
-
 constructor TAQ.Create;
 begin
 	inherited Create(FALSE);
 	FRecurse:=TRUE;
+end;
+
+
+procedure TAQ.CustomCancel(Local:Boolean; CancelType:TCancelType);
+type
+	{**
+	 * Die Funktion muss TRUE liefern, wenn ein Interval abgebrochen werden soll
+	 *}
+	TIntervalCancelFunction = reference to function(I:TInterval):Boolean;
+var
+	CancelF:TIntervalCancelFunction;
+	Finish, CheckForAnimation, AnyIntervalsDeleted:Boolean;
+	PerformCancel:TEachFunction;
+begin
+	CancelF:=nil;
+	AnyIntervalsDeleted:=FALSE;
+
+	if CancelType = ctInterval then
+		CancelF:=function(I:TInterval):Boolean
+		begin
+			Result:=not I.IsFinite;
+		end
+	else if CancelType in [ctTimer, ctTimerFinish, ctAnimation, ctAnimationFinish] then
+		CancelF:=function(I:TInterval):Boolean
+		begin
+			Result:=I.IsFinite;
+		end
+	else
+		raise EAQ.Create('No CancelF-Function defined.');
+
+	CheckForAnimation:=CancelType in [ctAnimation, ctAnimationFinish];
+	Finish:=CancelType in [ctTimerFinish, ctAnimationFinish];
+
+	PerformCancel:=function(AQ:TAQ; O:TObject):Boolean
+	var
+		cc:Integer;
+		TempAQ:TAQ;
+	begin
+		Result:=TRUE; // Each soll komplett durchlaufen
+		if not (O is TAQ) then
+			Exit;
+		TempAQ:=TAQ(O);
+		if not Assigned(TempAQ.FIntervals) then
+			Exit;
+
+		for cc:=TempAQ.FIntervals.Count - 1 downto 0 do
+			if CancelF(TInterval(TempAQ.FIntervals[cc])) and (not CheckForAnimation or
+				(CheckForAnimation AND TempAQ.Animating)) then
+			begin
+				if Finish then
+				begin
+					TInterval(TempAQ.FIntervals[cc]).Finish;
+				end
+				else
+				begin
+					if TempAQ.FIntervals[cc] = TempAQ.FCurrentInterval then
+						TempAQ.FCurrentInterval:=nil;
+					TempAQ.FIntervals.Delete(cc);
+					AnyIntervalsDeleted:=TRUE;
+				end;
+			end;
+		if Finish then
+			TempAQ.LocalIntervalTimerEvent(nil);
+	end;
+
+	if Local then
+	begin
+		{**
+		 * Ggf. unterordnete TAQ-Instanzen
+		 *}
+		Each(PerformCancel);
+		{**
+		 * Die aktuelle Instanz selbst kommt per Each nicht an
+		 *}
+		PerformCancel(Self, Self);
+	end
+	{**
+	 * Globale Suche
+	 *
+	 * Es sollen TAQ-Instanzen gesucht werden, die mind. ein Objekt von dieser TAQ-Instanz
+	 * beherbergen.
+	 *}
+	else
+	begin
+		GarbageCollector.Each(
+			function(GC:TAQ; Target:TObject):Boolean
+			var
+				TargetAQ:TAQ;
+			begin
+				Result:=TRUE; // Each soll komplett durchlaufen
+				TargetAQ:=TAQ(Target);
+				Each(
+					{**
+					 * @param AQ Enthält Self aus dem selben Kontext, wie die CustomCancel-Methode
+					 * @param O Enthält ein Object aus aktuellem Self
+					 *}
+					function(AQ:TAQ; O:TObject):Boolean
+					begin
+						Result:=TRUE;
+						if O is TAQ then
+							Exit;
+						if TargetAQ.IndexOf(O) >= 0 then
+						begin
+							TargetAQ.Each(PerformCancel);
+							PerformCancel(TargetAQ, TargetAQ);
+							Result:=FALSE; // Es wird nur ein Objekt-Vorkommen benötigt
+						end;
+					end);
+			end);
+	end;
+
+	if AnyIntervalsDeleted then
+		UpdateActiveIntervalAQs;
 end;
 
 function TAQ.CustomFiller(Filler:TEachFunction; Append, Recurse:Boolean):TAQ;
@@ -871,16 +1002,15 @@ begin
 	cc:=Count;
 	while cc > 0 do
 	begin
-		Dec(cc);
-		O:=Items[cc];
+		O:=Items[Count - cc];
 		if Recurse and (O is TAQ) then
 			TAQ(O).Each(EachFunction);
 		if not EachFunction(Self, O) then
 			Break
 		else if cc > Count then
 			cc:=Count;
+		Dec(cc);
 	end;
-	HeartBeat;
 end;
 
 {**
@@ -926,7 +1056,6 @@ begin
 	Result:=Self;
 	GetIntervals.Add(TInterval.Infinite(Interval, Each));
 	UpdateActiveIntervalAQs;
-	HeartBeat;
 end;
 
 {**
@@ -985,7 +1114,6 @@ begin
 	Result:=Self;
 	GetIntervals.Add(TInterval.Finite(Duration, Each, LastEach));
 	UpdateActiveIntervalAQs;
-	HeartBeat;
 end;
 
 {**
@@ -1063,9 +1191,10 @@ end;
  *
  * @see TAQ.CancelAnimations
  *}
-function TAQ.FinishAnimations:TAQ;
+function TAQ.FinishAnimations(Local:Boolean):TAQ;
 begin
-	Result:=FinishTimers;
+	Result:=Self;
+	CustomCancel(Local, ctAnimationFinish);
 end;
 
 {**
@@ -1078,37 +1207,22 @@ end;
  *
  * @see TAQ.CancelTimers
  *}
-function TAQ.FinishTimers:TAQ;
-var
-	FinishTimer:TEachFunction;
+function TAQ.FinishTimers(Local:Boolean):TAQ;
 begin
 	Result:=Self;
+	CustomCancel(Local, ctTimerFinish);
+end;
 
-	FinishTimer:=function(AQ:TAQ; O:TObject):Boolean
-	var
-		cc:Integer;
-	begin
-		Result:=TRUE;
-		if not (O is TAQ) then
-			Exit;
-		with TAQ(O) do
-		begin
-			if not Assigned(FIntervals) then
-				Exit;
-			for cc:=0 to FIntervals.Count - 1 do
-				{**
-				 * TInterval.Finish beendet nur die endlichen Intervale
-				 *}
-				TInterval(FIntervals[cc]).Finish;
-			{**
-			 * Die entsprechenden Routinen ablaufen lassen, die die letzte Each ausführen
-			 *}
-			LocalIntervalTimerEvent(nil);
-		end;
-	end;
-
-	Each(FinishTimer);
-	FinishTimer(Self, Self);
+{**
+ * Erstellt ein neues TAQ-Objekt, welches das erste Objekt aus der aktuellen Instanz enthält
+ *
+ * Hat die aktuelle Instanz keine Objekte, wird ein leeres Objekt geliefert.
+ *}
+function TAQ.First:TAQ;
+begin
+	Result:=Managed;
+	if Count > 0 then
+		Result.Append(Items[0]);
 end;
 
 {**
@@ -1157,8 +1271,8 @@ begin
 			begin
 				GarbageCollector.Remove(CheckAQ);
 
-				{$IFDEF OutputDebugGarbageCollector}
-				OutputDebugString(PWideChar(Format('Verbleibende TAQ-Instanzen im GarbageCollector: %d',
+				{$IFDEF OutputDebugGCFree}
+				OutputDebugString(PWideChar(Format('TAQ freigegeben. Verbleibend im GarbageCollector: %d.',
 					[GarbageCollector.Count])));
 				{$ENDIF}
 			end;
@@ -1265,9 +1379,6 @@ end;
 procedure TAQ.HeartBeat;
 	{**
 	 * Leitet den Herzschlag an ggf. enthaltene TAQ-Instanzen rekursiv weiter
-	 *
-	 * Eigentlich bietet sich die Echo-Methode hierfür an, doch die macht auch einen Herzschlag...
-	 * ...und man hätte einen Stack-Überlauf.
 	 *}
 	procedure HeartBeatEcho(AQ:TAQ);
 	var
@@ -1353,6 +1464,18 @@ begin
 end;
 
 {**
+ * Liefert ein neues TAQ-Objekt, welches das letzte Objekt aus der aktuellen Instanz enthält
+ *
+ * Hat die aktuelle Instanz keine Objekte, wird ein leeres Objekt geliefert.
+ *}
+function TAQ.Last:TAQ;
+begin
+	Result:=Managed;
+	if Count > 0 then
+		Result.Append(Items[Count - 1]);
+end;
+
+{**
  * Lokaler OnTimer-Event-Handler
  *
  * Das ursprüngliche Ereignis kommt von der Klassenmethode GlobalIntervalTimerEvent
@@ -1385,6 +1508,7 @@ begin
 	end;
 	if AnyRemoved then
 		UpdateActiveIntervalAQs;
+	HeartBeat;
 end;
 
 {**
@@ -1412,9 +1536,10 @@ begin
 			begin
 				ManagedAQ:=CheckAQ;
 				ManagedAQ.Clean;
+				ManagedAQ.HeartBeat;
 				UpdateActiveIntervalAQs;
-				{$IFDEF OutputDebugGarbageCollector}
-				OutputDebugString(PWideChar(Format('TAQ %p am Index #%d wiederverwendet,',
+				{$IFDEF OutputDebugGCRecycle}
+				OutputDebugString(PWideChar(Format('TAQ %p am Index #%d wiederverwendet.',
 					[@O, AQ.IndexOf(O)])));
 				{$ENDIF}
 			end;
@@ -1433,6 +1558,10 @@ begin
 	 * Das ist das ganze Geheimnis des TAQ-Objekt-Managing ;)
 	 *}
 	GarbageCollector.Add(Result);
+	{$IFDEF OutputDebugGCCreate}
+	OutputDebugString(PWideChar(Format('Neuer TAQ %p am Index #%d.',
+		[@Result, GarbageCollector.IndexOf(Result)])));
+	{$ENDIF}
 end;
 
 {**
