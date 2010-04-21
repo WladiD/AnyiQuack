@@ -9,15 +9,17 @@ uses
 type
 	TMainForm = class(TForm)
 		AddPanelButton:TButton;
-		PanelSizeTrackBar: TTrackBar;
-		RemovePanelButton: TButton;
-    Label1: TLabel;
-    DisturbedComboBox: TComboBox;
-    Label2: TLabel;
+		PanelSizeTrackBar:TTrackBar;
+		RemovePanelButton:TButton;
+		Label1:TLabel;
+		DisturbedComboBox:TComboBox;
+		Label2:TLabel;
+		Label3:TLabel;
+		Label4:TLabel;
 		procedure AddPanelButtonClick(Sender:TObject);
-		procedure FormResize(Sender: TObject);
-		procedure PanelSizeTrackBarChange(Sender: TObject);
-		procedure RemovePanelButtonClick(Sender: TObject);
+		procedure FormResize(Sender:TObject);
+		procedure PanelSizeTrackBarChange(Sender:TObject);
+		procedure RemovePanelButtonClick(Sender:TObject);
 	private
 		FPanelCounter:Integer;
 	public
@@ -30,8 +32,6 @@ var
 implementation
 
 {$R *.dfm}
-
-{TForm2}
 
 procedure TMainForm.AddPanelButtonClick(Sender:TObject);
 begin
@@ -63,14 +63,19 @@ begin
 		.Children
 		.Filter(TPanel)
 		.Last
-		.BoundsAnimation(-PanelSizeTrackBar.Position, -PanelSizeTrackBar.Position, -1, -1, 200,
-			nil,
-			procedure(Sender:TObject)
+		.Each(
+			function(AQ:TAQ; O:TObject):Boolean
 			begin
-				TAQ.Take(Sender).CancelAnimations;
-				Sender.Free;
-				Dec(FPanelCounter);
-				UpdateAlign;
+				Result:=TRUE;
+				AQ.BoundsAnimation(TControl(O).Left, Height, -1, -1, 200,
+					TAQ.Ease(etQuadratic),
+					procedure(Sender:TObject)
+					begin
+						TAQ.Take(Sender).CancelAnimations;
+						Sender.Free;
+						Dec(FPanelCounter);
+						UpdateAlign;
+					end);
 			end);
 end;
 
@@ -121,7 +126,9 @@ begin
 				AQ.BoundsAnimation(TargetLeft, TargetTop, PQSize, PQSize, 400,
 					TAQ.Ease(etQuadratic));
 				Inc(PIndex);
-			end);
+			end)
+		.Die;
+	PanelsAQ.Die;
 end;
 
 end.

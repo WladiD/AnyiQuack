@@ -46,12 +46,9 @@ begin
 end;
 
 procedure TForm1.ItemsCountTrackBarChange(Sender: TObject);
-var
-	AQ:TAQ;
 begin
-	AQ:=TAQ.Take(Sender);
-	AQ.TimerActors.CancelTimers;
-	AQ
+	TAQ.Take(Sender)
+		.CancelDelays
 		.EachDelay(500,
 			function(AQ:TAQ; O:TObject):Boolean
 			begin
@@ -123,8 +120,7 @@ begin
 	AQ:=ListBoxesAQ;
 	if AnimatedScrollCheckBox.Checked then
 	begin
-		AQ.TimerActors.CancelTimers;
-		AQ.EachTimer((AnimationDurationComboBox.ItemIndex + 1) * 100, ScrollEach);
+		AQ.CancelTimers.EachTimer((AnimationDurationComboBox.ItemIndex + 1) * 100, ScrollEach);
 	end
 	else
 		AQ.Each(ScrollEach);

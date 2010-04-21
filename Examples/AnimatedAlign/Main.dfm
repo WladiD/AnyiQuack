@@ -17,6 +17,30 @@ object MainForm: TMainForm
     337)
   PixelsPerInch = 96
   TextHeight = 13
+  object Label3: TLabel
+    Left = 315
+    Top = 8
+    Width = 311
+    Height = 33
+    Anchors = [akTop, akRight]
+    AutoSize = False
+    Caption = 
+      'Add a couple of panels and play with the size of form or panels.' +
+      ' Also try the different handling for disturbed animations.'
+    Color = clInfoBk
+    GlowSize = 3
+    ParentColor = False
+    Transparent = True
+    WordWrap = True
+  end
+  object Label4: TLabel
+    Left = 3
+    Top = 320
+    Width = 158
+    Height = 13
+    Anchors = [akLeft, akBottom]
+    Caption = 'Note: Flickering is a issue of VCL.'
+  end
   object Label1: TLabel
     Left = 164
     Top = 1
