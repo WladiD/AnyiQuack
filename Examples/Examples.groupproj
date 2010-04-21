@@ -9,6 +9,9 @@
 			<Projects Include="SyncScroll\SyncScroll.dproj">
 				<Dependencies/>
 			</Projects>
+			<Projects Include="AnimatedAlign\AnimatedAlign.dproj">
+				<Dependencies/>
+			</Projects>
 		</ItemGroup>
 		<ProjectExtensions>
 			<Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -35,14 +38,23 @@
 		<Target Name="SyncScroll:Make">
 			<MSBuild Targets="Make" Projects="SyncScroll\SyncScroll.dproj"/>
 		</Target>
+		<Target Name="AnimatedAlign">
+			<MSBuild Projects="AnimatedAlign\AnimatedAlign.dproj"/>
+		</Target>
+		<Target Name="AnimatedAlign:Clean">
+			<MSBuild Targets="Clean" Projects="AnimatedAlign\AnimatedAlign.dproj"/>
+		</Target>
+		<Target Name="AnimatedAlign:Make">
+			<MSBuild Targets="Make" Projects="AnimatedAlign\AnimatedAlign.dproj"/>
+		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="PulsateEdits;SyncScroll"/>
+			<CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean"/>
+			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make"/>
+			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make"/>
 		</Target>
 		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 	</Project>

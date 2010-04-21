@@ -71,13 +71,16 @@ var
 	Pulsate:TAnonymNotifyEvent;
 begin
 	Pulsate:=procedure(Sender:TObject)
+	var
+		SenderAQ:TAQ;
 	begin
+		SenderAQ:=TAQ.Take(Sender);
 		if (TEdit(Sender).Focused) and
 			{**
 			 * Diese Bedingung stellt sicher, dass keine weiteren Animationen für das Objekt laufen
 			 *}
-			(TAQ.Take(Sender).AnimationActors(FALSE).Count = 0) then
-			TAQ.Take(Sender).ShakeAnimation(0, 0, 1, 5, 1000, Pulsate);
+			(SenderAQ.AnimationActors(FALSE).Die.Count = 0) then
+			SenderAQ.ShakeAnimation(0, 0, 1, 5, 1000, Pulsate);
 	end;
 	Pulsate(Sender);
 end;

@@ -18,7 +18,12 @@ type
 		ItemsCountTrackBar: TTrackBar;
 		Label1:TLabel;
 		Label2:TLabel;
-    AnimatedScrollCheckBox: TCheckBox;
+		AnimatedScrollCheckBox: TCheckBox;
+		Label3: TLabel;
+		AnimationStyleComboBox: TComboBox;
+		Panel3: TPanel;
+		Label4: TLabel;
+		AnimationDurationComboBox: TComboBox;
 		procedure ItemsCountTrackBarChange(Sender:TObject);
 		procedure FormCreate(Sender:TObject);
 		procedure SyncScrollBarChange(Sender:TObject);
@@ -79,14 +84,14 @@ begin
 			end);
 end;
 
-function TForm1.ListBoxesAQ: TAQ;
+function TForm1.ListBoxesAQ:TAQ;
 begin
 	Result:=TAQ.Take(Form1)
 		.Children(TRUE, TRUE)
 		.Filter(TListBox);
 end;
 
-procedure TForm1.SyncScrollBarChange(Sender: TObject);
+procedure TForm1.SyncScrollBarChange(Sender:TObject);
 var
 	FirstItemIndex, ScrollItemIndex:Integer;
 	AQ:TAQ;
@@ -105,8 +110,9 @@ begin
 		 * Animiert
 		 *}
 		if Assigned(AQ.CurrentInterval) then
-			TListBox(O).TopIndex:=Round(TAQ.Ease(etQuadratic)(FirstItemIndex, ScrollItemIndex,
-				AQ.CurrentInterval.Progress))
+			TListBox(O).TopIndex:=Round(
+				TAQ.Ease(TEaseType(Ord(AnimationStyleComboBox.ItemIndex)))
+					(FirstItemIndex, ScrollItemIndex, AQ.CurrentInterval.Progress))
 		{**
 		 * Sofort
 		 *}
@@ -118,14 +124,10 @@ begin
 	if AnimatedScrollCheckBox.Checked then
 	begin
 		AQ.TimerActors.CancelTimers;
-		AQ.EachTimer(125, ScrollEach);
+		AQ.EachTimer((AnimationDurationComboBox.ItemIndex + 1) * 100, ScrollEach);
 	end
 	else
 		AQ.Each(ScrollEach);
-
-{	if AQ.TimerActors(FALSE).Contains(ListBox1) then
-		ShowMessage('ListBox1 ist enthalten');
-}
 end;
 
 end.
