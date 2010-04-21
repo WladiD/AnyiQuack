@@ -29,7 +29,6 @@ uses
 {$IFDEF DEBUG}
 	{$INCLUDE Debug.inc}
 {$ENDIF}
-
 {**
  * Sicherstellen, dass die boolesche Kurzauswertung verwendet wird
  *}
@@ -112,7 +111,7 @@ type
 	 * Gemanagete TAQ-Instanzen
 	 * ------------------------
 	 * TAQ beherbergt einen klassenweit aktiven GarbageCollector, der instanzierte TAQ-Objekte
-	 * verwaltet und sich (unter anderem) um dessen freigabe kümmert. Jede TAQ-Instanz hat eine
+	 * verwaltet und sich (unter anderem) um dessen Freigabe kümmert. Jede TAQ-Instanz hat eine
 	 * begrenzte Lebensdauer, die von der Konstante MaxLifeTime bestimmt wird, wird es nun für die
 	 * definierte Zeitspanne inaktiv, wird es freigegeben oder wiederverwendet.
 	 *

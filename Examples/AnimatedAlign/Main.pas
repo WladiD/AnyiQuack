@@ -16,6 +16,8 @@ type
 		Label2:TLabel;
 		Label3:TLabel;
 		Label4:TLabel;
+		TopPanel:TPanel;
+		BottomPanel:TPanel;
 		procedure AddPanelButtonClick(Sender:TObject);
 		procedure FormResize(Sender:TObject);
 		procedure PanelSizeTrackBarChange(Sender:TObject);
@@ -24,6 +26,8 @@ type
 		FPanelCounter:Integer;
 	public
 		procedure UpdateAlign;
+
+		function GetPanelsAQ:TAQ;
 	end;
 
 var
@@ -40,9 +44,10 @@ begin
 	begin
 		Parent:=Self;
 		SetBounds(-100, -100, 100, 100);
+		ParentBackground:=FALSE;
 		Color:=clBtnFace;
-		ParentColor:=FALSE;
 		Caption:=Format('Panel #%d', [FPanelCounter]);
+		SendToBack;
 	end;
 	UpdateAlign;
 end;
@@ -52,6 +57,17 @@ begin
 	UpdateAlign;
 end;
 
+function TMainForm.GetPanelsAQ:TAQ;
+begin
+	Result:=TAQ.Take(MainForm)
+		.Children
+		.Filter(
+			function(AQ:TAQ; O:TObject):Boolean
+			begin
+				Result:=(O is TPanel) and not ((O = TopPanel) or (O = BottomPanel));
+			end);
+end;
+
 procedure TMainForm.PanelSizeTrackBarChange(Sender: TObject);
 begin
 	UpdateAlign;
@@ -59,9 +75,7 @@ end;
 
 procedure TMainForm.RemovePanelButtonClick(Sender: TObject);
 begin
-	TAQ.Take(MainForm)
-		.Children
-		.Filter(TPanel)
+	GetPanelsAQ
 		.Last
 		.Each(
 			function(AQ:TAQ; O:TObject):Boolean
@@ -86,7 +100,7 @@ var
 	PQSize, PIndex:Integer;
 	PColumns, PRows, LeftOffset, TopOffset:Word;
 begin
-	PanelsAQ:=TAQ.Take(MainForm).Children.Filter(TPanel);
+	PanelsAQ:=GetPanelsAQ;
 
 	if DisturbedComboBox.ItemIndex = 0 then
 		PanelsAQ.CancelAnimations
@@ -96,13 +110,14 @@ begin
 	RemovePanelButton.Enabled:=PanelsAQ.Count > 0;
 
 	AWidth:=ClientWidth;
-	AHeight:=ClientHeight;
+	AHeight:=ClientHeight - TopPanel.Height - BottomPanel.Height;
 	PQSize:=PanelSizeTrackBar.Position;
 	DivMod(AWidth, PQSize, PColumns, LeftOffset);
 	DivMod(AHeight, PQSize, PRows, TopOffset);
 	PColumns:=Max(PColumns, 1);
 	LeftOffset:=(AWidth - (Min(PColumns, PanelsAQ.Count) * PQSize)) div 2;
-	TopOffset:=(AHeight - (Min(Ceil(PanelsAQ.Count / PColumns), PRows) * PQSize)) div 2;
+	TopOffset:=((AHeight - (Min(Ceil(PanelsAQ.Count / PColumns), PRows) * PQSize)) div 2) +
+		TopPanel.Height;
 	PIndex:=0;
 
 	PanelsAQ
