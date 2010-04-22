@@ -119,9 +119,6 @@ type
 	 * --------------------------
 	 * Eine TAQ-Instanz gilt als nicht verwaltet, wenn sie über den TAQ-Konstruktor oder mittels
 	 * der Klassenmethode TAQ.Unmanaged erzeugt wird. Diese werden nicht automatisch freigegeben.
-	 * Auch können solche Instanzen nicht von den Methoden gebrauch nehmen, die in irgendeiner Art
-	 * auf der Basis von Timern realisiert werden, wie z.B. TAQ.EachDelay, TAQ.EachTimer,
-	 * TAQ.XAnimation etc...
 	 *
 	 * Globaler TTimer
 	 * ---------------
@@ -362,7 +359,9 @@ const
 	 *}
 	MaxLifeTime = 10000;
 	{**
-	 * Der Interval basiert auf 40 msec (25fps = 1 sec)
+	 * Die Auflösung des klassenweiten TTimer TAQ.FIntervalTimer 
+	 *
+	 * 40 msec * 25 fps = 1 sec
 	 *}
 	IntervalResolution = 40;
 	{**
