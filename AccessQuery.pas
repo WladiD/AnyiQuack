@@ -16,6 +16,7 @@
  * All Rights Reserved.
  *
  * @author Waldemar Derr <mail@wladid.de>
+ * @see Project-Home (german) http://id.kihiwi.de/WladiD/His/Habe_ich/KiHiWi.187/
  * @version $Id$
  *}
 
@@ -38,35 +39,11 @@ type
 	EAQ = class(Exception);
 	TAQ = class;
 	TInterval = class;
-	{**
-	 * Dynamisches Array für Objekte
-	 *}
+
 	TObjectArray = array of TObject;
-	{**
-	 * Typ für anonyme Each-Funktionen
-	 *
-	 * @param AQ Die TAQ-Instanz, die die Each-Funktion aufruft
-	 * @param O Das Objekt, welches durch die Each-Funktion bearbeitet werden soll
-	 * @return Boolean Sobald die Funktion FALSE liefert, wird die Ausführung der Each-Methode
-	 *         angehalten
-	 *}
 	TEachFunction = reference to function(AQ:TAQ; O:TObject):Boolean;
-	{**
-	 * Typ für anonyme Benachrichtigungs-Events, der aber auch mit TNotifyEvent kompatibel ist
-	 *}
 	TAnonymNotifyEvent = reference to procedure(Sender:TObject);
-	{**
-	 * Typ für Beschleunigungsfunktionen
-	 *
-	 * @param StartValue Der Wert, ab dem gestartet wird
-	 * @param EndValue Der Endwert, der erreicht werden sollte, wenn Progress = 1 ist
-	 * @param Progress Fortschritt der Beschleunigung. Wert zwischen 0..1
-	 * @return Real
-	 *}
 	TEaseFunction = function(StartValue, EndValue, Progress:Real):Real;
-	{**
-	 * Vordefinierte Arten von Beschleunigungsfunktionen
-	 *}
 	TEaseType = (etLinear, etQuadratic, etMassiveQuadratic);
 
 	{**
@@ -129,66 +106,17 @@ type
 	TAQ = class(TObjectList)
 	private
 	class var
-		{**
-		 * Nimmt alle gemanagete TAQ-Instanzen auf
-		 *
-		 * Hierrüber wird, unter anderem, die Freigabe von nicht mehr verwendeten TAQ-Objekten
-		 * abgewickelt.
-		 *
-		 * Wird von der Klassenmethode GarbageCollector instanziert
-		 *
-		 * @see TAQ.GarbageCollector
-		 * @see TAQ.Managed
-		 *}
 		FGarbageCollector:TAQ;
-		{**
-		 * Der globale Timer
-		 *
-		 * Wird von der Klassenmethode GarbageCollector instanziert
-		 *
-		 * @see TAQ.GarbageCollector
-		 *}
 		FIntervalTimer:TTimer;
-		{**
-		 * Nimmt alle gemanagete TAQ-Instanzen auf, die mind. ein Interval verwenden
-		 *
-		 * Wird von der Klassenmethode GarbageCollector instanziert.
-		 *
-		 * @see TAQ.GarbageCollector
-		 * @see TAQ.UpdateActiveIntervalAQs
-		 *}
 		FActiveIntervalAQs:TAQ;
 	protected
 		type
 			TCancelType = (ctInterval, ctTimer, ctTimerFinish, ctAnimation, ctAnimationFinish);
 		var
-		{**
-		 * Der letzte Tick, der als Lebenszeichen ausgewertet wird
-		 *
-		 * @see MaxLifeTime
-		 * @see TAQ.HeartBeat
-		 *}
 		FLifeTick:Cardinal;
-		{**
-		 * Nimmt mehrere TInterval-Objekte auf
-		 *
-		 * Wird von GetIntervals instanziert.
-		 *
-		 * @see TInterval
-		 * @see TAQ.GetIntervals
-		 *}
 		FIntervals:TObjectList;
-		{**
-		 * @see TAQ.CurrentInterval
-		 *}
 		FCurrentInterval:TInterval;
-		{**
-		 * @see TAQ.Animating
-		 *}
 		FAnimating:Boolean;
-		{**
-		 * @see TAQ.Recurse
-		 *}
 		FRecurse:Boolean;
 
 		class function GarbageCollector:TAQ;
@@ -214,12 +142,6 @@ type
 		function IsAlive:Boolean;
 		procedure HeartBeat;
 
-		{**
-		 * Bestimmt, ob TAQ.Each ggf. andere enthaltene TAQ-Instanzen rekursiv mit der übergebenen
-		 * Each-Funktion durchlaufen soll.
-		 *
-		 * Standard ist TRUE. Beim FGarbageCollector und FActiveIntervalAQs aber FALSE.
-		 *}
 		property Recurse:Boolean read FRecurse;
 	public
 		constructor Create; reintroduce;
@@ -281,59 +203,17 @@ type
 
 		function Contains(AObject:TObject):Boolean;
 
-		{**
-		 * Diese Eigenschaft ist für jene TEachFunction-Funktionen gedacht, die aus dem Kontext der
-		 * EachInterval-, EachDelay- und EachTimer-Methoden aufgerufen werden.
-		 *
-		 * Hierrüber kann man den Fortschritt TInterval.Progress abrufen oder es mittels
-		 * TInterval.Cancel abbrechen.
-		 *
-		 * @see TInterval.Progress
-		 * @see TInterval.Cancel
-		 *}
 		property CurrentInterval:TInterval read FCurrentInterval;
-		{**
-		 * Sagt aus, ob die aktuelle Instanz eine Animation durchführt. Sie wird nur von
-		 * internen XAnimation-Methoden gesetzt. Manuelle Animationen mittels EachTimer können
-		 * das hier nicht setzen.
-		 *}
 		property Animating:Boolean read FAnimating;
 	end;
 
 	TInterval = class
 	private
-		{**
-		 * Der Tick, als der Interval begann
-		 *}
 		FFirstTick,
-		{**
-		 * Der Tick für die nächste Ausführung
-		 *}
 		FNextTick,
-		{**
-		 * Der Tick für die letzte Ausführung
-		 *
-		 * Ist 0, bei unendlichem Interval
-		 *}
 		FLastTick:Cardinal;
-		{**
-		 * Die Länge eines Intervals in msec
-		 *
-		 * Ist 0 bei abgebrochenem Interval
-		 *
-		 * @see TInterval.Cancel
-		 * @see TInterval.IsCanceled
-		 *}
 		FInterval:Integer;
-		{**
-		 * Die Each-Funktion, die nicht unbedingt ausgeführt wird
-		 *}
 		FNextEach,
-		{**
-		 * Die letzte Each-Funktion
-		 *
-		 * Ist nil, bei unendlichem Interval
-		 *}
 		FLastEach:TEachFunction;
 	protected
 		procedure UpdateNextTick;
@@ -354,19 +234,8 @@ type
 implementation
 
 const
-	{**
-	 * Die maximale Lebensdauer einer TAQ-Instanz bei Nichtbeschäftigung (msec)
-	 *}
 	MaxLifeTime = 10000;
-	{**
-	 * Die Auflösung des klassenweiten TTimer TAQ.FIntervalTimer 
-	 *
-	 * 40 msec * 25 fps = 1 sec
-	 *}
 	IntervalResolution = 40;
-	{**
-	 * Interval für den Bereinigungsvorgang des GarbageCollector in Millisekunden
-	 *}
 	GarbageCleanInterval = 5000;
 
 function LinearEase(StartValue, EndValue, Progress:Real):Real;
@@ -395,15 +264,6 @@ end;
 
 {** TAQ **}
 
-{**
- * Fügt mehrere Objekte mittels eines Objekt-Arrays hinzu
- *
- * Fungiert als Shortcut, für die Hinzufügung mehrerer Objekte ohne ein TObjectList-Objekt.
- *
- * Beispiel:
- *
- * TAQ.Take(Form1).Append(TObjectArray.Create(Button1, Button2));
- *}
 function TAQ.Append(Objects:TObjectArray):TAQ;
 var
 	cc:Integer;
@@ -413,9 +273,6 @@ begin
 		Add(Objects[cc]);
 end;
 
-{**
- * Fügt mehrere Objekte aus einer TObjectList-Instanz hinzu
- *}
 function TAQ.Append(Objects:TObjectList):TAQ;
 var
 	cc:Integer;
@@ -430,32 +287,18 @@ begin
 		Add(Objects[cc]);
 end;
 
-{**
- * Fügt ein einzelnes Objekt hinzu
- *
- * Es ist eine Chain-Kompatible Add-Methode.
- *}
 function TAQ.Append(AObject:TObject):TAQ;
 begin
 	Result:=Self;
 	Add(AObject);
 end;
 
-{**
- * Fügt eine TAQ-Instanz als solche hinzu
- *
- * Während Append(TObjectList) mit einem TAQ-Objekt als Parameter dessen Objekte hinzufügen würde,
- * fügt diese Methode das TAQ-Objekt selbst hinzu
- *}
 function TAQ.AppendAQ(AQ:TAQ):TAQ;
 begin
 	Result:=Self;
 	Add(AQ);
 end;
 
-{**
- * Fügt ein Interval hinzu
- *}
 procedure TAQ.AddInterval(Interval:TInterval);
 begin
 	if (GetIntervals.Count = 0) and (FActiveIntervalAQs.IndexOf(Self) = -1) then
@@ -467,9 +310,6 @@ begin
 	{$ENDIF}
 end;
 
-{**
- * Verwaltungsoverhead für Animationen
- *}
 procedure TAQ.Animate(Duration:Integer; Each, LastEach:TEachFunction);
 var
 	CustomLastEach:TEachFunction;
@@ -487,16 +327,6 @@ begin
 end;
 
 
-{**
- * Liefert ein neues TAQ-Objekt mit TAQ-Instanzen, die gerade eine Animation, für die in dieser
- * Instanz enthaltene Objekte, durchführen.
- *
- * Da die Each-Methode rekursiv mit den enthaltenen TAQ-Objekten arbeitet, laufen weitere Aktionen
- * transparent ab.
- *
- * @param IncludeOrphans Optional. Standard ist TRUE. Bestimmt, ob die neue Instanz auch die Objekte
- *        in sich vereint, für die keine passende TAQ-Instanz gefunden wurde.
- *}
 function TAQ.AnimationActors(IncludeOrphans:Boolean):TAQ;
 var
 	Actors:TAQ;
@@ -538,20 +368,6 @@ begin
 	Result:=Actors;
 end;
 
-{**
- * Führt eine Positionierungsanimation mit den enthaltenen TControl-Objekten durch
- *
- * @param NewLeft Neue absolute Links-Position.
- * @param NewTop Neue absolute Oben-Position.
- * @param NewWidth Neue absolute Breite. Soll die Breite nicht verändert werden, ist -1 anzugeben.
- * @param NewHeight Neue absolute Höhe. Soll die Höhe nicht verändert werden, ist -1 anzugeben.
- * @param Duration Die Dauer der Animation in Millisekunden.
- * @param EaseFunction Optional. Eine Beschleunigungsfunktion. Siehe TAQ.Ease, um vordefinierte
- *        Beschleunigungsfunktion zu verwenden. Wird keine (nil) angegeben, so kommt eine lineare
- *        Beschleunigungsfunktion zum Einsatz.
- * @param OnComplete Stanadrd ist nil. Event-Handler, der ausgelöst wird, wenn die Animation
- *        beendet ist. Das Ereignis wird übrigens für jedes Objekt, das animiert wird, ausgelöst.
- *}
 function TAQ.BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Duration:Integer;
 	EaseFunction:TEaseFunction; OnComplete:TAnonymNotifyEvent):TAQ;
 var
@@ -621,82 +437,29 @@ begin
 end;
 
 
-{**
- * Bricht die laufenden Animationen ab
- *
- * Im Gegensatz zu TAQ.FinishAnimations werden die Animationen auf der aktuellen Position
- * angehalten.
- *
- * @see TAQ.FinishAnimations
- *
- * @param Local Optional. Standard ist FALSE. Bestimmt, ob alle (FALSE) gemanageten TAQ-Instanzen
- *        auf die hier enthaltenen Objekte untersucht werden sollen. Wird TRUE übergeben, so bezieht
- *        sich die Operation nur auf die aktuelle Instanz.
- *}
 function TAQ.CancelAnimations(Local:Boolean):TAQ;
 begin
 	Result:=Self;
 	CustomCancel(Local, ctAnimation);
 end;
 
-{**
- * Bricht alle, mittels EachDelay erstellte Verzögerungen ab
- *
- * Zur Zeit ist es lediglich ein Wrapper zu TAQ.CancelTimers
- *
- * @param Local Optional. Standard ist FALSE. Bestimmt, ob alle (FALSE) gemanageten TAQ-Instanzen
- *        auf die hier enthaltenen Objekte untersucht werden sollen. Wird TRUE übergeben, so bezieht
- *        sich die Operation nur auf die aktuelle Instanz.
- *}
 function TAQ.CancelDelays(Local:Boolean):TAQ;
 begin
 	Result:=CancelTimers(Local);
 end;
 
-{**
- * Bricht alle, mittels EachInterval erstellte, Intervale ab
- *
- * @param Local Optional. Standard ist FALSE. Bestimmt, ob alle (FALSE) gemanageten TAQ-Instanzen
- *        auf die hier enthaltenen Objekte untersucht werden sollen. Wird TRUE übergeben, so bezieht
- *        sich die Operation nur auf die aktuelle Instanz.
- *}
 function TAQ.CancelIntervals(Local:Boolean):TAQ;
 begin
 	Result:=Self;
 	CustomCancel(Local, ctInterval);
 end;
 
-{**
- * Bricht aktive Timer ab
- *
- * Die Timer können dadurch !nicht! die letzte Each-Funktion ausführen. Siehe TAQ.FinishTimers.
- *
- * @see TAQ.FinishTimers
- *
- * @param Local Optional. Standard ist FALSE. Bestimmt, ob alle (FALSE) gemanageten TAQ-Instanzen
- *        auf die hier enthaltenen Objekte untersucht werden sollen. Wird TRUE übergeben, so bezieht
- *        sich die Operation nur auf die aktuelle Instanz.
- *}
 function TAQ.CancelTimers(Local:Boolean):TAQ;
 begin
 	Result:=Self;
 	CustomCancel(Local, ctTimer);
 end;
 
-{**
- * Ermittelt die Kindsobjekte für die enthaltenen Objekte
- *
- * @param Append Optional. Standard ist FALSE. Bestimmt, ob die Kindsobjekte der aktuellen
- *        TAQ-Instanz hinzugefügt werden sollen (TRUE) oder ob eine neue Instanz erstellt
- *        werden soll (FALSE), die zurückgeliefert wird.
- * @param Recurse Optional. Standard ist FALSE. Bestimmt, ob die ermittelten Kindsobjekte wiederrum
- *        auf Kindsobjekte untersucht werden sollen.
- * @param ChildrenFiller Optional. Standard ist nil. Wie der Name schon vermuten lässt, hat die
- *        Funktion die Aufgabe, dem übergebenen TAQ-Objekt die Kindsobjekte hinzuzufügen. Wird der
- *        Parameter nicht angegeben (nil), so wird eine interne Funktion verwendet, die nur
- *        von TComponent abgeleitete Objekte akzeptiert und deren Components-Eigenschaft
- *        berücksichtigt.
- *}
 function TAQ.Children(Append, Recurse:Boolean; ChildrenFiller:TEachFunction):TAQ;
 begin
 	if not Assigned(ChildrenFiller) then
@@ -715,12 +478,6 @@ begin
 	Result:=CustomFiller(ChildrenFiller, Append, Recurse);
 end;
 
-{**
- * Macht eine saubere Instanz
- *
- * Als wäre sie neu erstellt worden.
- * Die Lebenszeit wird verlängert.
- *}
 procedure TAQ.Clean;
 begin
 	Clear;
@@ -733,9 +490,6 @@ begin
 	end;
 end;
 
-{**
- * Entfernt alle vorhandenen Intervalle
- *}
 procedure TAQ.ClearIntervals;
 var
 	cc:Integer;
@@ -744,14 +498,6 @@ begin
 		RemoveInterval(TInterval(FIntervals[cc]));
 end;
 
-{**
- * Sagt aus, ob das übergebene Objekt enthalten ist
- *
- * Diese Funktion arbeitet per TAQ.Each und berücksichtigt daher die Eigenschaft TAQ.Recurse,
- * das heisst: Wenn diese Instanz Recurse = TRUE ist, so wird rekursiv in allen ggf. hier
- * enthaltenen TAQ-Instanzen gesucht
- *
- *}
 function TAQ.Contains(AObject:TObject):Boolean;
 var
 	Found:Boolean;
@@ -927,17 +673,6 @@ begin
 	Result:=TargetAQ;
 end;
 
-{**
- * Erstellt eine neue TAQ-Instanz mit allen Nicht-TAQ-Objekten
- *
- * Diverse Methoden liefern verschachtelte TAQ-Objekte, die wiederrum TAQ-Objekte enthalten können.
- * Viele Methoden können mit verschachtelten TAQ-Objekten problemlos und vorallem für den Anwender
- * transparent arbeiten, doch kann die Performance stark einbrechen, wenn damit intensive Aktionen
- * durchgeführt werden. Genau für solche Fälle existiert diese Methode, die wieder aus einem
- * komplexen ein einfaches TAQ-Objekt erstellt, mit dem Operationen deutlich performanter sind.
- *
- * @see TAQ.Multiplex
- *}
 function TAQ.Demultiplex:TAQ;
 var
 	SimpleAQ:TAQ;
@@ -954,11 +689,6 @@ begin
 		end);
 end;
 
-{**
- * Wichtig:
- * Gemeanagete TAQ-Instanzen sollten !nie! außerhalb freigegeben werden, das ist Aufgabe des
- * GarbageCollectors!
- *}
 destructor TAQ.Destroy;
 begin
 	if Assigned(FIntervals) then
@@ -969,40 +699,6 @@ begin
 	inherited Destroy;
 end;
 
-{**
- * Kennzeichnet die Instanz als tot
- *
- * TAQ.IsAlive würde beim nächsten Aufruf FALSE liefern. Wenn hingegen irgendwelche weitere
- * Aktionen mit den Each-Methoden erfolgen, wird die Lebenszeit wieder erhöht.
- *
- * Um Verwirrungen vorzubeugen:
- * - Die Die-Methode hat nur bei gemanageten Instanzen einen Effekt
- * - Das Objekt wird nicht sofort freigegeben, sondern erst beim nächsten Durchlauf des
- *   GarbageCollectors
- * - Die Verwendung dieser Methode ist absolut freiwillig, hat aber den positiven Effekt, dass
- *   die Instanz unter bestimmten Umständen wiederverwendet wird, wenn eine neue Instanz von
- *   TAQ.Managed angefordert wird und sie noch nicht freigegeben wurde.
- * - Auch die TAQ-Instanzen, die diese Methode nicht aufrufen, "sterben", sobald sie inaktiv
- *   werden.
- * - Das Objekt wird nicht als "tot" gekennzeichnet, wenn irgendwelche
- *   Intervale/Timer/Animationen/Verzögerungen aktiv sind.
- * - Das Objekt kann in jedem Fall im selben Chain weiterverwendet werden.
- *
- * Diese Methode wurde vor allem im Hinblick auf folgendes Szenario implementiert:
- *
- * TAQ.Take(AnyObjects).Each(EachFunction);   // 1. Instanz wird erstellt und lebt 10 Sekunden (Standard)
- * TAQ.Take(OtherObjects).Each(EachFunction); // 2. Instanz wird erstellt und lebt 10 Sekunden
- *
- * In diesem Fall wird TAQ nur dazu benutzt, um bestimmte Objekte schnell durchzulaufen. Nun ist es
- * so, dass die erstellten TAQ-Instanzen mind. MaxLifeTime Millisekunden leben, bis sie freigegeben
- * oder wiederverwendet werden können.
- *
- * Das selbse Beispiel mit der Die-Methode:
- *
- * TAQ.Take(AnyObjects).Each(EachFunction).Die;   // 1. Instanz wird erstellt
- * TAQ.Take(OtherObjects).Each(EachFunction).Die; // 1. Instanz wird wiederverwendet und wird
- *                                                // baldmöglichst freigegeben oder wiederverwendet
- *}
 function TAQ.Die:TAQ;
 begin
 	Result:=Self;
@@ -1011,11 +707,6 @@ begin
 	FLifeTick:=0;
 end;
 
-{**
- * Führt die übergebene Funktion für jedes Objekt aus
- *
- * Das ist die Kernfunktion der gesamten Klasse, auch wenn sie nicht danach aussieht.
- *}
 function TAQ.Each(EachFunction:TEachFunction):TAQ;
 var
 	cc:Integer;
@@ -1036,21 +727,6 @@ begin
 	end;
 end;
 
-{**
- * Startet eine Verzögerung
- *
- * Identisch mit TAQ.EachInterval, mit dem Unterschied, dass die Each-Funktion nur einmal
- * durchgeführt wird. Intern entspricht es einem Interval und kann daher mittels TAQ.CancelInterval
- * abgebrochen und mittels TAQ.IntervalActors gefunden werden.
- *
- * @see TAQ.EachInterval
- * @see TAQ.CancelInterval
- *
- * @param Delay Anzahl der Millisekunden, nach denen die Each-Funktion durchgeführt wird
- * @param Each Die Each-Funktion, die verzögert ausgeführt werden soll
- *
- * @throws EAQ Wenn Delay >= MaxLifeTime ist
- *}
 function TAQ.EachDelay(Delay:Integer; Each:TEachFunction):TAQ;
 begin
 	if Delay >= MaxLifeTime then
@@ -1059,18 +735,6 @@ begin
 	Result:=EachTimer(Delay, nil, Each);
 end;
 
-{**
- * Startet einen unbegrenzten (unendlichen) Timer/Interval
- *
- * Das Interval kann nur manuell mit der Methode TAQ.CancelIntervals beendet werden.
- *
- * @see TAQ.CancelIntervals
- *
- * @param Interval Anzahl der Millisekunden, nach denen die Each-Funktion gestartet wird
- * @param Each Die Each-Funktion, die solange ausgeführt wird, bis das Interval manuell beendet wird
- *
- * @throws EAQ Wenn Interval >= MaxLifeTime ist
- *}
 function TAQ.EachInterval(Interval:Integer; Each:TEachFunction):TAQ;
 begin
 	if Interval >= MaxLifeTime then
@@ -1080,10 +744,7 @@ begin
 	AddInterval(TInterval.Infinite(Interval, Each));
 end;
 
-{**
- * Wiederholt die übergebene
- *}
-function TAQ.EachRepeat(Times:Integer; EachFunction:TEachFunction): TAQ;
+function TAQ.EachRepeat(Times:Integer; EachFunction:TEachFunction):TAQ;
 var
 	cc:Integer;
 begin
@@ -1092,42 +753,6 @@ begin
 		Each(EachFunction);
 end;
 
-{**
- * Startet einen begrenzten Timer, der nach einer definierten Zeit abläuft
- *
- * Ist in den Each-Funktionen (Parameter Each und LastEach) ein Fortschritt vonnöten,
- * wie es z.B. bei Animationen der Fall ist, so kann dieser in TAQ.CurrentInterval.Progress
- * abgerufen werden.
- *
- * @see TAQ.CurrentInterval
- * @see TInterval.Progress
- *
- * Soll der Timer außerhalb beendet werden, so ist die Methode FinishTimers auf die entsprechende
- * TAQ-Instanz anzuwenden. Der Timer kann aber auch abgebrochen werden, in diesem Fall wird aber
- * die entsprechende LastEach nicht aufgerufen, mittels der Methode CancelTimers.
- *
- * @see TAQ.FinishTimers
- * @see TAQ.CancelTimers
- *
- * Eine weitere Möglichkeit der vorzeitigen Beendigung des Timers besteht innerhalb der
- * Each-Funktionen und zwar über TAQ.CurrentInterval.Finish
- *
- * @see TAQ.CurrentInterval
- * @see TInterval.Finish
- *
- * @param Duration Dauer in Millisekunden
- * @param Each Each-Funktion, die in unbestimmten Abständen aufgerufen wird.
- *        Wird LastEach angegeben, so ist es durchaus möglich, dass diese Funktion niemals
- *        aufgerufen wird, wenn der Timer z.B. zu kurz gesetzt ist oder das System ausgelastet ist.
- *        Wird LastEach jedoch nicht definiert (nil), so ist garantiert, dass sie mindestens einmal
- *        (nämlich zum Abschluss) aufgerufen wird.
- * @param LastEach Optional. Standard ist nil. Wird hier eine Each-Funktion angegeben, so ist
- *        sichergestellt (außer der Timer wird mittels TAQ.CancelTimers abgebrochen), dass sie nach
- *        Ablauf des Timers aufgerufen wird. Ist keine Funktion (nil) angegeben, wird der
- *        Each-Parameter stellvertretend verwendet.
- *
- * @throws EAQ Wenn Duration >= MaxLifeTime ist
- *}
 function TAQ.EachTimer(Duration:Integer; Each, LastEach:TEachFunction):TAQ;
 begin
 	if Duration >= MaxLifeTime then
@@ -1137,9 +762,6 @@ begin
 	AddInterval(TInterval.Finite(Duration, Each, LastEach));
 end;
 
-{**
- * Stellt sicher, dass eine Beschleunigungsfunktion geliefert wird
- *}
 class function TAQ.Ease(EaseFunction:TEaseFunction):TEaseFunction;
 begin
 	if Assigned(EaseFunction) then
@@ -1148,9 +770,6 @@ begin
 		Result:=LinearEase;
 end;
 
-{**
- * Liefert eine Beschleunigungsfunktion anhand eines TEaseType
- *}
 class function TAQ.Ease(EaseType:TEaseType):TEaseFunction;
 begin
 	case EaseType of
@@ -1163,10 +782,6 @@ begin
 	end;
 end;
 
-{**
- * Erstellt eine neue TAQ-Instanz, die alle hier verfügbaren Objekte enthält, wenn sie von der
- * übergebenen Klasse abgeleitet sind
- *}
 function TAQ.Filter(ByClass:TClass):TAQ;
 var
 	NewAQ:TAQ;
@@ -1184,10 +799,6 @@ begin
 	Result:=NewAQ;
 end;
 
-{**
- * Übernimmt alle Objekte aus der aktuellen in eine neue TAQ-Instanz, die von der übergebenen
- * Each-Funktion mit TRUE bestätigt werden.
- *}
 function TAQ.Filter(FilterEach:TEachFunction):TAQ;
 var
 	NewAQ:TAQ;
@@ -1203,45 +814,18 @@ begin
 	Result:=NewAQ;
 end;
 
-{**
- * Beendet laufende Animationen
- *
- * Im Gegensatz zu TAQ.CancelAnimations wird die Animation sofort im Endzustand beendet.
- *
- * @see TAQ.CancelAnimations
- *
- * @param Local Optional. Standard ist FALSE. Bestimmt, ob alle (FALSE) gemanageten TAQ-Instanzen
- *        auf die hier enthaltenen Objekte untersucht werden sollen. Wird TRUE übergeben, so bezieht
- *        sich die Operation nur auf die aktuelle Instanz.
- *}
 function TAQ.FinishAnimations(Local:Boolean):TAQ;
 begin
 	Result:=Self;
 	CustomCancel(Local, ctAnimationFinish);
 end;
 
-{**
- * Beendet aktive Timer
- *
- * Auf diese Weise haben Timer die Möglichkeit, ihre letzte Each-Funktion auszuführen.
- *
- * @see TAQ.CancelTimers
- *
- * @param Local Optional. Standard ist FALSE. Bestimmt, ob alle (FALSE) gemanageten TAQ-Instanzen
- *        auf die hier enthaltenen Objekte untersucht werden sollen. Wird TRUE übergeben, so bezieht
- *        sich die Operation nur auf die aktuelle Instanz.
- *}
 function TAQ.FinishTimers(Local:Boolean):TAQ;
 begin
 	Result:=Self;
 	CustomCancel(Local, ctTimerFinish);
 end;
 
-{**
- * Erstellt ein neues TAQ-Objekt, welches das erste Objekt aus der aktuellen Instanz enthält
- *
- * Hat die aktuelle Instanz keine Objekte, wird ein leeres Objekt geliefert.
- *}
 function TAQ.First:TAQ;
 begin
 	Result:=Managed;
@@ -1249,15 +833,6 @@ begin
 		Result.Append(Items[0]);
 end;
 
-{**
- * Liefert eine Instanz des GarbageCollector, der unter anderem die Aufgabe hat, nicht verwendete
- * TAQ-Instanzen freizugeben.
- *
- * Es wird nach dem Singleton-Pattern instanziert.
- *
- * Der GarbageCollector gibt die von ihm verwaltete TAQ-Instanzen frei, wenn das letzte
- * Lebenszeichen (TAQ.FLifeTick) länger als MaxLifeTime her ist.
- *}
 class function TAQ.GarbageCollector:TAQ;
 begin
 	if Assigned(FGarbageCollector) then
@@ -1306,9 +881,6 @@ begin
 	Result:=FGarbageCollector;
 end;
 
-{**
- * On-Demand-Instanzierung von FIntervals
- *}
 function TAQ.GetIntervals:TObjectList;
 begin
 	if not Assigned(FIntervals) then
@@ -1316,12 +888,6 @@ begin
 	Result:=FIntervals;
 end;
 
-{**
- * Der globale OnTimer-Event-Handler von FIntervalTimer
- *
- * Um Speicher zu sparen, wird nur ein TTimer verwendet, der mit einer festen Auflösung läuft.
- * Um nun das Event an die richtigen TAQ-Instanzen zu leiten, wird FActiveIntervalAQs verwendet.
- *}
 class procedure TAQ.GlobalIntervalTimerEvent(Sender:TObject);
 begin
 	FActiveIntervalAQs.Each(
@@ -1336,13 +902,6 @@ begin
 		end);
 end;
 
-{**
- * Ermittelt, ob mind. ein Interval definiert ist
- *
- * Intervalle werden stets mittels TAQ.EachInterval gestartet.
- *
- * @see TAQ.EachInterval
- *}
 function TAQ.HasInterval:Boolean;
 var
 	AnyIntervals:Boolean;
@@ -1365,13 +924,6 @@ begin
 	Result:=AnyIntervals;
 end;
 
-{**
- * Ermittelt, ob mind. ein Timer definiert ist
- *
- * Timer werden stets mittels TAQ.EachTimer gestartet.
- *
- * @see TAQ.EachTimer
- *}
 function TAQ.HasTimer:Boolean;
 var
 	AnyTimers:Boolean;
@@ -1395,11 +947,6 @@ begin
 	Result:=AnyTimers;
 end;
 
-{**
- * Macht einen "Herzschlag" und verlängert damit die Lebenszeit des Objekts
- *
- * @see TAQ.IsAlive
- *}
 procedure TAQ.HeartBeat;
 	{**
 	 * Leitet den Herzschlag an ggf. enthaltene TAQ-Instanzen rekursiv weiter
@@ -1426,16 +973,6 @@ begin
 //		HeartBeatEcho(Self);
 end;
 
-{**
- * Liefert ein neues TAQ-Objekt mit TAQ-Instanzen, die gerade ein Interval, für die in dieser
- * Instanz enthaltene Objekte, haben.
- *
- * Da die Each-Methode rekursiv mit den enthaltenen TAQ-Objekten arbeitet, laufen weitere Aktionen
- * transparent ab.
- *
- * @param IncludeOrphans Optional. Standard ist TRUE. Bestimmt, ob die neue Instanz auch die Objekte
- *        in sich vereint, für die keine passende TAQ-Instanz gefunden wurde.
- *}
 function TAQ.IntervalActors(IncludeOrphans:Boolean):TAQ;
 var
 	Actors:TAQ;
@@ -1477,21 +1014,11 @@ begin
 	Result:=Actors;
 end;
 
-{**
- * Sagt aus, ob die Lebenszeit der Instanz abgelaufen ist
- *
- * @see TAQ.HeartBeat
- *}
 function TAQ.IsAlive:Boolean;
 begin
 	Result:=(FLifeTick + MaxLifeTime) > GetTickCount;
 end;
 
-{**
- * Liefert ein neues TAQ-Objekt, welches das letzte Objekt aus der aktuellen Instanz enthält
- *
- * Hat die aktuelle Instanz keine Objekte, wird ein leeres Objekt geliefert.
- *}
 function TAQ.Last:TAQ;
 begin
 	Result:=Managed;
@@ -1499,13 +1026,6 @@ begin
 		Result.Append(Items[Count - 1]);
 end;
 
-{**
- * Lokaler OnTimer-Event-Handler
- *
- * Das ursprüngliche Ereignis kommt von der Klassenmethode GlobalIntervalTimerEvent
- *
- * @see TAQ.GlobalIntervalTimerEvent
- *}
 procedure TAQ.LocalIntervalTimerEvent(Sender:TObject);
 var
 	cc:Integer;
@@ -1519,12 +1039,6 @@ begin
 	HeartBeat;
 end;
 
-{**
- * Liefert eine neue gemanagete TAQ-Instanz, die automatisch freigegeben wird, wenn sie nicht
- * mehr verwendet wird.
- *
- * Auch kann nur eine gemanagete TAQ-Instanz von Intervallen profitieren.
- *}
 class function TAQ.Managed:TAQ;
 var
 	ManagedAQ:TAQ;
@@ -1571,20 +1085,6 @@ begin
 	{$ENDIF}
 end;
 
-{**
- * Erstellt eine neue komplexe TAQ-Instanz, die jedes enthaltene Nicht-TAQ-Objekt in eine separate
- * TAQ-Instanz verpackt und der neuen Instanz unterordnet.
- *
- * Wenn untergeordnete TAQ-Instanzen enthalten sind, so werden diese verworfen, aber ihre Objekte
- * übernommen.
- *
- * Dieses Verfahren wird z.B. bei den internen Animationsmethoden angewendet.
- *
- * Die verschachtelten TAQ-Objekte können mittels TAQ.Demultiplex wieder in ein einfaches TAQ-Objekt
- * umgewandelt werden.
- *
- * @see TAQ.Demultiplex
- *}
 function TAQ.Multiplex:TAQ;
 var
 	MultiAQ:TAQ;
@@ -1601,21 +1101,6 @@ begin
 		end);
 end;
 
-{**
- * Ermittelt die Elternobjekte für die enthaltenen Objekte
- *
- * @param Append Optional. Standard ist FALSE. Bestimmt, ob die Elternobjekte der aktuellen
- *        TAQ-Instanz hinzugefügt werden sollen (TRUE) oder ob eine neue Instanz erstellt
- *        werden soll (FALSE), die zurückgeliefert wird.
- * @param Recurse Optional. Standard ist FALSE. Bestimmt, ob die ermittelten Elternobjekte wiederrum
- *        auf Elternobjekte untersucht werden sollen.
- * @param ParentsFiller Optional. Standard ist nil. Wie der Name schon vermuten lässt, hat die
- *        Funktion die Aufgabe, dem übergebenen TAQ-Objekt die Elternobjekte hinzuzufügen. Wird der
- *        Parameter nicht angegeben (nil), so wird eine interne Funktion verwendet, die nur
- *        von TComponent abgeleitete Objekte akzeptiert.
- *        Die interne Funktion verwendet die Eigenschaft TComponent.HasParent und die Methode
- *        TComponent.GetParentComponent für die Objektfindung.
- *}
 function TAQ.Parents(Append, Recurse:Boolean; ParentsFiller:TEachFunction):TAQ;
 begin
 	if not Assigned(ParentsFiller) then
@@ -1629,12 +1114,6 @@ begin
 	Result:=CustomFiller(ParentsFiller, Append, Recurse);
 end;
 
-{**
- * Führt die TInterval.Each-Funktion aus und sagt aus, ob das Interval noch aktiv ist
- *
- * Wenn diese Methode FALSE liefert, so heisst es, dass das Interval auch aus FIntervals entfernt
- * wurde, da es beendet ist.
- *}
 function TAQ.ProcessInterval(Interval:TInterval):Boolean;
 var
 	EachFunction:TEachFunction;
@@ -1654,11 +1133,6 @@ begin
 	end;
 end;
 
-{**
- * Entfernt ein zuvor mittels TAQ.AddInterval hinzugefügtes Interval
- *
- * @see TAQ.AddInterval
- *}
 procedure TAQ.RemoveInterval(Interval:TInterval);
 begin
 	FIntervals.Remove(Interval);
@@ -1670,20 +1144,6 @@ begin
 	{$ENDIF}
 end;
 
-{**
- * Führt eine Schüttel-Animation mit allen enthaltenen TControl-Objekten durch
- *
- * @param XTimes Bestimmt, wie oft das Objekt rechts und links geschüttelt werden soll
- *        Wird 0 angegeben, so wird es nicht in der X-Achse geschüttelt.
- * @param XDiff Bestimmt, wie weit nach rechts bzw. nach links geschüttelt werden soll
- * @param YTimes Bestimmt, wie oft das Objekt runter und hoch geschüttelt werden soll
- *        Wird 0 angegeben, so wird es nicht in der Y-Achse geschüttelt.
- * @param YDiff Bestimmt, wie weit nach unten bzw. nach oben geschüttelt werden soll
- * @param Duration Die Dauer der Animation in Millisekunden
- * @param OnComplete Event-Handler, der aufgerufen wird, wenn die Animation beendet ist.
- *        Das Ereignis wird für jedes animierte Objekt, welches im Sender übergeben wird,
- *        ausgelöst.
- *}
 function TAQ.ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration:Integer;
 	OnComplete:TAnonymNotifyEvent):TAQ;
 var
@@ -1757,32 +1217,16 @@ begin
 	Result.Each(WholeEach);
 end;
 
-{**
- * Erstellt eine neue gemanagete TAQ-Instanz, mit Objekten aus dem Array
- *}
 class function TAQ.Take(Objects:TObjectArray):TAQ;
 begin
 	Result:=Managed.Append(Objects);
 end;
 
-{**
- * Erstellt eine neue gemanagete TAQ-Instanz, mit einem einzelnen übergebenen Objekt
- *}
 class function TAQ.Take(AObject:TObject):TAQ;
 begin
 	Result:=Managed.Append(AObject);
 end;
 
-{**
- * Liefert ein neues TAQ-Objekt mit TAQ-Instanzen, die gerade einen Timer, für die in dieser
- * Instanz enthaltenen Objekte, haben.
- *
- * Da die Each-Methode rekursiv mit den enthaltenen TAQ-Objekten arbeitet, laufen weitere Aktionen
- * transparent ab.
- *
- * @param IncludeOrphans Optional. Standard ist TRUE. Bestimmt, ob die neue Instanz auch die Objekte
- *        in sich vereint, für die keine passende TAQ-Instanz gefunden wurde.
- *}
 function TAQ.TimerActors(IncludeOrphans:Boolean):TAQ;
 var
 	Actors:TAQ;
@@ -1823,31 +1267,11 @@ begin
 		end);
 end;
 
-{**
- * Liefert eine neue !nicht! gemanagete TAQ-Instanz
- *
- * Sie muss manuell freigegeben werden.
- *
- * Ein sinnvolles Einsatzszenario wäre:
- *
- * TAQ.Unmanaged.Append(ObjectList).Each(function...).Free;
- *
- * Einschränkung: Die EachTimer- und EachInterval-Methoden können mit ungemanageten TAQ-Instanzen
- * nicht verwendet werden, da die OnTimer-Event-Verteilung über den GarbageCollector in der Methode
- * TAQ.GlobalIntervalTimerEvent abgewickelt wird.
- *
- * @see TAQ.GlobalIntervalTimerEvent
- *}
 class function TAQ.Unmanaged:TAQ;
 begin
 	Result:=TAQ.Create;
 end;
 
-{**
- * Erstellt eine neue gemanagete TAQ-Instanz, mit Objekten aus einer TObjectList
- *
- * Anmerkung: TAQ ist von TObjectList abgeleitet und kann somit auch hier übergeben werden
- *}
 class function TAQ.Take(Objects:TObjectList):TAQ;
 begin
 	Result:=Managed.Append(Objects);
@@ -1855,23 +1279,11 @@ end;
 
 {** TInterval **}
 
-{**
- * Bricht das Interval ab
- *
- * Auswirkungen:
- * - TInterval.Each wird keine Funktion (nil) zurückliefern.
- * - TInterval.IsFinished liefert TRUE
- *
- * @see TInterval.Finish
- *}
 procedure TInterval.Cancel;
 begin
 	FInterval:=0;
 end;
 
-{**
- * Liefert die entsprechenden Each-Funktion, wenn der Zeitpunkt erreicht ist oder nil
- *}
 function TInterval.Each:TEachFunction;
 var
 	CurrentTick:Cardinal;
@@ -1906,30 +1318,12 @@ begin
 	end;
 end;
 
-{**
- * Manuelle Beendigung eines endlichen Intervals
- *
- * Der nächste Aufruf von TInterval.Each liefert die letzte Each-Funktion.
- *
- * @see TInterval.Cancel
- *}
 procedure TInterval.Finish;
 begin
 	if IsFinite and not IsFinished then
 		FLastTick:=GetTickCount;
 end;
 
-{**
- * Erstellt einen endlichen Interval
- *
- * @param Duration Die Dauer des gesamten Intervals in Millisekunden.
- *        Wert muss >= IntervalResolution sein.
- * @param Each Each-Funktion, die in Teilintervalen ausgeführt wird. Es ist durchaus möglich, dass
- *        diese nie ausgeführt wird, es sei denn der LastEach-Parameter wird nicht angegeben.
- * @param LastEach Each-Funktion, die in jedem Fall beim Ablauf des Gesamtintervals ausgeführt wird.
- *        Wird hier nil angegeben, wird stellvertretend die im Each-Parameter angegebene Funktion
- *        verwendet.
- *}
 constructor TInterval.Finite(Duration:Integer; Each, LastEach:TEachFunction);
 begin
 	FNextEach:=Each;
@@ -1942,13 +1336,6 @@ begin
 	UpdateNextTick;
 end;
 
-{**
- * Erstellt einen unbegrenzten Interval
- *
- * @param Interval Angabe in Millisekunden
- *        Wert muss >= IntervalResolution sein.
- * @param Each Each-Funktion, die immer nach dem gesetzten Interval ausgeführt wird
- *}
 constructor TInterval.Infinite(Interval:Integer; Each:TEachFunction);
 begin
 	FFirstTick:=GetTickCount;
@@ -1959,49 +1346,26 @@ begin
 	UpdateNextTick;
 end;
 
-{**
- * Sagt aus, ob das Interval zuvor mittels TInterval.Cancel abgebrochen wurde
- *
- * @see TInterval.Cancel
- *}
 function TInterval.IsCanceled:Boolean;
 begin
 	Result:=FInterval = 0;
 end;
 
-{**
- * Sagt aus, ob das Interval beendet ist
- *
- * Beendet ist es, wenn FLastTick eines endlichen Intervals abgelaufen ist oder das Interval
- * abgebrochen wurde.
- *}
 function TInterval.IsFinished:Boolean;
 begin
 	Result:=((FLastTick > 0) and (GetTickCount >= FLastTick)) or IsCanceled;
 end;
 
-{**
- * Sagt aus, ob das Interval endlich ist
- *
- * In TAQ wird TRUE als Timer behandlet und FALSE als Interval, doch in diesem Kontext ist beides
- * ein Interval ;)
- *}
 function TInterval.IsFinite:Boolean;
 begin
 	Result:=FLastTick > 0;
 end;
 
-{**
- * Liefert den Fortschritt des Intervals als Fließkommazahl im Bereich von 0..1
- *}
 function TInterval.Progress:Real;
 begin
 	Result:=Min(1, (GetTickCount - FFirstTick) / Max(1, (FLastTick - FFirstTick)));
 end;
 
-{**
- * Aktualisiert den nächsten gültigen Tick
- *}
 procedure TInterval.UpdateNextTick;
 begin
 	FNextTick:=GetTickCount + Cardinal(FInterval);
