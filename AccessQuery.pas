@@ -46,63 +46,6 @@ type
 	TEaseFunction = function(StartValue, EndValue, Progress:Real):Real;
 	TEaseType = (etLinear, etQuadratic, etMassiveQuadratic);
 
-	{**
-	 * AQ ist das Kürzel für AccessQuery und bildet die Kernklasse der AccessQuery-Unit
-	 *
-	 * TAQ greift ein oder beliebig viele Objekte und bietet Methoden, diese mittels anonymer
-	 * Funktionen zu verarbeiten.
-	 *
-	 * Die Verarbeitung kann...
-	 *
-	 * - sofort (TAQ.Each),
-	 * - wiederholt (TAQ.EachRepeat),
-	 * - zeitversetzt (TAQ.EachDelay),
-	 * - zeitbegrenzt (TAQ.EachTimer)
-	 * - oder in Zeit-Intervallen (TAQ.EachInterval)
-	 *
-	 * durchgeführt werden.
-	 *
-	 * Chain-Pattern
-	 * -------------
-	 * TAQ wurde mit Hinblick auf das äußerst produktive Chain-Pattern entwickelt. Das Chain-Pattern
-	 * ist nichts weiteres, als die Verwendung von mehreren Objekt-Methoden in einer Anweisung.
-	 * Alle Methoden, die ein TAQ-Objekt zurückliefern sind zu diesem Entwurfsmuster kompatibel.
-	 *
-	 * Beispiel:
-	 * TAQ.Take(Form1).Children(FALSE, TRUE).Filter(TButton).Each(EachFunction).Die;
-	 *
-	 * Beispiel-Erläuterung:
-	 * - TAQ.Take(Form1) ist eine Klassenmethode und liefert uns eine neue gemanagete TAQ-Instanz,
-	 *   welche die Form1 aufnimmt.
-	 * - Children(FALSE, TRUE) ermittels rekursiv alle Kindsobjekte von Form1 und liefert wieder
-	 *   eine neue TAQ-Instanz. Wenn der 1. Parameter TRUE wäre, würde es die aktuelle Instanz
-	 *   beibehalten.
-	 * - Filter(TButton) läuft nun alle von Children ermittelten Objekte durch und nimmt nur die
-	 *   Objekte auf, die vom Typ/Klasse TButton sind und packt sie wieder in ein neues TAQ-Objekt.
-	 * - Each(EachFunction) hier kann man nun bequem mittels einer anonymen Funktion vom Typ
-	 *   TEachFunction, alle Buttons verarbeiten.
-	 * - Die Die-Methode ist absolut freiwillig und bedeutet lediglich, dass wir die letzte
-	 *   TAQ-Instanz nicht brauchen. Auf diese Weise kann der GarbageCollector sie schneller
-	 *   freigeben oder wiederverwenden.
-	 *
-	 * Gemanagete TAQ-Instanzen
-	 * ------------------------
-	 * TAQ beherbergt einen klassenweit aktiven GarbageCollector, der instanzierte TAQ-Objekte
-	 * verwaltet und sich (unter anderem) um dessen Freigabe kümmert. Jede TAQ-Instanz hat eine
-	 * begrenzte Lebensdauer, die von der Konstante MaxLifeTime bestimmt wird, wird es nun für die
-	 * definierte Zeitspanne inaktiv, wird es freigegeben oder wiederverwendet.
-	 *
-	 * Ungemanagete TAQ-Instanzen
-	 * --------------------------
-	 * Eine TAQ-Instanz gilt als nicht verwaltet, wenn sie über den TAQ-Konstruktor oder mittels
-	 * der Klassenmethode TAQ.Unmanaged erzeugt wird. Diese werden nicht automatisch freigegeben.
-	 *
-	 * Globaler TTimer
-	 * ---------------
-	 * Beliebig viele TAQ-Objekte können von Timer-Funktionalität gebrauch nehmen, doch es wird nur
-	 * ein klassenweit gültiges TTimer-Objekt verwendet. Dieses läuft in einer festen Auflösung, die
-	 * in der Konstante IntervalResolution definiert ist.
-	 *}
 	TAQ = class(TObjectList)
 	private
 	class var
