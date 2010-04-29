@@ -99,7 +99,7 @@ object MainForm: TMainForm
       31)
     object Label4: TLabel
       Left = 3
-      Top = 14
+      Top = 12
       Width = 158
       Height = 13
       Anchors = [akLeft, akBottom]
@@ -108,7 +108,7 @@ object MainForm: TMainForm
     end
     object AddPanelButton: TButton
       Left = 552
-      Top = 4
+      Top = 2
       Width = 75
       Height = 25
       Anchors = [akRight, akBottom]
@@ -118,7 +118,7 @@ object MainForm: TMainForm
     end
     object RemovePanelButton: TButton
       Left = 464
-      Top = 4
+      Top = 2
       Width = 82
       Height = 25
       Anchors = [akRight, akBottom]

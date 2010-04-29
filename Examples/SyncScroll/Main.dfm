@@ -125,7 +125,8 @@ object Form1: TForm1
       Items.Strings = (
         'etLinear'
         'etQuadratic'
-        'etMassiveQuadratic')
+        'etMassiveQuadratic'
+        'etSinus')
     end
     object AnimationDurationComboBox: TComboBox
       Left = 372

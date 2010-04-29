@@ -47,8 +47,10 @@ begin
 		ParentBackground:=FALSE;
 		Color:=clBtnFace;
 		Caption:=Format('Panel #%d', [FPanelCounter]);
-		SendToBack;
+		BringToFront;
 	end;
+	TopPanel.BringToFront;
+	BottomPanel.BringToFront;
 	UpdateAlign;
 end;
 
@@ -75,20 +77,37 @@ end;
 
 procedure TMainForm.RemovePanelButtonClick(Sender: TObject);
 begin
+	{**
+	 * Stellt sicher, dass die letzte Entfernungsanimation sofort beendet wird
+	 *}
+	GetPanelsAQ.FinishAnimations;
 	GetPanelsAQ
 		.Last
 		.Each(
 			function(AQ:TAQ; O:TObject):Boolean
 			begin
 				Result:=TRUE;
-				AQ.BoundsAnimation(TControl(O).Left, Height, -1, -1, 200,
-					TAQ.Ease(etQuadratic),
+				AQ.BoundsAnimation(TControl(O).Left, Height, -1, -1, 200, TAQ.Ease(etQuadratic),
 					procedure(Sender:TObject)
 					begin
-						TAQ.Take(Sender).CancelAnimations;
 						Sender.Free;
 						Dec(FPanelCounter);
-						UpdateAlign;
+						{**
+						 * Die folgende EachDelay ist etwas strange, aber es eigentlich ganz
+						 * einfach:
+						 * Wenn UpdateAlign direkt aufgerufen wird, wird es aus dem Stack-Kontext
+						 * der Animationsmethode aufgerufen und daher gibt es sehr schnell eine
+						 * nicht nachvollziehbare AV. Mit dem Delay erreicht man, dass es wieder aus
+						 * dem Hauptkontext des Programms aufgerufen wird. Das CancelDelay stellt
+						 * zudem sicher, dass die Verzögerung nur einmal erfolgt. Die Verzögerung
+						 * muss etwas länger sein, als die übergeordnete Animation.
+						 *}
+						TAQ.Take(Self).CancelDelays.EachDelay(250,
+							function(AQ:TAQ; O:TObject):Boolean
+							begin
+								Result:=FALSE;
+								UpdateAlign;
+							end);
 					end);
 			end);
 end;
@@ -100,12 +119,12 @@ var
 	PQSize, PIndex:Integer;
 	PColumns, PRows, LeftOffset, TopOffset:Word;
 begin
-	PanelsAQ:=GetPanelsAQ;
-
 	if DisturbedComboBox.ItemIndex = 0 then
-		PanelsAQ.CancelAnimations
+		GetPanelsAQ.CancelAnimations.Die
 	else
-		PanelsAQ.FinishAnimations;
+		GetPanelsAQ.FinishAnimations.Die;
+
+	PanelsAQ:=GetPanelsAQ;
 
 	RemovePanelButton.Enabled:=PanelsAQ.Count > 0;
 
