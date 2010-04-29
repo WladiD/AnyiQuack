@@ -40,11 +40,14 @@ type
 	TAQ = class;
 	TInterval = class;
 
+	TEaseType = (etLinear, etQuadratic, etMassiveQuadratic, etSinus);
+	TActorRole = (arTimer, arInterval, arDelay, arAnimation);
+
 	TObjectArray = array of TObject;
+
 	TEachFunction = reference to function(AQ:TAQ; O:TObject):Boolean;
 	TAnonymNotifyEvent = reference to procedure(Sender:TObject);
 	TEaseFunction = function(StartValue, EndValue, Progress:Real):Real;
-	TEaseType = (etLinear, etQuadratic, etMassiveQuadratic);
 
 	TAQ = class(TObjectList)
 	private
@@ -53,34 +56,30 @@ type
 		FIntervalTimer:TTimer;
 		FActiveIntervalAQs:TAQ;
 	protected
-		type
-			TCancelType = (ctInterval, ctTimer, ctTimerFinish, ctAnimation, ctAnimationFinish);
 		var
 		FLifeTick:Cardinal;
 		FIntervals:TObjectList;
 		FCurrentInterval:TInterval;
-		FAnimating:Boolean;
 		FRecurse:Boolean;
 
 		class function GarbageCollector:TAQ;
 		class procedure GlobalIntervalTimerEvent(Sender:TObject);
 
-
-		function HasTimer:Boolean;
-		function HasInterval:Boolean;
+		function HasActors(ActorRole:TActorRole):Boolean;
 
 		procedure LocalIntervalTimerEvent(Sender:TObject);
 
 		function GetIntervals:TObjectList;
 		procedure ClearIntervals;
 		procedure AddInterval(Interval:TInterval);
-		function ProcessInterval(Interval:TInterval):Boolean;
+		procedure ProcessInterval(Interval:TInterval);
 		procedure RemoveInterval(Interval:TInterval);
 
 		procedure Animate(Duration:Integer; Each:TEachFunction; LastEach:TEachFunction = nil);
 
 		function CustomFiller(Filler:TEachFunction; Append, Recurse:Boolean):TAQ;
-		procedure CustomCancel(Local:Boolean; CancelType:TCancelType);
+		procedure CustomCancel(Local:Boolean; ActorRole:TActorRole; Finish:Boolean);
+		function CustomActors(ActorRole:TActorRole; IncludeOrphans:Boolean):TAQ;
 
 		function IsAlive:Boolean;
 		procedure HeartBeat;
@@ -117,9 +116,10 @@ type
 		function Multiplex:TAQ;
 		function Demultiplex:TAQ;
 
-		function AnimationActors(IncludeOrphans:Boolean = TRUE):TAQ;
-		function IntervalActors(IncludeOrphans:Boolean = TRUE):TAQ;
-		function TimerActors(IncludeOrphans:Boolean = TRUE):TAQ;
+		function AnimationActors(IncludeOrphans:Boolean = FALSE):TAQ;
+		function IntervalActors(IncludeOrphans:Boolean = FALSE):TAQ;
+		function TimerActors(IncludeOrphans:Boolean = FALSE):TAQ;
+		function DelayActors(IncludeOrphans:Boolean = FALSE):TAQ;
 
 		function Each(EachFunction:TEachFunction):TAQ;
 		function EachInterval(Interval:Integer; Each:TEachFunction):TAQ;
@@ -147,7 +147,6 @@ type
 		function Contains(AObject:TObject):Boolean;
 
 		property CurrentInterval:TInterval read FCurrentInterval;
-		property Animating:Boolean read FAnimating;
 	end;
 
 	TInterval = class
@@ -158,11 +157,12 @@ type
 		FInterval:Integer;
 		FNextEach,
 		FLastEach:TEachFunction;
+		FActorRole:TActorRole;
 	protected
 		procedure UpdateNextTick;
 	public
-		constructor Infinite(Interval:Integer; Each:TEachFunction);
-		constructor Finite(Duration:Integer; Each, LastEach:TEachFunction);
+		constructor Infinite(Interval:Integer; Each:TEachFunction; ActorRole:TActorRole);
+		constructor Finite(Duration:Integer; Each, LastEach:TEachFunction; ActorRole:TActorRole);
 
 		function Each:TEachFunction;
 		function IsCanceled:Boolean;
@@ -172,6 +172,8 @@ type
 
 		procedure Finish;
 		procedure Cancel;
+
+		property ActorRole:TActorRole read FActorRole;
 	end;
 
 implementation
@@ -203,6 +205,14 @@ var
 begin
 	Delta:=EndValue - StartValue;
 	Result:=StartValue + (Delta * Progress * Sqr(Progress));
+end;
+
+function SinusEase(StartValue, EndValue, Progress:Real):Real;
+var
+	Delta:Real;
+begin
+	Delta:=EndValue - StartValue;
+	Result:=StartValue + (Delta * (Sin(Progress * (Pi / 2))));
 end;
 
 {** TAQ **}
@@ -254,61 +264,14 @@ begin
 end;
 
 procedure TAQ.Animate(Duration:Integer; Each, LastEach:TEachFunction);
-var
-	CustomLastEach:TEachFunction;
 begin
-	CustomLastEach:=function(AQ:TAQ; O:TObject):Boolean
-	begin
-		Result:=TRUE;
-		AQ.FAnimating:=FALSE;
-		if Assigned(LastEach) then
-			LastEach(AQ, O)
-		else
-			Each(AQ, O);
-	end;
-	EachTimer(Duration, Each, CustomLastEach).FAnimating:=TRUE;
+	AddInterval(TInterval.Finite(Duration, Each, LastEach, arAnimation));
 end;
 
 
 function TAQ.AnimationActors(IncludeOrphans:Boolean):TAQ;
-var
-	Actors:TAQ;
 begin
-	Actors:=Managed;
-
-	Each(
-		{**
-		 * @param SAQ Synonym für SourceAccessQuery und ist Self von TimerActors
-		 * @param SO Synonym für SourceObject und beinhaltet das Objekt für das die passenden
-		 *        TAQ-Instanzen gesucht werden
-		 *}
-		function(SAQ:TAQ; SO:TObject):Boolean
-		var
-			SOFound:Boolean;
-		begin
-			Result:=TRUE; // Each soll stets komplett durchlaufen
-			SOFound:=FALSE;
-			GarbageCollector.Each(
-				{**
-				 * @param AQ Enthält den GarbageCollector
-				 * @param O Enthält eine TAQ-Instanz, die darauf untersucht wird, ob sie SO enthält
-				 *        einen aktiven Timer hat und gerade animiert wird
-				 *}
-				function(AQ:TAQ; O:TObject):Boolean
-				begin
-					Result:=TRUE; // Each soll stets komplett durchlaufen
-					with TAQ(O) do
-						if Contains(SO) and Animating then
-						begin
-							Actors.Add(O);
-							SOFound:=TRUE;
-						end;
-				end);
-			if IncludeOrphans and not SOFound then
-				Actors.Add(SO);
-		end);
-
-	Result:=Actors;
+	Result:=CustomActors(arAnimation, IncludeOrphans);
 end;
 
 function TAQ.BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Duration:Integer;
@@ -383,24 +346,25 @@ end;
 function TAQ.CancelAnimations(Local:Boolean):TAQ;
 begin
 	Result:=Self;
-	CustomCancel(Local, ctAnimation);
+	CustomCancel(Local, arAnimation, FALSE);
 end;
 
 function TAQ.CancelDelays(Local:Boolean):TAQ;
 begin
-	Result:=CancelTimers(Local);
+	Result:=Self;
+	CustomCancel(Local, arDelay, FALSE);
 end;
 
 function TAQ.CancelIntervals(Local:Boolean):TAQ;
 begin
 	Result:=Self;
-	CustomCancel(Local, ctInterval);
+	CustomCancel(Local, arInterval, FALSE);
 end;
 
 function TAQ.CancelTimers(Local:Boolean):TAQ;
 begin
 	Result:=Self;
-	CustomCancel(Local, ctTimer);
+	CustomCancel(Local, arTimer, FALSE);
 end;
 
 function TAQ.Children(Append, Recurse:Boolean; ChildrenFiller:TEachFunction):TAQ;
@@ -424,7 +388,6 @@ end;
 procedure TAQ.Clean;
 begin
 	Clear;
-	FAnimating:=FALSE;
 	FCurrentInterval:=nil;
 	if Assigned(FIntervals) then
 	begin
@@ -449,7 +412,7 @@ begin
 	Each(
 		function(AQ:TAQ; O:TObject):Boolean
 		begin
-			Found:=Found or (O = AObject) or (AQ.IndexOf(AObject) >= 0);
+			Found:=Found or (O = AObject);
 			Result:=not Found;
 		end);
 	Result:=Found;
@@ -462,35 +425,59 @@ begin
 end;
 
 
-procedure TAQ.CustomCancel(Local:Boolean; CancelType:TCancelType);
-type
-	{**
-	 * Die Funktion muss TRUE liefern, wenn ein Interval abgebrochen werden soll
-	 *}
-	TIntervalCancelFunction = reference to function(I:TInterval):Boolean;
+function TAQ.CustomActors(ActorRole:TActorRole; IncludeOrphans:Boolean):TAQ;
 var
-	CancelF:TIntervalCancelFunction;
-	Finish, CheckForAnimation:Boolean;
+	Actors:TAQ;
+begin
+	Actors:=Managed;
+	if not Assigned(FActiveIntervalAQs) then
+		Exit(Actors);
+	{**
+	 * Der GarbageCollector muss kurz raus, da er hierfür nicht relevant ist und wird im
+	 * Anschluss wieder hinzugefügt
+	 *}
+	FActiveIntervalAQs.Remove(GarbageCollector);
+	Each(
+		{**
+		 * @param SAQ Synonym für SourceAccessQuery und ist Self von CustomActors
+		 * @param SO Synonym für SourceObject und beinhaltet das Objekt für das die passenden
+		 *        TAQ-Instanzen gesucht werden
+		 *}
+		function(SAQ:TAQ; SO:TObject):Boolean
+		var
+			SOFound:Boolean;
+		begin
+			Result:=TRUE; // Each soll stets komplett durchlaufen
+			SOFound:=FALSE;
+			FActiveIntervalAQs.Each(
+				{**
+				 * @param AQ Enthält den GarbageCollector
+				 * @param O Enthält eine TAQ-Instanz, die darauf untersucht wird, ob sie SO enthält
+				 *        einen aktiven Timer hat und gerade animiert wird
+				 *}
+				function(AQ:TAQ; O:TObject):Boolean
+				var
+					TargetAQ:TAQ;
+				begin
+					Result:=TRUE; // Each soll stets komplett durchlaufen
+					TargetAQ:=TAQ(O);
+					if TargetAQ.HasActors(ActorRole) and TargetAQ.Contains(SO) then
+					begin
+						Actors.Add(O);
+						SOFound:=TRUE;
+					end;
+				end);
+			if IncludeOrphans and not SOFound then
+				Actors.Add(SO);
+		end);
+	FActiveIntervalAQs.Add(GarbageCollector);
+	Result:=Actors;
+end;
+
+procedure TAQ.CustomCancel(Local:Boolean; ActorRole:TActorRole; Finish:Boolean);
+var
 	Perform:TEachFunction;
 begin
-	CancelF:=nil;
-
-	if CancelType = ctInterval then
-		CancelF:=function(I:TInterval):Boolean
-		begin
-			Result:=not I.IsFinite;
-		end
-	else if CancelType in [ctTimer, ctTimerFinish, ctAnimation, ctAnimationFinish] then
-		CancelF:=function(I:TInterval):Boolean
-		begin
-			Result:=I.IsFinite;
-		end
-	else
-		raise EAQ.Create('No CancelF-Function defined.');
-
-	CheckForAnimation:=CancelType in [ctAnimation, ctAnimationFinish];
-	Finish:=CancelType in [ctTimerFinish, ctAnimationFinish];
-
 	Perform:=function(AQ:TAQ; O:TObject):Boolean
 	var
 		cc:Integer;
@@ -508,14 +495,12 @@ begin
 		begin
 			CI:=TInterval(TempAQ.FIntervals[cc]);
 
-			if CancelF(CI) and
-				(not CheckForAnimation or (CheckForAnimation and TempAQ.Animating)) then
+			if CI.ActorRole = ActorRole then
 			begin
 				if Finish then
 					CI.Finish
 				else
 					CI.Cancel;
-
 				TempAQ.ProcessInterval(CI);
 			end;
 		end;
@@ -530,7 +515,7 @@ begin
 		{**
 		 * Die aktuelle Instanz selbst kommt per Each nicht an
 		 *}
-		Perform(Self, Self);
+		Perform(nil, Self);
 	end
 	{**
 	 * Globale Suche
@@ -571,7 +556,7 @@ begin
 							if TargetAQ.IndexOf(O) >= 0 then
 							begin
 								TargetAQ.Each(Perform);
-								Perform(TargetAQ, TargetAQ);
+								Perform(nil, TargetAQ);
 								Result:=FALSE; // Es wird nur ein Objekt-Vorkommen benötigt
 							end;
 						end);
@@ -614,6 +599,11 @@ begin
 		TargetAQ:=Managed;
 	Each(Self);
 	Result:=TargetAQ;
+end;
+
+function TAQ.DelayActors(IncludeOrphans:Boolean):TAQ;
+begin
+	Result:=CustomActors(arDelay, IncludeOrphans);
 end;
 
 function TAQ.Demultiplex:TAQ;
@@ -675,7 +665,8 @@ begin
 	if Delay >= MaxLifeTime then
 		raise EAQ.CreateFmt('Delay (%d) muss kleiner als MaxLifeTime (%d) sein.',
 			[Delay, MaxLifeTime]);
-	Result:=EachTimer(Delay, nil, Each);
+	Result:=Self;
+	AddInterval(TInterval.Finite(Delay, nil, Each, arDelay));
 end;
 
 function TAQ.EachInterval(Interval:Integer; Each:TEachFunction):TAQ;
@@ -684,7 +675,7 @@ begin
 		raise EAQ.CreateFmt('Interval (%d) muss kleiner als MaxLifeTime (%d) sein.',
 			[Interval, MaxLifeTime]);
 	Result:=Self;
-	AddInterval(TInterval.Infinite(Interval, Each));
+	AddInterval(TInterval.Infinite(Interval, Each, arInterval));
 end;
 
 function TAQ.EachRepeat(Times:Integer; EachFunction:TEachFunction):TAQ;
@@ -702,7 +693,7 @@ begin
 		raise EAQ.CreateFmt('Dauer des Timers (%d) muss kleiner als MaxLifeTime (%d) sein.',
 			[Duration, MaxLifeTime]);
 	Result:=Self;
-	AddInterval(TInterval.Finite(Duration, Each, LastEach));
+	AddInterval(TInterval.Finite(Duration, Each, LastEach, arTimer));
 end;
 
 class function TAQ.Ease(EaseFunction:TEaseFunction):TEaseFunction;
@@ -720,6 +711,8 @@ begin
 			Result:=QuadraticEase;
 		etMassiveQuadratic:
 			Result:=MassiveQuadraticEase;
+		etSinus:
+			Result:=SinusEase;
 	else
 		Result:=LinearEase;
 	end;
@@ -760,13 +753,13 @@ end;
 function TAQ.FinishAnimations(Local:Boolean):TAQ;
 begin
 	Result:=Self;
-	CustomCancel(Local, ctAnimationFinish);
+	CustomCancel(Local, arAnimation, TRUE);
 end;
 
 function TAQ.FinishTimers(Local:Boolean):TAQ;
 begin
 	Result:=Self;
-	CustomCancel(Local, ctTimerFinish);
+	CustomCancel(Local, arTimer, TRUE);
 end;
 
 function TAQ.First:TAQ;
@@ -845,49 +838,26 @@ begin
 		end);
 end;
 
-function TAQ.HasInterval:Boolean;
+function TAQ.HasActors(ActorRole:TActorRole):Boolean;
 var
-	AnyIntervals:Boolean;
+	AnyActors:Boolean;
 begin
 	Result:=FALSE;
 	if not (Assigned(FIntervals) and (FIntervals.Count > 0)) then
 		Exit;
-	AnyIntervals:=FALSE;
+	AnyActors:=FALSE;
 	TAQ.Take(FIntervals)
 		.Each(
 			function(AQ:TAQ; O:TObject):Boolean
 			begin
-				AnyIntervals:=AnyIntervals or (not TInterval(O).IsFinite);
+				AnyActors:=TInterval(O).ActorRole = ActorRole;
 				{**
-				 * Die Each soll nur laufen, bis das erste Interval gefunden wird
+				 * Die Each soll nur laufen, bis der erste Actor gefunden wird
 				 *}
-				Result:=not AnyIntervals;
+				Result:=not AnyActors;
 			end)
 		.Die;
-	Result:=AnyIntervals;
-end;
-
-function TAQ.HasTimer:Boolean;
-var
-	AnyTimers:Boolean;
-begin
-	Result:=FALSE;
-	if not (Assigned(FIntervals) and (FIntervals.Count > 0)) then
-		Exit;
-	AnyTimers:=FALSE;
-	TAQ.Take(FIntervals)
-		.Each(
-			function(AQ:TAQ; O:TObject):Boolean
-			begin
-				with TInterval(O) do
-					AnyTimers:=IsFinite and not IsFinished;
-				{**
-				 * Die Each soll nur laufen, bis der erste Timer gefunden wird
-				 *}
-				Result:=not AnyTimers;
-			end)
-		.Die;
-	Result:=AnyTimers;
+	Result:=AnyActors;
 end;
 
 procedure TAQ.HeartBeat;
@@ -912,49 +882,13 @@ begin
 	 * Rekursiv (TAQ.Recurse) ist. Standardmäßig sind alle TAQ-Instanzen rekursiv.
 	 * Ausnahmen: TAQ.FGarbageCollector
 	 *}
-//	if Recurse then
-//		HeartBeatEcho(Self);
+	if Recurse then
+		HeartBeatEcho(Self);
 end;
 
 function TAQ.IntervalActors(IncludeOrphans:Boolean):TAQ;
-var
-	Actors:TAQ;
 begin
-	Actors:=Managed;
-
-	Each(
-		{**
-		 * @param SAQ Synonym für SourceAccessQuery und ist Self von TimerActors
-		 * @param SO Synonym für SourceObject und beinhaltet das Objekt für das die passenden
-		 *        TAQ-Instanzen gesucht werden
-		 *}
-		function(SAQ:TAQ; SO:TObject):Boolean
-		var
-			SOFound:Boolean;
-		begin
-			Result:=TRUE; // Each soll stets komplett durchlaufen
-			SOFound:=FALSE;
-			GarbageCollector.Each(
-				{**
-				 * @param AQ Enthält den GarbageCollector
-				 * @param O Enthält eine TAQ-Instanz, die darauf untersucht wird, ob sie SO enthält
-				 *        und einen aktiven Timer hat
-				 *}
-				function(AQ:TAQ; O:TObject):Boolean
-				begin
-					Result:=TRUE; // Each soll stets komplett durchlaufen
-					with TAQ(O) do
-						if Contains(SO) and HasInterval then
-						begin
-							Actors.Add(O);
-							SOFound:=TRUE;
-						end;
-				end);
-			if IncludeOrphans and not SOFound then
-				Actors.Add(SO);
-		end);
-
-	Result:=Actors;
+	Result:=CustomActors(arInterval, IncludeOrphans);
 end;
 
 function TAQ.IsAlive:Boolean;
@@ -1057,21 +991,19 @@ begin
 	Result:=CustomFiller(ParentsFiller, Append, Recurse);
 end;
 
-function TAQ.ProcessInterval(Interval:TInterval):Boolean;
+procedure TAQ.ProcessInterval(Interval:TInterval);
 var
 	EachFunction:TEachFunction;
 begin
-	Result:=TRUE;
 	FCurrentInterval:=Interval;
 
 	EachFunction:=(CurrentInterval.Each);
 	if Assigned(EachFunction) then
 		Each(EachFunction);
 
-	if CurrentInterval.IsFinished then
+	if Assigned(CurrentInterval) and CurrentInterval.IsFinished then
 	begin
 		RemoveInterval(CurrentInterval);
-		Result:=FALSE;
 		FCurrentInterval:=nil;
 	end;
 end;
@@ -1171,43 +1103,8 @@ begin
 end;
 
 function TAQ.TimerActors(IncludeOrphans:Boolean):TAQ;
-var
-	Actors:TAQ;
 begin
-	Actors:=Managed;
-	Result:=Actors;
-
-	Each(
-		{**
-		 * @param SAQ Synonym für SourceAccessQuery und ist Self von TimerActors
-		 * @param SO Synonym für SourceObject und beinhaltet das Objekt für das die passenden
-		 *        TAQ-Instanzen gesucht werden
-		 *}
-		function(SAQ:TAQ; SO:TObject):Boolean
-		var
-			SOFound:Boolean;
-		begin
-			Result:=TRUE; // Each soll stets komplett durchlaufen
-			SOFound:=FALSE;
-			GarbageCollector.Each(
-				{**
-				 * @param AQ Enthält den GarbageCollector
-				 * @param O Enthält eine TAQ-Instanz, die darauf untersucht wird, ob sie SO enthält
-				 *        und einen aktiven Timer hat
-				 *}
-				function(AQ:TAQ; O:TObject):Boolean
-				begin
-					Result:=TRUE; // Each soll stets komplett durchlaufen
-					with TAQ(O) do
-						if Contains(SO) and HasTimer then
-						begin
-							Actors.Add(O);
-							SOFound:=TRUE;
-						end;
-				end);
-			if IncludeOrphans and not SOFound then
-				Actors.Add(SO);
-		end);
+	Result:=CustomActors(arTimer, IncludeOrphans);
 end;
 
 class function TAQ.Unmanaged:TAQ;
@@ -1249,10 +1146,12 @@ begin
 	else if (FLastTick > 0) then
 	begin
 		if CurrentTick >= FLastTick then
+		begin
 			if Assigned(FLastEach) then
 				Result:=FLastEach
 			else
-				Result:=FNextEach
+				Result:=FNextEach;
+		end
 		else if CurrentTick >= FNextTick then
 		begin
 			Result:=FNextEach;
@@ -1267,8 +1166,9 @@ begin
 		FLastTick:=GetTickCount;
 end;
 
-constructor TInterval.Finite(Duration:Integer; Each, LastEach:TEachFunction);
+constructor TInterval.Finite(Duration:Integer; Each, LastEach:TEachFunction; ActorRole:TActorRole);
 begin
+	FActorRole:=ActorRole;
 	FNextEach:=Each;
 	FLastEach:=LastEach;
 
@@ -1279,8 +1179,9 @@ begin
 	UpdateNextTick;
 end;
 
-constructor TInterval.Infinite(Interval:Integer; Each:TEachFunction);
+constructor TInterval.Infinite(Interval:Integer; Each:TEachFunction; ActorRole:TActorRole);
 begin
+	FActorRole:=ActorRole;
 	FFirstTick:=GetTickCount;
 	FNextEach:=Each;
 	FLastEach:=nil;
@@ -1306,7 +1207,9 @@ end;
 
 function TInterval.Progress:Real;
 begin
-	Result:=Min(1, (GetTickCount - FFirstTick) / Max(1, (FLastTick - FFirstTick)));
+	if FLastTick = FFirstTick then
+		Exit(1);
+	Result:=(Min(GetTickCount, FLastTick) - FFirstTick) / (FLastTick - FFirstTick);
 end;
 
 procedure TInterval.UpdateNextTick;
