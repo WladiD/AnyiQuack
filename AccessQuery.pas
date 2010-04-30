@@ -55,6 +55,7 @@ type
 		FGarbageCollector:TAQ;
 		FIntervalTimer:TTimer;
 		FActiveIntervalAQs:TAQ;
+		FTick:Cardinal;
 	protected
 		var
 		FLifeTick:Cardinal;
@@ -84,6 +85,7 @@ type
 		function IsAlive:Boolean;
 		procedure HeartBeat;
 
+		class property Tick:Cardinal read FTick;
 		property Recurse:Boolean read FRecurse;
 	public
 		constructor Create; reintroduce;
@@ -92,9 +94,9 @@ type
 		class function Managed:TAQ;
 		class function Unmanaged:TAQ;
 
+		class function Take(AObject:TObject):TAQ; overload;
 		class function Take(Objects:TObjectArray):TAQ; overload;
 		class function Take(Objects:TObjectList):TAQ; overload;
-		class function Take(AObject:TObject):TAQ; overload;
 
 		class function Ease(EaseType:TEaseType):TEaseFunction; overload;
 		class function Ease(EaseFunction:TEaseFunction = nil):TEaseFunction; overload;
@@ -102,9 +104,9 @@ type
 		procedure Clean;
 		function Die:TAQ;
 
+		function Append(AObject:TObject):TAQ; overload;
 		function Append(Objects:TObjectArray):TAQ; overload;
 		function Append(Objects:TObjectList):TAQ; overload;
-		function Append(AObject:TObject):TAQ; overload;
 
 		function AppendAQ(AQ:TAQ):TAQ;
 
@@ -778,6 +780,8 @@ begin
 	 * Ab hier fängt die Instanzierung der gesamten Klasse an
 	 *}
 
+	FTick:=GetTickCount;
+
 	FIntervalTimer:=TTimer.Create(nil);
 	with FIntervalTimer do
 	begin
@@ -826,6 +830,7 @@ end;
 
 class procedure TAQ.GlobalIntervalTimerEvent(Sender:TObject);
 begin
+	FTick:=GetTickCount;
 	FActiveIntervalAQs.Each(
 		{**
 		 * @param AQ Enthält FActiveIntervalAQs
@@ -850,7 +855,7 @@ begin
 		.Each(
 			function(AQ:TAQ; O:TObject):Boolean
 			begin
-				AnyActors:=TInterval(O).ActorRole = ActorRole;
+				AnyActors:=(TInterval(O).ActorRole = ActorRole) and not TInterval(O).IsFinished;
 				{**
 				 * Die Each soll nur laufen, bis der erste Actor gefunden wird
 				 *}
@@ -876,7 +881,7 @@ procedure TAQ.HeartBeat;
 			end;
 	end;
 begin
-	FLifeTick:=GetTickCount;
+	FLifeTick:=TAQ.Tick;
 	{**
 	 * Der Herzschlag muss an enthaltene TAQ-Instanzen weitergereicht werden, wenn diese Instanz
 	 * Rekursiv (TAQ.Recurse) ist. Standardmäßig sind alle TAQ-Instanzen rekursiv.
@@ -893,7 +898,7 @@ end;
 
 function TAQ.IsAlive:Boolean;
 begin
-	Result:=(FLifeTick + MaxLifeTime) > GetTickCount;
+	Result:=(FLifeTick + MaxLifeTime) > TAQ.Tick;
 end;
 
 function TAQ.Last:TAQ;
@@ -1125,17 +1130,14 @@ begin
 end;
 
 function TInterval.Each:TEachFunction;
-var
-	CurrentTick:Cardinal;
 begin
 	Result:=nil;
 	if IsCanceled then
 		Exit;
-	CurrentTick:=GetTickCount;
 	{**
 	 * Unendlicher Interval
 	 *}
-	if (FLastTick = 0) and (CurrentTick >= FNextTick) then
+	if (FLastTick = 0) and (TAQ.Tick >= FNextTick) then
 	begin
 		Result:=FNextEach;
 		UpdateNextTick;
@@ -1145,14 +1147,16 @@ begin
 	 *}
 	else if (FLastTick > 0) then
 	begin
-		if CurrentTick >= FLastTick then
+		if TAQ.Tick >= FLastTick then
 		begin
 			if Assigned(FLastEach) then
 				Result:=FLastEach
 			else
 				Result:=FNextEach;
+			FLastEach:=nil;
+			FNextEach:=nil;
 		end
-		else if CurrentTick >= FNextTick then
+		else if TAQ.Tick >= FNextTick then
 		begin
 			Result:=FNextEach;
 			UpdateNextTick;
@@ -1163,7 +1167,7 @@ end;
 procedure TInterval.Finish;
 begin
 	if IsFinite and not IsFinished then
-		FLastTick:=GetTickCount;
+		FLastTick:=TAQ.Tick;
 end;
 
 constructor TInterval.Finite(Duration:Integer; Each, LastEach:TEachFunction; ActorRole:TActorRole);
@@ -1172,7 +1176,7 @@ begin
 	FNextEach:=Each;
 	FLastEach:=LastEach;
 
-	FFirstTick:=GetTickCount;
+	FFirstTick:=TAQ.Tick;
 	FInterval:=Max(IntervalResolution, Ceil(Duration / IntervalResolution));
 
 	FLastTick:=FFirstTick + Cardinal(Duration);
@@ -1182,7 +1186,7 @@ end;
 constructor TInterval.Infinite(Interval:Integer; Each:TEachFunction; ActorRole:TActorRole);
 begin
 	FActorRole:=ActorRole;
-	FFirstTick:=GetTickCount;
+	FFirstTick:=TAQ.Tick;
 	FNextEach:=Each;
 	FLastEach:=nil;
 	FInterval:=Max(IntervalResolution, Interval);
@@ -1197,7 +1201,8 @@ end;
 
 function TInterval.IsFinished:Boolean;
 begin
-	Result:=((FLastTick > 0) and (GetTickCount >= FLastTick)) or IsCanceled;
+	Result:=((FLastTick > 0) and (TAQ.Tick >= FLastTick) and not Assigned(FLastEach) and
+		not Assigned(FNextEach)) or IsCanceled;
 end;
 
 function TInterval.IsFinite:Boolean;
@@ -1207,14 +1212,14 @@ end;
 
 function TInterval.Progress:Real;
 begin
-	if FLastTick = FFirstTick then
+	if (FLastTick = FFirstTick) or (TAQ.Tick >= FLastTick) then
 		Exit(1);
-	Result:=(Min(GetTickCount, FLastTick) - FFirstTick) / (FLastTick - FFirstTick);
+	Result:=(Min(TAQ.Tick, FLastTick) - FFirstTick) / (FLastTick - FFirstTick);
 end;
 
 procedure TInterval.UpdateNextTick;
 begin
-	FNextTick:=GetTickCount + Cardinal(FInterval);
+	FNextTick:=TAQ.Tick + Cardinal(FInterval);
 end;
 
 initialization

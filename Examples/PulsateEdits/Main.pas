@@ -18,7 +18,6 @@ type
 		CheckButton: TButton;
 		Label1: TLabel;
 		Label2: TLabel;
-		procedure EditEnter(Sender: TObject);
 		procedure FormCreate(Sender: TObject);
 		procedure CheckButtonClick(Sender: TObject);
 	private
@@ -56,10 +55,10 @@ begin
 
 	Incorrect
 		.FinishAnimations
-		.ShakeAnimation(2, 10, 0, 0, 400);
+		.ShakeAnimation(3, 10, 0, 0, 400);
 end;
 
-procedure TForm1.EditEnter(Sender: TObject);
+procedure TForm1.FormCreate(Sender: TObject);
 var
 	Pulsate:TAnonymNotifyEvent;
 begin
@@ -72,21 +71,20 @@ begin
 			{**
 			 * Diese Bedingung stellt sicher, dass keine weiteren Animationen für das Objekt laufen
 			 *}
-			(SenderAQ.AnimationActors(FALSE).Die.Count = 0) then
-			SenderAQ.ShakeAnimation(0, 0, 1, 5, 1000, Pulsate);
+			(SenderAQ.AnimationActors.Die.Count = 0) then
+			SenderAQ.ShakeAnimation(0, 0, 1, 5, 1000, Pulsate).Die;
 		SenderAQ.Die;
 	end;
-	Pulsate(Sender);
-end;
 
-procedure TForm1.FormCreate(Sender: TObject);
-begin
-	TAQ.Take(Self).Children(TRUE, TRUE).Filter(TEdit).Each(
-		function(AQ:TAQ; O:TObject):Boolean
-		begin
-			Result:=TRUE;
-			TEdit(O).OnEnter:=EditEnter;
-		end);
+	TAQ.Take(Self)
+		.Children(TRUE, TRUE)
+		.Filter(TEdit)
+		.EachInterval(333,
+			function(AQ:TAQ; O:TObject):Boolean
+			begin
+				Pulsate(O);
+				Result:=TRUE;
+			end);
 end;
 
 end.

@@ -3,7 +3,7 @@
 			<ProjectGuid>{BFC45E17-ABB7-4875-B30A-D3C77CBC0C2D}</ProjectGuid>
 			<ProjectVersion>12.0</ProjectVersion>
 			<MainSource>AnimatedAlign.dpr</MainSource>
-			<Config Condition="'$(Config)'==''">Debug</Config>
+			<Config Condition="'$(Config)'==''">Release</Config>
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Basis' or '$(Base)'!=''">

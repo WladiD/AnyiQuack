@@ -93,7 +93,7 @@ begin
 						Sender.Free;
 						Dec(FPanelCounter);
 						{**
-						 * Die folgende EachDelay ist etwas strange, aber es eigentlich ganz
+						 * Die folgende EachDelay ist etwas strange, aber es ist eigentlich ganz
 						 * einfach:
 						 * Wenn UpdateAlign direkt aufgerufen wird, wird es aus dem Stack-Kontext
 						 * der Animationsmethode aufgerufen und daher gibt es sehr schnell eine
