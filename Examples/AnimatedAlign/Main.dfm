@@ -12,8 +12,26 @@ object MainForm: TMainForm
   Font.Style = []
   OldCreateOrder = False
   OnResize = FormResize
+  DesignSize = (
+    635
+    337)
   PixelsPerInch = 96
   TextHeight = 13
+  object Label3: TLabel
+    Left = 324
+    Top = 268
+    Width = 311
+    Height = 33
+    Anchors = [akRight, akBottom]
+    AutoSize = False
+    Caption = 
+      'Add a couple of panels and play with the size of form or panels.' +
+      ' Also try the different handling for disturbed animations.'
+    Color = clInfoBk
+    ParentColor = False
+    Transparent = True
+    WordWrap = True
+  end
   object TopPanel: TPanel
     Left = 0
     Top = 0
@@ -25,9 +43,6 @@ object MainForm: TMainForm
     BevelOuter = bvNone
     ParentBackground = False
     TabOrder = 0
-    DesignSize = (
-      635
-      42)
     object Label1: TLabel
       Left = 164
       Top = 1
@@ -42,20 +57,12 @@ object MainForm: TMainForm
       Height = 13
       Caption = 'Panel size'
     end
-    object Label3: TLabel
-      Left = 315
-      Top = 8
-      Width = 311
-      Height = 33
-      Anchors = [akTop, akRight]
-      AutoSize = False
-      Caption = 
-        'Add a couple of panels and play with the size of form or panels.' +
-        ' Also try the different handling for disturbed animations.'
-      Color = clInfoBk
-      ParentColor = False
-      Transparent = True
-      WordWrap = True
+    object Label5: TLabel
+      Left = 324
+      Top = 1
+      Width = 125
+      Height = 13
+      Caption = 'Animation duration (msec)'
     end
     object DisturbedComboBox: TComboBox
       Left = 164
@@ -71,7 +78,7 @@ object MainForm: TMainForm
         'Finish')
     end
     object PanelSizeTrackBar: TTrackBar
-      Left = 3
+      Left = 0
       Top = 17
       Width = 150
       Height = 21
@@ -79,8 +86,20 @@ object MainForm: TMainForm
       Min = 20
       Frequency = 20
       Position = 100
+      PositionToolTip = ptBottom
       TabOrder = 1
       OnChange = PanelSizeTrackBarChange
+    end
+    object AnimationDurationTrackBar: TTrackBar
+      Left = 318
+      Top = 17
+      Width = 150
+      Height = 21
+      Max = 1500
+      Min = 100
+      Position = 500
+      PositionToolTip = ptBottom
+      TabOrder = 2
     end
   end
   object BottomPanel: TPanel
@@ -99,7 +118,7 @@ object MainForm: TMainForm
       31)
     object Label4: TLabel
       Left = 3
-      Top = 10
+      Top = 8
       Width = 158
       Height = 13
       Anchors = [akLeft, akBottom]
@@ -108,7 +127,7 @@ object MainForm: TMainForm
     end
     object AddPanelButton: TButton
       Left = 552
-      Top = 3
+      Top = 1
       Width = 75
       Height = 25
       Anchors = [akRight, akBottom]
@@ -118,7 +137,7 @@ object MainForm: TMainForm
     end
     object RemovePanelButton: TButton
       Left = 464
-      Top = 3
+      Top = 1
       Width = 82
       Height = 25
       Anchors = [akRight, akBottom]

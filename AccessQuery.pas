@@ -62,9 +62,12 @@ type
 		FIntervals:TObjectList;
 		FCurrentInterval:TInterval;
 		FRecurse:Boolean;
+		FChainedTo:TAQ;
 
 		class function GarbageCollector:TAQ;
 		class procedure GlobalIntervalTimerEvent(Sender:TObject);
+
+
 
 		function HasActors(ActorRole:TActorRole):Boolean;
 
@@ -81,6 +84,11 @@ type
 		function CustomFiller(Filler:TEachFunction; Append, Recurse:Boolean):TAQ;
 		procedure CustomCancel(Local:Boolean; ActorRole:TActorRole; Finish:Boolean);
 		function CustomActors(ActorRole:TActorRole; IncludeOrphans:Boolean):TAQ;
+
+		function IfContainsEach(ByClass:TClass):TEachFunction; overload;
+		function IfContainsEach(Objects:TObjectArray):TEachFunction; overload;
+		function IfContainsEach(Objects:TObjectList):TEachFunction; overload;
+		function IfContainsEach(AQ:TAQ):TEachFunction; overload;
 
 		function IsAlive:Boolean;
 		procedure HeartBeat;
@@ -100,6 +108,9 @@ type
 
 		class function Ease(EaseType:TEaseType):TEaseFunction; overload;
 		class function Ease(EaseFunction:TEaseFunction = nil):TEaseFunction; overload;
+
+		function NewChain:TAQ;
+		function EndChain:TAQ;
 
 		procedure Clean;
 		function Die:TAQ;
@@ -138,6 +149,32 @@ type
 
 		function Filter(ByClass:TClass):TAQ; overload;
 		function Filter(FilterEach:TEachFunction):TAQ; overload;
+
+		function Exclude(ByClass:TClass):TAQ; overload;
+		function Exclude(AObject:TObject):TAQ; overload;
+		function Exclude(Objects:TObjectArray):TAQ; overload;
+		function Exclude(Objects:TObjectList):TAQ; overload;
+		function Exclude(AQ:TAQ):TAQ; overload;
+		function Exclude(ExcludeEach:TEachFunction):TAQ; overload;
+
+		function IfSimple(Condition:Boolean):TAQ;
+		function IfAll(EachFunction:TEachFunction):TAQ;
+		function IfAny(EachFunction:TEachFunction):TAQ;
+
+		function IfContains(AObject:TObject):TAQ;
+
+		function IfContainsAny(ByClass:TClass):TAQ; overload;
+		function IfContainsAny(Objects:TObjectArray):TAQ; overload;
+		function IfContainsAny(Objects:TObjectList):TAQ; overload;
+		function IfContainsAny(AQ:TAQ):TAQ; overload;
+
+		function IfContainsAll(ByClass:TClass):TAQ; overload;
+		function IfContainsAll(Objects:TObjectArray):TAQ; overload;
+		function IfContainsAll(Objects:TObjectList):TAQ; overload;
+		function IfContainsAll(AQ:TAQ):TAQ; overload;
+
+		function EndIf:TAQ;
+
 		function First:TAQ;
 		function Last:TAQ;
 
@@ -369,6 +406,15 @@ begin
 	CustomCancel(Local, arTimer, FALSE);
 end;
 
+{**
+ * Erstellt eine neue gemanagete TAQ-Instanz, die an die aktuelle "angekettet" wird
+ *}
+function TAQ.NewChain:TAQ;
+begin
+	Result:=Managed;
+	Result.FChainedTo:=Self;
+end;
+
 function TAQ.Children(Append, Recurse:Boolean; ChildrenFiller:TEachFunction):TAQ;
 begin
 	if not Assigned(ChildrenFiller) then
@@ -391,6 +437,19 @@ procedure TAQ.Clean;
 begin
 	Clear;
 	FCurrentInterval:=nil;
+	{**
+	 * Sollte diese Instanz mit einer anderen zuvor verkettet worden sein, so muss diese Verbindung
+	 * aufgehoben werden
+	 *}
+	GarbageCollector.Each(
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			if TAQ(O).FChainedTo = Self then
+				TAQ(O).FChainedTo:=nil;
+			Result:=TRUE; // Kompletter Scan
+		end);
+
+	FChainedTo:=nil;
 	if Assigned(FIntervals) then
 	begin
 		ClearIntervals;
@@ -431,7 +490,7 @@ function TAQ.CustomActors(ActorRole:TActorRole; IncludeOrphans:Boolean):TAQ;
 var
 	Actors:TAQ;
 begin
-	Actors:=Managed;
+	Actors:=NewChain;
 	if not Assigned(FActiveIntervalAQs) then
 		Exit(Actors);
 	{**
@@ -598,7 +657,7 @@ begin
 	if Append then
 		TargetAQ:=Self
 	else
-		TargetAQ:=Managed;
+		TargetAQ:=NewChain;
 	Each(Self);
 	Result:=TargetAQ;
 end;
@@ -612,7 +671,7 @@ function TAQ.Demultiplex:TAQ;
 var
 	SimpleAQ:TAQ;
 begin
-	SimpleAQ:=Managed;
+	SimpleAQ:=NewChain;
 	Result:=SimpleAQ;
 	Each(
 		function(AQ:TAQ; O:TObject):Boolean
@@ -626,11 +685,7 @@ end;
 
 destructor TAQ.Destroy;
 begin
-	if Assigned(FIntervals) then
-	begin
-		ClearIntervals;
-		FIntervals.Free;
-	end;
+	Clean;
 	inherited Destroy;
 end;
 
@@ -706,6 +761,84 @@ begin
 		Result:=LinearEase;
 end;
 
+{**
+ * Synonym für TAQ.Prev
+ *}
+function TAQ.EndIf:TAQ;
+begin
+	Result:=EndChain;
+end;
+
+function TAQ.Exclude(Objects:TObjectArray):TAQ;
+begin
+	Result:=Exclude(
+		function(AQ:TAQ; O:TObject):Boolean
+		var
+			cc:Integer;
+		begin
+			for cc:=0 to Length(Objects) - 1 do
+				if Objects[cc] = O then
+					Exit(TRUE);
+			Result:=FALSE;
+		end);
+end;
+
+function TAQ.Exclude(AObject:TObject):TAQ;
+begin
+	Result:=Exclude(
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			Result:=O = AObject;
+		end);
+end;
+
+function TAQ.Exclude(ByClass:TClass):TAQ;
+begin
+	Result:=Exclude(
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			Result:=O is ByClass;
+		end);
+end;
+
+{**
+ * Erstellt eine neue TAQ-Instanz mit allen Objekten, die von der EachFunction mit FALSE
+ * bestätigt wurden. Objekte, die von der EachFunction mit TRUE beantwortet werden, sind nicht
+ * Bestandteil der neuen Instanz.
+ *}
+function TAQ.Exclude(ExcludeEach:TEachFunction):TAQ;
+var
+	NewAQ:TAQ;
+begin
+	NewAQ:=NewChain;
+	Each(
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			if not ExcludeEach(AQ, O) then
+				NewAQ.Add(O);
+			Result:=TRUE;
+		end);
+	Result:=NewAQ;
+end;
+
+function TAQ.Exclude(AQ:TAQ):TAQ;
+begin
+	Result:=Exclude(
+		function(OAQ:TAQ; O:TObject):Boolean
+		begin
+			Result:=AQ.Contains(O);
+		end);
+end;
+
+function TAQ.Exclude(Objects:TObjectList):TAQ;
+begin
+	Result:=Exclude(
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			Result:=Objects.IndexOf(O) >= 0;
+		end);
+end;
+
 class function TAQ.Ease(EaseType:TEaseType):TEaseFunction;
 begin
 	case EaseType of
@@ -724,7 +857,7 @@ function TAQ.Filter(ByClass:TClass):TAQ;
 var
 	NewAQ:TAQ;
 begin
-	NewAQ:=Managed;
+	NewAQ:=NewChain;
 
 	Each(
 		function(AQ:TAQ; O:TObject):Boolean
@@ -741,7 +874,7 @@ function TAQ.Filter(FilterEach:TEachFunction):TAQ;
 var
 	NewAQ:TAQ;
 begin
-	NewAQ:=Managed;
+	NewAQ:=NewChain;
 	Each(
 		function(OAQ:TAQ; OO:TObject):Boolean
 		begin
@@ -766,7 +899,7 @@ end;
 
 function TAQ.First:TAQ;
 begin
-	Result:=Managed;
+	Result:=NewChain;
 	if Count > 0 then
 		Result.Append(Items[0]);
 end;
@@ -891,6 +1024,138 @@ begin
 		HeartBeatEcho(Self);
 end;
 
+{**
+ * Liefert die EachFunction immer TRUE zurück, so wird ein neues TAQ-Objekt mit allen Objekten aus
+ * der aktuellen Instanz erstellt und zurückgegeben. Sonst wird ein leeres TAQ-Objekt geliefert.
+ *}
+function TAQ.IfAll(EachFunction:TEachFunction):TAQ;
+var
+	Condition:Boolean;
+begin
+	Condition:=Count > 0;
+	Each(
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			Condition:=Condition and EachFunction(AQ, O);
+			Result:=not Condition;
+		end);
+	Result:=IfSimple(Condition);
+end;
+
+{**
+ * Liefert die EachFunction mind. einmal TRUE zurück, so wird ein neues TAQ-Objekt mit allen
+ * Objekten aus der aktuellen Instanz erstellt und zurückgegeben. Sonst wird ein leeres TAQ-Objekt
+ * geliefert.
+ *}
+function TAQ.IfAny(EachFunction:TEachFunction):TAQ;
+var
+	Condition:Boolean;
+begin
+	Condition:=FALSE;
+	Each(
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			Condition:=Condition or EachFunction(AQ, O);
+			Result:=not Condition;
+		end);
+	Result:=IfSimple(Condition);
+end;
+
+function TAQ.IfContainsAll(Objects:TObjectList):TAQ;
+begin
+	Result:=IfAll(IfContainsEach(Objects));
+end;
+
+function TAQ.IfContainsAll(AQ:TAQ):TAQ;
+begin
+	Result:=IfAll(IfContainsEach(AQ));
+end;
+
+function TAQ.IfContainsAll(Objects:TObjectArray):TAQ;
+begin
+	Result:=IfAll(IfContainsEach(Objects));
+end;
+
+function TAQ.IfContainsAll(ByClass:TClass):TAQ;
+begin
+	Result:=IfAll(IfContainsEach(ByClass));
+end;
+
+function TAQ.IfContainsAny(Objects:TObjectList):TAQ;
+begin
+	Result:=IfAny(IfContainsEach(Objects));
+end;
+
+function TAQ.IfContainsAny(AQ:TAQ):TAQ;
+begin
+	Result:=IfAny(IfContainsEach(AQ));
+end;
+
+function TAQ.IfContainsAny(Objects:TObjectArray):TAQ;
+begin
+	Result:=IfAny(IfContainsEach(Objects));
+end;
+
+function TAQ.IfContainsAny(ByClass:TClass):TAQ;
+begin
+	Result:=IfAny(IfContainsEach(ByClass));
+end;
+
+function TAQ.IfContains(AObject:TObject):TAQ;
+begin
+	Result:=IfSimple(Contains(AObject));
+end;
+
+function TAQ.IfContainsEach(ByClass:TClass):TEachFunction;
+begin
+	Result:=function(AQ:TAQ; O:TObject):Boolean
+	begin
+		Result:=O is ByClass;
+	end;
+end;
+
+function TAQ.IfContainsEach(Objects:TObjectArray):TEachFunction;
+begin
+	Result:=function(AQ:TAQ; O:TObject):Boolean
+	var
+		cc:Integer;
+	begin
+		Result:=FALSE;
+		for cc:=0 to Length(Objects) - 1 do
+			if O = Objects[cc] then
+				Exit(TRUE);
+	end;
+end;
+
+function TAQ.IfContainsEach(AQ:TAQ):TEachFunction;
+begin
+	Result:=function(SourceAQ:TAQ; O:TObject):Boolean
+	begin
+		Result:=AQ.Contains(O);
+	end;
+end;
+
+function TAQ.IfContainsEach(Objects:TObjectList):TEachFunction;
+begin
+	Result:=function(AQ:TAQ; O:TObject):Boolean
+	begin
+		Result:=Objects.IndexOf(O) >= 0;
+	end;
+end;
+
+{**
+ * Liefert ein neues TAQ-Objekt mit allen Objekten aus der aktuellen Instanz, wenn die Bedingung
+ * TRUE ist. Ist die Bedingung hingegen FALSE, so wird ein leeres gemanagetes TAQ-Objekt geliefert.
+ *
+ * Eine Bedingung kann (muss aber nicht) durch TAQ.EndIf abgeschlossen werden.
+ *}
+function TAQ.IfSimple(Condition:Boolean):TAQ;
+begin
+	Result:=NewChain;
+	if Condition then
+		Result.Append(Self);
+end;
+
 function TAQ.IntervalActors(IncludeOrphans:Boolean):TAQ;
 begin
 	Result:=CustomActors(arInterval, IncludeOrphans);
@@ -903,7 +1168,7 @@ end;
 
 function TAQ.Last:TAQ;
 begin
-	Result:=Managed;
+	Result:=NewChain;
 	if Count > 0 then
 		Result.Append(Items[Count - 1]);
 end;
@@ -971,7 +1236,7 @@ function TAQ.Multiplex:TAQ;
 var
 	MultiAQ:TAQ;
 begin
-	MultiAQ:=Managed;
+	MultiAQ:=NewChain;
 	Result:=MultiAQ;
 	Each(
 		function(AQ:TAQ; O:TObject):Boolean
@@ -994,6 +1259,17 @@ begin
 			AQ.Add(TComponent(O).GetParentComponent);
 		end;
 	Result:=CustomFiller(ParentsFiller, Append, Recurse);
+end;
+
+{**
+ * Liefert die TAQ-Instanz, durch die diese Instanz erstellt wurde oder ein leeres TAQ-Objekt,
+ * falls es nicht (mehr) verfügbar ist.
+ *}
+function TAQ.EndChain:TAQ;
+begin
+	if Assigned(FChainedTo) and GarbageCollector.Contains(FChainedTo) then
+		Exit(FChainedTo);
+	Result:=Managed;
 end;
 
 procedure TAQ.ProcessInterval(Interval:TInterval);

@@ -18,6 +18,8 @@ type
 		Label4:TLabel;
 		TopPanel:TPanel;
 		BottomPanel:TPanel;
+		Label5:TLabel;
+		AnimationDurationTrackBar:TTrackBar;
 		procedure AddPanelButtonClick(Sender:TObject);
 		procedure FormResize(Sender:TObject);
 		procedure PanelSizeTrackBarChange(Sender:TObject);
@@ -54,7 +56,7 @@ begin
 	UpdateAlign;
 end;
 
-procedure TMainForm.FormResize(Sender: TObject);
+procedure TMainForm.FormResize(Sender:TObject);
 begin
 	UpdateAlign;
 end;
@@ -70,24 +72,25 @@ begin
 			end);
 end;
 
-procedure TMainForm.PanelSizeTrackBarChange(Sender: TObject);
+procedure TMainForm.PanelSizeTrackBarChange(Sender:TObject);
 begin
 	UpdateAlign;
 end;
 
-procedure TMainForm.RemovePanelButtonClick(Sender: TObject);
+procedure TMainForm.RemovePanelButtonClick(Sender:TObject);
 begin
 	{**
 	 * Stellt sicher, dass die letzte Entfernungsanimation sofort beendet wird
 	 *}
-	GetPanelsAQ.FinishAnimations;
+	GetPanelsAQ.FinishAnimations.CancelDelays;
 	GetPanelsAQ
 		.Last
 		.Each(
 			function(AQ:TAQ; O:TObject):Boolean
 			begin
 				Result:=TRUE;
-				AQ.BoundsAnimation(TControl(O).Left, Height, -1, -1, 200, TAQ.Ease(etQuadratic),
+				AQ.BoundsAnimation(TControl(O).Left, Height, -1, -1,
+					AnimationDurationTrackBar.Position, TAQ.Ease(etQuadratic),
 					procedure(Sender:TObject)
 					begin
 						Sender.Free;
@@ -99,8 +102,7 @@ begin
 						 * der Animationsmethode aufgerufen und daher gibt es sehr schnell eine
 						 * nicht nachvollziehbare AV. Mit dem Delay erreicht man, dass es wieder aus
 						 * dem Hauptkontext des Programms aufgerufen wird. Das CancelDelay stellt
-						 * zudem sicher, dass die Verzögerung nur einmal erfolgt. Die Verzögerung
-						 * muss etwas länger sein, als die übergeordnete Animation.
+						 * zudem sicher, dass die Verzögerung nur einmal erfolgt.
 						 *}
 						TAQ.Take(Self).CancelDelays.EachDelay(250,
 							function(AQ:TAQ; O:TObject):Boolean
@@ -140,7 +142,6 @@ begin
 	PIndex:=0;
 
 	PanelsAQ
-		.Multiplex
 		.Each(
 			function(AQ:TAQ; O:TObject):Boolean
 			var
@@ -157,12 +158,11 @@ begin
 				TargetLeft:=(XTile * PQSize) + LeftOffset;
 				TargetTop:=(YTile * PQSize) + TopOffset;
 
-				AQ.BoundsAnimation(TargetLeft, TargetTop, PQSize, PQSize, 400,
-					TAQ.Ease(etQuadratic));
+				TAQ.Take(O).BoundsAnimation(TargetLeft, TargetTop, PQSize, PQSize,
+					AnimationDurationTrackBar.Position, TAQ.Ease(etSinus));
 				Inc(PIndex);
 			end)
 		.Die;
-	PanelsAQ.Die;
 end;
 
 end.
