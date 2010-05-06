@@ -67,8 +67,6 @@ type
 		class function GarbageCollector:TAQ;
 		class procedure GlobalIntervalTimerEvent(Sender:TObject);
 
-
-
 		function HasActors(ActorRole:TActorRole):Boolean;
 
 		procedure LocalIntervalTimerEvent(Sender:TObject);
@@ -406,9 +404,6 @@ begin
 	CustomCancel(Local, arTimer, FALSE);
 end;
 
-{**
- * Erstellt eine neue gemanagete TAQ-Instanz, die an die aktuelle "angekettet" wird
- *}
 function TAQ.NewChain:TAQ;
 begin
 	Result:=Managed;
@@ -761,9 +756,6 @@ begin
 		Result:=LinearEase;
 end;
 
-{**
- * Synonym für TAQ.Prev
- *}
 function TAQ.EndIf:TAQ;
 begin
 	Result:=EndChain;
@@ -801,11 +793,6 @@ begin
 		end);
 end;
 
-{**
- * Erstellt eine neue TAQ-Instanz mit allen Objekten, die von der EachFunction mit FALSE
- * bestätigt wurden. Objekte, die von der EachFunction mit TRUE beantwortet werden, sind nicht
- * Bestandteil der neuen Instanz.
- *}
 function TAQ.Exclude(ExcludeEach:TEachFunction):TAQ;
 var
 	NewAQ:TAQ;
@@ -1024,10 +1011,6 @@ begin
 		HeartBeatEcho(Self);
 end;
 
-{**
- * Liefert die EachFunction immer TRUE zurück, so wird ein neues TAQ-Objekt mit allen Objekten aus
- * der aktuellen Instanz erstellt und zurückgegeben. Sonst wird ein leeres TAQ-Objekt geliefert.
- *}
 function TAQ.IfAll(EachFunction:TEachFunction):TAQ;
 var
 	Condition:Boolean;
@@ -1042,11 +1025,6 @@ begin
 	Result:=IfSimple(Condition);
 end;
 
-{**
- * Liefert die EachFunction mind. einmal TRUE zurück, so wird ein neues TAQ-Objekt mit allen
- * Objekten aus der aktuellen Instanz erstellt und zurückgegeben. Sonst wird ein leeres TAQ-Objekt
- * geliefert.
- *}
 function TAQ.IfAny(EachFunction:TEachFunction):TAQ;
 var
 	Condition:Boolean;
@@ -1143,12 +1121,6 @@ begin
 	end;
 end;
 
-{**
- * Liefert ein neues TAQ-Objekt mit allen Objekten aus der aktuellen Instanz, wenn die Bedingung
- * TRUE ist. Ist die Bedingung hingegen FALSE, so wird ein leeres gemanagetes TAQ-Objekt geliefert.
- *
- * Eine Bedingung kann (muss aber nicht) durch TAQ.EndIf abgeschlossen werden.
- *}
 function TAQ.IfSimple(Condition:Boolean):TAQ;
 begin
 	Result:=NewChain;
@@ -1261,10 +1233,6 @@ begin
 	Result:=CustomFiller(ParentsFiller, Append, Recurse);
 end;
 
-{**
- * Liefert die TAQ-Instanz, durch die diese Instanz erstellt wurde oder ein leeres TAQ-Objekt,
- * falls es nicht (mehr) verfügbar ist.
- *}
 function TAQ.EndChain:TAQ;
 begin
 	if Assigned(FChainedTo) and GarbageCollector.Contains(FChainedTo) then
