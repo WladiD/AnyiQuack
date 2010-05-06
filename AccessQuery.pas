@@ -213,6 +213,8 @@ type
 		property ActorRole:TActorRole read FActorRole;
 	end;
 
+	function OA(Objects:array of TObject):TObjectArray;
+
 implementation
 
 const
@@ -250,6 +252,15 @@ var
 begin
 	Delta:=EndValue - StartValue;
 	Result:=StartValue + (Delta * (Sin(Progress * (Pi / 2))));
+end;
+
+function OA(Objects:array of TObject):TObjectArray;
+var
+	cc:Integer;
+begin
+	SetLength(Result, Length(Objects));
+	for cc:=0 to Length(Objects) - 1 do
+		Result[cc]:=Objects[cc];
 end;
 
 {** TAQ **}
