@@ -12,6 +12,9 @@
 			<Projects Include="AnimatedAlign\AnimatedAlign.dproj">
 				<Dependencies/>
 			</Projects>
+			<Projects Include="SlidingForm\SlidingForm.dproj">
+				<Dependencies/>
+			</Projects>
 		</ItemGroup>
 		<ProjectExtensions>
 			<Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -47,14 +50,23 @@
 		<Target Name="AnimatedAlign:Make">
 			<MSBuild Targets="Make" Projects="AnimatedAlign\AnimatedAlign.dproj"/>
 		</Target>
+		<Target Name="SlidingForm">
+			<MSBuild Projects="SlidingForm\SlidingForm.dproj"/>
+		</Target>
+		<Target Name="SlidingForm:Clean">
+			<MSBuild Targets="Clean" Projects="SlidingForm\SlidingForm.dproj"/>
+		</Target>
+		<Target Name="SlidingForm:Make">
+			<MSBuild Targets="Make" Projects="SlidingForm\SlidingForm.dproj"/>
+		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign"/>
+			<CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign;SlidingForm"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean"/>
+			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean;SlidingForm:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make"/>
+			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make;SlidingForm:Make"/>
 		</Target>
 		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 	</Project>
