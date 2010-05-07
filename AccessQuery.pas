@@ -302,6 +302,15 @@ end;
 
 procedure TAQ.AddInterval(Interval:TInterval);
 begin
+	{**
+	 * Das Intervall wird nicht angenommen, wenn keine Objekte vorhanden sind
+	 *}
+	if Count = 0 then
+	begin
+		Interval.Free;
+		Exit;
+	end;
+
 	if (GetIntervals.Count = 0) and (FActiveIntervalAQs.IndexOf(Self) = -1) then
 		FActiveIntervalAQs.Add(Self);
 	GetIntervals.Add(Interval);
@@ -1031,7 +1040,7 @@ begin
 		function(AQ:TAQ; O:TObject):Boolean
 		begin
 			Condition:=Condition and EachFunction(AQ, O);
-			Result:=not Condition;
+			Result:=Condition;
 		end);
 	Result:=IfSimple(Condition);
 end;
