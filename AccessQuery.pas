@@ -47,7 +47,7 @@ type
 
 	TEachFunction = reference to function(AQ:TAQ; O:TObject):Boolean;
 	TAnonymNotifyEvent = reference to procedure(Sender:TObject);
-	TEaseFunction = function(StartValue, EndValue, Progress:Real):Real;
+	TEaseFunction = reference to function(StartValue, EndValue, Progress:Real):Real;
 
 	TAQ = class(TObjectList)
 	private
