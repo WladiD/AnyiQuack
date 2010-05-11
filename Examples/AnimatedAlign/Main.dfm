@@ -33,6 +33,7 @@ object MainForm: TMainForm
     WordWrap = True
   end
   object TopPanel: TPanel
+    Tag = 1
     Left = 0
     Top = 0
     Width = 635
@@ -83,7 +84,7 @@ object MainForm: TMainForm
       Width = 150
       Height = 21
       Max = 200
-      Min = 20
+      Min = 55
       Frequency = 20
       Position = 100
       PositionToolTip = ptBottom
@@ -95,7 +96,7 @@ object MainForm: TMainForm
       Top = 17
       Width = 150
       Height = 21
-      Max = 1500
+      Max = 2000
       Min = 100
       Position = 500
       PositionToolTip = ptBottom
@@ -103,6 +104,7 @@ object MainForm: TMainForm
     end
   end
   object BottomPanel: TPanel
+    Tag = 1
     Left = 0
     Top = 304
     Width = 635
@@ -118,7 +120,7 @@ object MainForm: TMainForm
       31)
     object Label4: TLabel
       Left = 3
-      Top = 8
+      Top = 4
       Width = 158
       Height = 13
       Anchors = [akLeft, akBottom]
@@ -127,7 +129,7 @@ object MainForm: TMainForm
     end
     object AddPanelButton: TButton
       Left = 552
-      Top = 1
+      Top = 3
       Width = 75
       Height = 25
       Anchors = [akRight, akBottom]
@@ -137,7 +139,7 @@ object MainForm: TMainForm
     end
     object RemovePanelButton: TButton
       Left = 464
-      Top = 1
+      Top = 3
       Width = 82
       Height = 25
       Anchors = [akRight, akBottom]

@@ -23,9 +23,7 @@ object Form1: TForm1
     Width = 121
     Height = 241
     Anchors = [akLeft, akTop, akBottom]
-    DoubleBuffered = False
     ItemHeight = 13
-    ParentDoubleBuffered = False
     TabOrder = 0
   end
   object ListBox2: TListBox

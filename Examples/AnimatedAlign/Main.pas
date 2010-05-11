@@ -68,7 +68,7 @@ begin
 		.Filter(
 			function(AQ:TAQ; O:TObject):Boolean
 			begin
-				Result:=(O is TPanel) and not ((O = TopPanel) or (O = BottomPanel));
+				Result:=(O is TPanel) and (TControl(O).Tag = 0);
 			end);
 end;
 
@@ -79,39 +79,22 @@ end;
 
 procedure TMainForm.RemovePanelButtonClick(Sender:TObject);
 begin
-	{**
-	 * Stellt sicher, dass die letzte Entfernungsanimation sofort beendet wird
-	 *}
-	GetPanelsAQ.FinishAnimations.CancelDelays;
 	GetPanelsAQ
 		.Last
 		.Each(
 			function(AQ:TAQ; O:TObject):Boolean
 			begin
 				Result:=TRUE;
-				AQ.BoundsAnimation(TControl(O).Left, Height, -1, -1,
+				Dec(FPanelCounter);
+				TControl(O).Tag:=1; // Dadurch wird es für GetPanelsAQ nicht greifbar
+				AQ.CancelAnimations.BoundsAnimation(TControl(O).Left, Height, -1, -1,
 					AnimationDurationTrackBar.Position, TAQ.Ease(etQuadratic),
 					procedure(Sender:TObject)
 					begin
 						Sender.Free;
-						Dec(FPanelCounter);
-						{**
-						 * Die folgende EachDelay ist etwas strange, aber es ist eigentlich ganz
-						 * einfach:
-						 * Wenn UpdateAlign direkt aufgerufen wird, wird es aus dem Stack-Kontext
-						 * der Animationsmethode aufgerufen und daher gibt es sehr schnell eine
-						 * nicht nachvollziehbare AV. Mit dem Delay erreicht man, dass es wieder aus
-						 * dem Hauptkontext des Programms aufgerufen wird. Das CancelDelay stellt
-						 * zudem sicher, dass die Verzögerung nur einmal erfolgt.
-						 *}
-						TAQ.Take(Self).CancelDelays.EachDelay(250,
-							function(AQ:TAQ; O:TObject):Boolean
-							begin
-								Result:=FALSE;
-								UpdateAlign;
-							end);
 					end);
 			end);
+	UpdateAlign;
 end;
 
 procedure TMainForm.UpdateAlign;
@@ -121,11 +104,6 @@ var
 	PQSize, PIndex:Integer;
 	PColumns, PRows, LeftOffset, TopOffset:Word;
 begin
-	if DisturbedComboBox.ItemIndex = 0 then
-		GetPanelsAQ.CancelAnimations.Die
-	else
-		GetPanelsAQ.FinishAnimations.Die;
-
 	PanelsAQ:=GetPanelsAQ;
 
 	RemovePanelButton.Enabled:=PanelsAQ.Count > 0;
@@ -142,15 +120,24 @@ begin
 	PIndex:=0;
 
 	PanelsAQ
-		.Each(
+		.CancelDelays
+		.EachDelay(50,
 			function(AQ:TAQ; O:TObject):Boolean
 			var
 				TargetLeft, TargetTop:Integer;
 				XTile, YTile, Dummy:Word;
 			begin
 				Result:=TRUE;
-				if not (O is TPanel) then
-					Exit;
+				{**
+				 * Anstehende Animationen beenden oder abbrechen
+				 *}
+				if PIndex = 0 then
+				begin
+					if DisturbedComboBox.ItemIndex = 0 then
+						AQ.CancelAnimations
+					else
+						AQ.FinishAnimations;
+				end;
 
 				YTile:=Floor(PIndex/PColumns);
 				DivMod(((PIndex - (YTile * PColumns)) + PColumns), PColumns, Dummy, XTile);

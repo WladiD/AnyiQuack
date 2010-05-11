@@ -991,7 +991,7 @@ function TAQ.Filter(ByClass:TClass):TAQ;
 begin
 	if SupervisorLock(Result, 'Filter') then
 		Exit;
-	Filter(
+	Result:=Filter(
 		function(AQ:TAQ; O:TObject):Boolean
 		begin
 			Result:=O is ByClass;

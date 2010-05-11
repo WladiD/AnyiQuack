@@ -83,7 +83,8 @@ end;
 
 function TForm1.ListBoxesAQ:TAQ;
 begin
-	Result:=TAQ.Take(Form1)
+	Result:=TAQ
+		.Take(Form1)
 		.Children(TRUE, TRUE)
 		.Filter(TListBox);
 end;
@@ -91,7 +92,6 @@ end;
 procedure TForm1.SyncScrollBarChange(Sender:TObject);
 var
 	FirstItemIndex, ScrollItemIndex:Integer;
-	AQ:TAQ;
 	ScrollEach:TEachFunction;
 begin
 	FirstItemIndex:=ListBox1.TopIndex;
@@ -117,13 +117,13 @@ begin
 			TListBox(O).TopIndex:=ScrollItemIndex;
 	end;
 
-	AQ:=ListBoxesAQ;
-	if AnimatedScrollCheckBox.Checked then
-	begin
-		AQ.CancelTimers.EachTimer((AnimationDurationComboBox.ItemIndex + 1) * 100, ScrollEach);
-	end
-	else
-		AQ.Each(ScrollEach);
+	ListBoxesAQ
+		.IfThen(AnimatedScrollCheckBox.Checked)
+			.CancelTimers
+			.EachTimer((AnimationDurationComboBox.ItemIndex + 1) * 100, ScrollEach)
+		.IfElse
+			.Each(ScrollEach)
+		.IfEnd;
 end;
 
 end.
