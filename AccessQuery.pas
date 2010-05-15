@@ -1,5 +1,5 @@
 ﻿{**
- * "The contents of this file are subject to the Mozilla Public License
+ * The contents of this file are subject to the Mozilla Public License
  * Version 1.1 (the "License"); you may not use this file except in
  * compliance with the License. You may obtain a copy of the License at
  * http://www.mozilla.org/MPL/
@@ -25,7 +25,7 @@ unit AccessQuery;
 interface
 
 uses
-	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Math;
+	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Math, Graphics;
 
 {$IFDEF DEBUG}
 	{$INCLUDE Debug.inc}
@@ -48,6 +48,7 @@ type
 	TEachFunction = reference to function(AQ:TAQ; O:TObject):Boolean;
 	TAnonymNotifyEvent = reference to procedure(Sender:TObject);
 	TEaseFunction = reference to function(StartValue, EndValue, Progress:Real):Real;
+	TEachMiscFunction<T> = reference to function(AQ:TAQ; O:TObject; Misc:T):Boolean;
 
 	TAQ = class(TObjectList)
 	private
@@ -68,7 +69,7 @@ type
 		class function GarbageCollector:TAQ;
 		class procedure GlobalIntervalTimerEvent(Sender:TObject);
 
-		function HasActors(ActorRole:TActorRole):Boolean;
+		function HasActors(ActorRole:TActorRole; ID:Integer = 0):Boolean;
 
 		procedure LocalIntervalTimerEvent(Sender:TObject);
 
@@ -78,16 +79,23 @@ type
 		procedure ProcessInterval(Interval:TInterval);
 		procedure RemoveInterval(Interval:TInterval);
 
-		procedure Animate(Duration:Integer; Each:TEachFunction; LastEach:TEachFunction = nil);
+		procedure Animate(Duration:Integer; Each:TEachFunction; LastEach:TEachFunction = nil;
+			ID:Integer = 0);
 
 		function CustomFiller(Filler:TEachFunction; Append, Recurse:Boolean):TAQ;
-		procedure CustomCancel(Local:Boolean; ActorRole:TActorRole; Finish:Boolean);
-		function CustomActors(ActorRole:TActorRole; IncludeOrphans:Boolean):TAQ;
+		procedure CustomCancel(ActorRole:TActorRole; ID:Integer; Finish:Boolean);
+		function CustomActors(ActorRole:TActorRole; ID:Integer; IncludeOrphans:Boolean):TAQ;
+		procedure CustomColorAnimation(FromColor, ToColor:TColor; Duration:Integer; ID:Integer;
+			ColorAssignFunction:TEachMiscFunction<TColor>; EaseFunction:TEaseFunction = nil;
+			OnComplete:TAnonymNotifyEvent = nil);
 
 		function IfContainsEach(ByClass:TClass):TEachFunction; overload;
 		function IfContainsEach(Objects:TObjectArray):TEachFunction; overload;
 		function IfContainsEach(Objects:TObjectList):TEachFunction; overload;
 		function IfContainsEach(AQ:TAQ):TEachFunction; overload;
+
+		function ChildrenFiller(AQ:TAQ; O:TObject):Boolean;
+		function ParentsFiller(AQ:TAQ; O:TObject):Boolean;
 
 		function IsAlive:Boolean;
 		procedure HeartBeat;
@@ -125,44 +133,44 @@ type
 		function Append(AObject:TObject):TAQ; overload;
 		function Append(Objects:TObjectArray):TAQ; overload;
 		function Append(Objects:TObjectList):TAQ; overload;
-
 		function AppendAQ(AQ:TAQ):TAQ;
 
-		function Children(Append:Boolean = FALSE; Recurse:Boolean = FALSE;
-			ChildrenFiller:TEachFunction = nil):TAQ;
-		function Parents(Append:Boolean = FALSE; Recurse:Boolean = FALSE;
-			ParentsFiller:TEachFunction = nil):TAQ;
+		function ChildrenAppend(Recurse:Boolean = FALSE; ChildrenFiller:TEachFunction = nil):TAQ;
+		function ChildrenChain(Recurse:Boolean = FALSE; ChildrenFiller:TEachFunction = nil):TAQ;
+		function ParentsAppend(Recurse:Boolean = FALSE; ParentsFiller:TEachFunction = nil):TAQ;
+		function ParentsChain(Recurse:Boolean = FALSE; ParentsFiller:TEachFunction = nil):TAQ;
 
-		function Multiplex:TAQ;
-		function Demultiplex:TAQ;
+		function MultiplexChain:TAQ;
+		function DemultiplexChain:TAQ;
 
-		function AnimationActors(IncludeOrphans:Boolean = FALSE):TAQ;
-		function IntervalActors(IncludeOrphans:Boolean = FALSE):TAQ;
-		function TimerActors(IncludeOrphans:Boolean = FALSE):TAQ;
-		function DelayActors(IncludeOrphans:Boolean = FALSE):TAQ;
+		function AnimationActorsChain(ID:Integer = 0; IncludeOrphans:Boolean = FALSE):TAQ;
+		function IntervalActorsChain(ID:Integer = 0; IncludeOrphans:Boolean = FALSE):TAQ;
+		function TimerActorsChain(ID:Integer = 0; IncludeOrphans:Boolean = FALSE):TAQ;
+		function DelayActorsChain(ID:Integer = 0; IncludeOrphans:Boolean = FALSE):TAQ;
 
 		function Each(EachFunction:TEachFunction):TAQ;
-		function EachInterval(Interval:Integer; Each:TEachFunction):TAQ;
-		function EachTimer(Duration:Integer; Each:TEachFunction; LastEach:TEachFunction = nil):TAQ;
-		function EachDelay(Delay:Integer; Each:TEachFunction):TAQ;
+		function EachInterval(Interval:Integer; Each:TEachFunction; ID:Integer = 0):TAQ;
+		function EachTimer(Duration:Integer; Each:TEachFunction; LastEach:TEachFunction = nil;
+			ID:Integer = 0):TAQ;
+		function EachDelay(Delay:Integer; Each:TEachFunction; ID:Integer = 0):TAQ;
 		function EachRepeat(Times:Integer; EachFunction:TEachFunction):TAQ;
 
-		function FinishAnimations(Local:Boolean = FALSE):TAQ;
-		function CancelAnimations(Local:Boolean = FALSE):TAQ;
-		function FinishTimers(Local:Boolean = FALSE):TAQ;
-		function CancelTimers(Local:Boolean = FALSE):TAQ;
-		function CancelDelays(Local:Boolean = FALSE):TAQ;
-		function CancelIntervals(Local:Boolean = FALSE):TAQ;
+		function FinishAnimations(ID:Integer = 0):TAQ;
+		function CancelAnimations(ID:Integer = 0):TAQ;
+		function FinishTimers(ID:Integer = 0):TAQ;
+		function CancelTimers(ID:Integer = 0):TAQ;
+		function CancelDelays(ID:Integer = 0):TAQ;
+		function CancelIntervals(ID:Integer = 0):TAQ;
 
-		function Filter(ByClass:TClass):TAQ; overload;
-		function Filter(FilterEach:TEachFunction):TAQ; overload;
+		function FilterChain(ByClass:TClass):TAQ; overload;
+		function FilterChain(FilterEach:TEachFunction):TAQ; overload;
 
-		function Exclude(ByClass:TClass):TAQ; overload;
-		function Exclude(AObject:TObject):TAQ; overload;
-		function Exclude(Objects:TObjectArray):TAQ; overload;
-		function Exclude(Objects:TObjectList):TAQ; overload;
-		function Exclude(AQ:TAQ):TAQ; overload;
-		function Exclude(ExcludeEach:TEachFunction):TAQ; overload;
+		function ExcludeChain(ByClass:TClass):TAQ; overload;
+		function ExcludeChain(AObject:TObject):TAQ; overload;
+		function ExcludeChain(Objects:TObjectArray):TAQ; overload;
+		function ExcludeChain(Objects:TObjectList):TAQ; overload;
+		function ExcludeChain(AQ:TAQ):TAQ; overload;
+		function ExcludeChain(ExcludeEach:TEachFunction):TAQ; overload;
 
 		function IfThen(Condition:Boolean):TAQ;
 		function IfElse:TAQ;
@@ -183,13 +191,17 @@ type
 		function IfContainsAll(Objects:TObjectList):TAQ; overload;
 		function IfContainsAll(AQ:TAQ):TAQ; overload;
 
-		function First:TAQ;
-		function Last:TAQ;
+		function SliceChain(StartIndex:Integer; Count:Integer = 0):TAQ;
 
 		function BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Duration:Integer;
-			EaseFunction:TEaseFunction = nil; OnComplete:TAnonymNotifyEvent = nil):TAQ;
-		function ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration:Integer;
+			ID:Integer = 0; EaseFunction:TEaseFunction = nil;
 			OnComplete:TAnonymNotifyEvent = nil):TAQ;
+		function ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration:Integer; ID:Integer = 0;
+			OnComplete:TAnonymNotifyEvent = nil):TAQ;
+		function BackgroundColorAnimation(ToColor:TColor; Duration:Integer; ID:Integer = 0;
+			EaseFunction:TEaseFunction = nil; OnComplete:TAnonymNotifyEvent = nil):TAQ;
+		function FontColorAnimation(ToColor:TColor; Duration:Integer; ID:Integer = 0;
+			EaseFunction:TEaseFunction = nil; OnComplete:TAnonymNotifyEvent = nil):TAQ;
 
 		function Contains(AObject:TObject):Boolean;
 
@@ -207,11 +219,14 @@ type
 		FNextEach,
 		FLastEach:TEachFunction;
 		FActorRole:TActorRole;
+		FID:Integer;
 	protected
 		procedure UpdateNextTick;
 	public
-		constructor Infinite(Interval:Integer; Each:TEachFunction; ActorRole:TActorRole);
-		constructor Finite(Duration:Integer; Each, LastEach:TEachFunction; ActorRole:TActorRole);
+		constructor Infinite(Interval:Integer; Each:TEachFunction; ActorRole:TActorRole;
+			ID:Integer);
+		constructor Finite(Duration:Integer; Each, LastEach:TEachFunction; ActorRole:TActorRole;
+			ID:Integer);
 
 		function Each:TEachFunction;
 		function IsCanceled:Boolean;
@@ -223,7 +238,12 @@ type
 		procedure Cancel;
 
 		property ActorRole:TActorRole read FActorRole;
+		property ID:Integer read FID;
 	end;
+
+	function Take(AObject:TObject):TAQ; overload;
+	function Take(Objects:TObjectArray):TAQ; overload;
+	function Take(Objects:TObjectList):TAQ; overload;
 
 	function OA(Objects:array of TObject):TObjectArray;
 
@@ -233,10 +253,24 @@ const
 	MaxLifeTime = 10000;
 	IntervalResolution = 40;
 	GarbageCleanInterval = 5000;
+	GarbageCleanTime = 100;
+	SpareAQsCount = 1000;
 
 const
 	RecurseBitMask       = $01;
 	ConditionLockBitMask = $02;
+
+type
+	TControlRobin = class helper for TControl
+	protected
+		function GetBackgroundColor:TColor;
+		procedure SetBackgroundColor(NewColor:TColor);
+		function GetFontColor:TColor;
+		procedure SetFontColor(NewColor:TColor);
+	public
+		property BackgroundColor:TColor read GetBackgroundColor write SetBackgroundColor;
+		property FontColor:TColor read GetFontColor write SetFontColor;
+	end;
 
 function LinearEase(StartValue, EndValue, Progress:Real):Real;
 var
@@ -268,6 +302,21 @@ var
 begin
 	Delta:=EndValue - StartValue;
 	Result:=StartValue + (Delta * (Sin(Progress * (Pi / 2))));
+end;
+
+function Take(AObject:TObject):TAQ;
+begin
+	Result:=TAQ.Take(AObject);
+end;
+
+function Take(Objects:TObjectArray):TAQ;
+begin
+	Result:=TAQ.Take(Objects);
+end;
+
+function Take(Objects:TObjectList):TAQ;
+begin
+	Result:=TAQ.Take(Objects);
 end;
 
 function OA(Objects:array of TObject):TObjectArray;
@@ -355,32 +404,48 @@ begin
 	{$ENDIF}
 end;
 
-procedure TAQ.Animate(Duration:Integer; Each, LastEach:TEachFunction);
+procedure TAQ.Animate(Duration:Integer; Each, LastEach:TEachFunction; ID:Integer);
 begin
-	AddInterval(TInterval.Finite(Duration, Each, LastEach, arAnimation));
+	AddInterval(TInterval.Finite(Duration, Each, LastEach, arAnimation, ID));
 end;
 
 
-function TAQ.AnimationActors(IncludeOrphans:Boolean):TAQ;
+function TAQ.AnimationActorsChain(ID:Integer; IncludeOrphans:Boolean):TAQ;
 begin
-	if SupervisorLock(Result, 'AnimationActors') then
+	if SupervisorLock(Result, 'AnimationActorsChain') then
 		Exit;
-	Result:=CustomActors(arAnimation, IncludeOrphans);
+	Result:=CustomActors(arAnimation, ID, IncludeOrphans);
+end;
+
+function TAQ.BackgroundColorAnimation(ToColor:TColor; Duration:Integer; ID:Integer;
+	EaseFunction:TEaseFunction; OnComplete:TAnonymNotifyEvent):TAQ;
+begin
+	if SupervisorLock(Result, 'BackgroundColorAnimation') then
+		Exit;
+	MultiplexChain
+		.Each(
+			function(AQ:TAQ; O:TObject):Boolean
+			begin
+				Result:=TRUE; // Komplett durchlaufen
+				if O is TControl then
+					AQ.CustomColorAnimation(TControl(O).BackgroundColor, ToColor, Duration, ID,
+						function(AQ:TAQ; O:TObject; Color:TColor):Boolean
+						begin
+							TControl(O).BackgroundColor:=Color;
+							Result:=TRUE;
+						end,
+						EaseFunction, OnComplete);
+			end)
+		.Die;
 end;
 
 function TAQ.BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Duration:Integer;
-	EaseFunction:TEaseFunction; OnComplete:TAnonymNotifyEvent):TAQ;
+	ID:Integer; EaseFunction:TEaseFunction; OnComplete:TAnonymNotifyEvent):TAQ;
 var
 	WholeEach:TEachFunction;
 begin
 	if SupervisorLock(Result, 'BoundsAnimation') then
 		Exit;
-	with Self.Filter(TControl) do
-	begin
-		Result:=Multiplex;
-		Result.FChainedTo:=Self;
-		Die; // Die gefilterte TAQ sterben lassen
-	end;
 
 	WholeEach:=function(AQ:TAQ; O:TObject):Boolean
 	var
@@ -422,7 +487,6 @@ begin
 
 			if Progress = 1 then
 			begin
-
 				{$IFDEF OutputDebugAnimation}
 				OutputDebugString(PWideChar('BoundsAnimation beendet für $' +
 					IntToHex(Integer(O), SizeOf(Integer) * 2)));
@@ -433,39 +497,39 @@ begin
 			end;
 		end;
 
-		AQ.Animate(Duration, EachF);
+		AQ.Animate(Duration, EachF, nil, ID);
 	end;
 
-	Result.Each(WholeEach);
+	MultiplexChain.Each(WholeEach).Die;
 end;
 
 
-function TAQ.CancelAnimations(Local:Boolean):TAQ;
+function TAQ.CancelAnimations(ID:Integer):TAQ;
 begin
 	if SupervisorLock(Result, 'CancelAnimations') then
 		Exit;
-	CustomCancel(Local, arAnimation, FALSE);
+	CustomCancel(arAnimation, ID, FALSE);
 end;
 
-function TAQ.CancelDelays(Local:Boolean):TAQ;
+function TAQ.CancelDelays(ID:Integer):TAQ;
 begin
 	if SupervisorLock(Result, 'CancelDelays') then
 		Exit;
-	CustomCancel(Local, arDelay, FALSE);
+	CustomCancel(arDelay, ID, FALSE);
 end;
 
-function TAQ.CancelIntervals(Local:Boolean):TAQ;
+function TAQ.CancelIntervals(ID:Integer):TAQ;
 begin
 	if SupervisorLock(Result, 'CancelIntervals') then
 		Exit;
-	CustomCancel(Local, arInterval, FALSE);
+	CustomCancel(arInterval, ID, FALSE);
 end;
 
-function TAQ.CancelTimers(Local:Boolean):TAQ;
+function TAQ.CancelTimers(ID:Integer):TAQ;
 begin
 	if SupervisorLock(Result, 'CancelTimers') then
 		Exit;
-	CustomCancel(Local, arTimer, FALSE);
+	CustomCancel(arTimer, ID, FALSE);
 end;
 
 function TAQ.NewChain:TAQ;
@@ -476,24 +540,34 @@ begin
 	Result.FChainedTo:=Self;
 end;
 
-function TAQ.Children(Append, Recurse:Boolean; ChildrenFiller:TEachFunction):TAQ;
+function TAQ.ChildrenAppend(Recurse:Boolean; ChildrenFiller:TEachFunction):TAQ;
 begin
-	if SupervisorLock(Result, 'Children') then
+	if SupervisorLock(Result, 'ChildrenAppend') then
 		Exit;
 	if not Assigned(ChildrenFiller) then
-		ChildrenFiller:=function(AQ:TAQ; O:TObject):Boolean
-		var
-			cc:Integer;
-		begin
-			Result:=TRUE;
-			if not (O is TComponent) then
-				Exit;
-			with TComponent(O) do
-				for cc:=0 to ComponentCount - 1 do
-					AQ.Add(Components[cc]);
-		end;
+		ChildrenFiller:=Self.ChildrenFiller;
+	Result:=CustomFiller(ChildrenFiller, TRUE, Recurse);
+end;
 
-	Result:=CustomFiller(ChildrenFiller, Append, Recurse);
+function TAQ.ChildrenChain(Recurse:Boolean; ChildrenFiller:TEachFunction):TAQ;
+begin
+	if SupervisorLock(Result, 'ChildrenChain') then
+		Exit;
+	if not Assigned(ChildrenFiller) then
+		ChildrenFiller:=Self.ChildrenFiller;
+	Result:=CustomFiller(ChildrenFiller, FALSE, Recurse);
+end;
+
+function TAQ.ChildrenFiller(AQ:TAQ; O:TObject):Boolean;
+var
+	cc:Integer;
+begin
+	Result:=TRUE;
+	if not (O is TComponent) then
+		Exit;
+	with TComponent(O) do
+		for cc:=0 to ComponentCount - 1 do
+			AQ.Add(Components[cc]);
 end;
 
 procedure TAQ.Clean;
@@ -554,7 +628,7 @@ begin
 end;
 
 
-function TAQ.CustomActors(ActorRole:TActorRole; IncludeOrphans:Boolean):TAQ;
+function TAQ.CustomActors(ActorRole:TActorRole; ID:Integer; IncludeOrphans:Boolean):TAQ;
 var
 	Actors:TAQ;
 begin
@@ -603,7 +677,7 @@ begin
 	Result:=Actors;
 end;
 
-procedure TAQ.CustomCancel(Local:Boolean; ActorRole:TActorRole; Finish:Boolean);
+procedure TAQ.CustomCancel(ActorRole:TActorRole; ID:Integer; Finish:Boolean);
 var
 	Perform:TEachFunction;
 begin
@@ -624,7 +698,7 @@ begin
 		begin
 			CI:=TInterval(TempAQ.FIntervals[cc]);
 
-			if CI.ActorRole = ActorRole then
+			if (CI.ActorRole = ActorRole) and ((ID = 0) or (ID = CI.ID)) then
 			begin
 				if Finish then
 					CI.Finish
@@ -635,63 +709,95 @@ begin
 		end;
 	end;
 
-	if Local then
-	begin
-		{**
-		 * Ggf. unterordnete TAQ-Instanzen
-		 *}
-		Each(Perform);
-		{**
-		 * Die aktuelle Instanz selbst kommt per Each nicht an
-		 *}
-		Perform(nil, Self);
-	end
+	if not Assigned(FActiveIntervalAQs) then
+		Exit;
 	{**
-	 * Globale Suche
-	 *
-	 * Es sollen TAQ-Instanzen gesucht werden, die mind. ein Objekt von dieser TAQ-Instanz
-	 * beherbergen.
+	 * Abbrüche und Beendigungen können sich nur an aktive TAQ-Instanzen richten
 	 *}
-	else
-	begin
-		if not Assigned(FActiveIntervalAQs) then
-			Exit;
-		{**
-		 * Der GarbageCollector muss kurz raus, da er hierfür nicht relevant ist und wird im
-		 * Anschluss wieder hinzugefügt
-		 *}
-		FActiveIntervalAQs.Remove(GarbageCollector);
-		{**
-		 * Abbrüche und Beendigungen können sich nur an aktive TAQ-Instanzen richten
-		 *}
-		FActiveIntervalAQs
-			.Each(
-				function(GC:TAQ; Target:TObject):Boolean
-				var
-					TargetAQ:TAQ;
-				begin
-					Result:=TRUE; // Each soll komplett durchlaufen
-					TargetAQ:=TAQ(Target);
-					Each(
-						{**
-						 * @param AQ Enthält Self aus dem selben Kontext, wie die CustomCancel-Methode
-						 * @param O Enthält ein Object aus aktuellem Self
-						 *}
-						function(AQ:TAQ; O:TObject):Boolean
+	FActiveIntervalAQs
+		.Each(
+			function(GC:TAQ; Target:TObject):Boolean
+			var
+				TargetAQ:TAQ;
+			begin
+				Result:=TRUE; // Each soll komplett durchlaufen
+				if Target = FGarbageCollector then
+					Exit;
+				TargetAQ:=TAQ(Target);
+				Each(
+					{**
+					 * @param AQ Enthält Self aus dem selben Kontext, wie die CustomCancel-Methode
+					 * @param O Enthält ein Object aus Self
+					 *}
+					function(AQ:TAQ; O:TObject):Boolean
+					begin
+						Result:=TRUE;
+						if O is TAQ then
+							Exit;
+						if TargetAQ.IndexOf(O) >= 0 then
 						begin
-							Result:=TRUE;
-							if O is TAQ then
-								Exit;
-							if TargetAQ.IndexOf(O) >= 0 then
-							begin
-								TargetAQ.Each(Perform);
-								Perform(nil, TargetAQ);
-								Result:=FALSE; // Es wird nur ein Objekt-Vorkommen benötigt
-							end;
-						end);
-				end)
-			.Add(GarbageCollector);
+							TargetAQ.Each(Perform);
+							Perform(nil, TargetAQ);
+							Result:=FALSE; // Es wird nur ein Objekt-Vorkommen benötigt
+						end;
+					end);
+			end);
+end;
+
+procedure TAQ.CustomColorAnimation(FromColor, ToColor:TColor; Duration:Integer; ID:Integer;
+	ColorAssignFunction:TEachMiscFunction<TColor>; EaseFunction:TEaseFunction;
+	OnComplete:TAnonymNotifyEvent);
+var
+	FromR, FromG, FromB,
+	ToR, ToG, ToB:Byte;
+
+	function R(Color:TColor):Byte;
+	begin
+		Result:=Color and $FF;
 	end;
+
+	function G(Color:TColor):Byte;
+	begin
+		Result:=(Color and $FF00) shr 8;
+	end;
+
+	function B(Color:TColor):Byte;
+	begin
+		Result:=(Color and $FF0000) shr 16;
+	end;
+begin
+	if FromColor = ToColor then
+		Exit;
+	FromColor:=ColorToRGB(FromColor);
+	FromR:=R(FromColor);
+	FromG:=G(FromColor);
+	FromB:=B(FromColor);
+	ToColor:=ColorToRGB(ToColor);
+	ToR:=R(ToColor);
+	ToG:=G(ToColor);
+	ToB:=B(ToColor);
+
+	EaseFunction:=(TAQ.Ease(EaseFunction));
+	Animate(Duration,
+		function(AQ:TAQ; O:TObject):Boolean
+		var
+			NewR:Byte;
+			NewG:Byte;
+			NewB:Byte;
+			NewColor:TColor;
+			Progress:Real;
+		begin
+			Progress:=AQ.CurrentInterval.Progress;
+
+			NewR:=Round(EaseFunction(FromR, ToR, Progress));
+			NewG:=Round(EaseFunction(FromG, ToG, Progress));
+			NewB:=Round(EaseFunction(FromB, ToB, Progress));
+			NewColor:=RGB(NewR, NewG, NewB);
+			Result:=ColorAssignFunction(AQ, O, NewColor);
+
+			if (Progress = 1) and Assigned(OnComplete) then
+				OnComplete(O);
+		end, nil, ID);
 end;
 
 function TAQ.CustomFiller(Filler:TEachFunction; Append, Recurse:Boolean):TAQ;
@@ -772,18 +878,18 @@ begin
 end;
 
 
-function TAQ.DelayActors(IncludeOrphans:Boolean):TAQ;
+function TAQ.DelayActorsChain(ID:Integer; IncludeOrphans:Boolean):TAQ;
 begin
-	if SupervisorLock(Result, 'DelayActors') then
+	if SupervisorLock(Result, 'DelayActorsChain') then
 		Exit;
-	Result:=CustomActors(arDelay, IncludeOrphans);
+	Result:=CustomActors(arDelay, ID, IncludeOrphans);
 end;
 
-function TAQ.Demultiplex:TAQ;
+function TAQ.DemultiplexChain:TAQ;
 var
 	SimpleAQ:TAQ;
 begin
-	if SupervisorLock(Result, 'Demultiplex') then
+	if SupervisorLock(Result, 'DemultiplexChain') then
 		Exit;
 	SimpleAQ:=NewChain;
 	Result:=SimpleAQ;
@@ -835,24 +941,24 @@ begin
 	end;
 end;
 
-function TAQ.EachDelay(Delay:Integer; Each:TEachFunction):TAQ;
+function TAQ.EachDelay(Delay:Integer; Each:TEachFunction; ID:Integer):TAQ;
 begin
 	if Delay >= MaxLifeTime then
 		raise EAQ.CreateFmt('Delay (%d) muss kleiner als MaxLifeTime (%d) sein.',
 			[Delay, MaxLifeTime])
 	else if SupervisorLock(Result, 'EachDelay') then
 		 Exit;
-	AddInterval(TInterval.Finite(Delay, nil, Each, arDelay));
+	AddInterval(TInterval.Finite(Delay, nil, Each, arDelay, ID));
 end;
 
-function TAQ.EachInterval(Interval:Integer; Each:TEachFunction):TAQ;
+function TAQ.EachInterval(Interval:Integer; Each:TEachFunction; ID:Integer):TAQ;
 begin
 	if Interval >= MaxLifeTime then
 		raise EAQ.CreateFmt('Interval (%d) muss kleiner als MaxLifeTime (%d) sein.',
 			[Interval, MaxLifeTime])
 	else if SupervisorLock(Result, 'EachInterval') then
 		Exit;
-	AddInterval(TInterval.Infinite(Interval, Each, arInterval));
+	AddInterval(TInterval.Infinite(Interval, Each, arInterval, ID));
 end;
 
 function TAQ.EachRepeat(Times:Integer; EachFunction:TEachFunction):TAQ;
@@ -865,14 +971,14 @@ begin
 		Each(EachFunction);
 end;
 
-function TAQ.EachTimer(Duration:Integer; Each, LastEach:TEachFunction):TAQ;
+function TAQ.EachTimer(Duration:Integer; Each, LastEach:TEachFunction; ID:Integer):TAQ;
 begin
 	if Duration >= MaxLifeTime then
 		raise EAQ.CreateFmt('Dauer des Timers (%d) muss kleiner als MaxLifeTime (%d) sein.',
 			[Duration, MaxLifeTime])
 	else if SupervisorLock(Result, 'EachTimer') then
 		Exit;
-	AddInterval(TInterval.Finite(Duration, Each, LastEach, arTimer));
+	AddInterval(TInterval.Finite(Duration, Each, LastEach, arTimer, ID));
 end;
 
 class function TAQ.Ease(EaseFunction:TEaseFunction):TEaseFunction;
@@ -896,11 +1002,11 @@ begin
 	end;
 end;
 
-function TAQ.Exclude(Objects:TObjectArray):TAQ;
+function TAQ.ExcludeChain(Objects:TObjectArray):TAQ;
 begin
-	if SupervisorLock(Result, 'Exclude') then
+	if SupervisorLock(Result, 'ExcludeChain') then
 		Exit;
-	Result:=Exclude(
+	Result:=ExcludeChain(
 		function(AQ:TAQ; O:TObject):Boolean
 		var
 			cc:Integer;
@@ -912,33 +1018,33 @@ begin
 		end);
 end;
 
-function TAQ.Exclude(AObject:TObject):TAQ;
+function TAQ.ExcludeChain(AObject:TObject):TAQ;
 begin
-	if SupervisorLock(Result, 'Exclude') then
+	if SupervisorLock(Result, 'ExcludeChain') then
 		Exit;
-	Result:=Exclude(
+	Result:=ExcludeChain(
 		function(AQ:TAQ; O:TObject):Boolean
 		begin
 			Result:=O = AObject;
 		end);
 end;
 
-function TAQ.Exclude(ByClass:TClass):TAQ;
+function TAQ.ExcludeChain(ByClass:TClass):TAQ;
 begin
-	if SupervisorLock(Result, 'Exclude') then
+	if SupervisorLock(Result, 'ExcludeChain') then
 		Exit;
-	Result:=Exclude(
+	Result:=ExcludeChain(
 		function(AQ:TAQ; O:TObject):Boolean
 		begin
 			Result:=O is ByClass;
 		end);
 end;
 
-function TAQ.Exclude(ExcludeEach:TEachFunction):TAQ;
+function TAQ.ExcludeChain(ExcludeEach:TEachFunction):TAQ;
 var
 	NewAQ:TAQ;
 begin
-	if SupervisorLock(Result, 'Exclude') then
+	if SupervisorLock(Result, 'ExcludeChain') then
 		Exit;
 	NewAQ:=NewChain;
 	Each(
@@ -951,22 +1057,22 @@ begin
 	Result:=NewAQ;
 end;
 
-function TAQ.Exclude(AQ:TAQ):TAQ;
+function TAQ.ExcludeChain(AQ:TAQ):TAQ;
 begin
-	if SupervisorLock(Result, 'Exclude') then
+	if SupervisorLock(Result, 'ExcludeChain') then
 		Exit;
-	Result:=Exclude(
+	Result:=ExcludeChain(
 		function(OAQ:TAQ; O:TObject):Boolean
 		begin
 			Result:=AQ.Contains(O);
 		end);
 end;
 
-function TAQ.Exclude(Objects:TObjectList):TAQ;
+function TAQ.ExcludeChain(Objects:TObjectList):TAQ;
 begin
-	if SupervisorLock(Result, 'Exclude') then
+	if SupervisorLock(Result, 'ExcludeChain') then
 		Exit;
-	Result:=Exclude(
+	Result:=ExcludeChain(
 		function(AQ:TAQ; O:TObject):Boolean
 		begin
 			Result:=Objects.IndexOf(O) >= 0;
@@ -987,22 +1093,22 @@ begin
 	end;
 end;
 
-function TAQ.Filter(ByClass:TClass):TAQ;
+function TAQ.FilterChain(ByClass:TClass):TAQ;
 begin
-	if SupervisorLock(Result, 'Filter') then
+	if SupervisorLock(Result, 'FilterChain') then
 		Exit;
-	Result:=Filter(
+	Result:=FilterChain(
 		function(AQ:TAQ; O:TObject):Boolean
 		begin
 			Result:=O is ByClass;
 		end);
 end;
 
-function TAQ.Filter(FilterEach:TEachFunction):TAQ;
+function TAQ.FilterChain(FilterEach:TEachFunction):TAQ;
 var
 	NewAQ:TAQ;
 begin
-	if SupervisorLock(Result, 'Filter') then
+	if SupervisorLock(Result, 'FilterChain') then
 		Exit;
 	NewAQ:=NewChain;
 	Each(
@@ -1015,27 +1121,40 @@ begin
 	Result:=NewAQ;
 end;
 
-function TAQ.FinishAnimations(Local:Boolean):TAQ;
+function TAQ.FinishAnimations(ID:Integer):TAQ;
 begin
 	if SupervisorLock(Result, 'FinishAnimations') then
 		Exit;
-	CustomCancel(Local, arAnimation, TRUE);
+	CustomCancel(arAnimation, ID, TRUE);
 end;
 
-function TAQ.FinishTimers(Local:Boolean):TAQ;
+function TAQ.FinishTimers(ID:Integer):TAQ;
 begin
 	if SupervisorLock(Result, 'FinishTimers') then
 		Exit;
-	CustomCancel(Local, arTimer, TRUE);
+	CustomCancel(arTimer, ID, TRUE);
 end;
 
-function TAQ.First:TAQ;
+function TAQ.FontColorAnimation(ToColor:TColor; Duration:Integer; ID:Integer;
+	EaseFunction:TEaseFunction; OnComplete:TAnonymNotifyEvent):TAQ;
 begin
-	if SupervisorLock(Result, 'First') then
+	if SupervisorLock(Result, 'FontColorAnimation') then
 		Exit;
-	Result:=NewChain;
-	if Count > 0 then
-		Result.Append(Items[0]);
+	MultiplexChain
+		.Each(
+			function(AQ:TAQ; O:TObject):Boolean
+			begin
+				Result:=TRUE; // Komplett durchlaufen
+				if O is TControl then
+					AQ.CustomColorAnimation(TControl(O).FontColor, ToColor, Duration, ID,
+						function(AQ:TAQ; O:TObject; Color:TColor):Boolean
+						begin
+							TControl(O).FontColor:=Color;
+							Result:=TRUE;
+						end,
+						EaseFunction, OnComplete);
+			end)
+		.Die;
 end;
 
 class function TAQ.GarbageCollector:TAQ;
@@ -1069,21 +1188,57 @@ begin
 		 * In GarbageCollector befindet sich der FGarbageCollector selbst und
 		 * in O eine TAQ-Instanz die auf ihre Lebenszeichen untersucht werden muss.
 		 *}
-		function(GarbageCollector:TAQ; O:TObject):Boolean
+		function(GCC:TAQ; O:TObject):Boolean
 		var
-			CheckAQ:TAQ;
+			CleanEndTick:Cardinal;
+			AQsForDestroy:Integer;
 		begin
-			CheckAQ:=TAQ(O);
-			if not CheckAQ.IsAlive then
-			begin
-				GarbageCollector.Remove(CheckAQ);
+			Result:=FALSE; // Soll nur einmal ausgeführt werden, da die eigentliche Bereinigung in den untergeordeneten Eachs abläuft
+			AQsForDestroy:=0;
 
+			GCC.Each(
+				function(AQ:TAQ; O:TObject):Boolean
+				begin
+					if not TAQ(O).IsAlive then
+						Inc(AQsForDestroy);
+					Result:=TRUE;
+				end);
+
+			if AQsForDestroy < SpareAQsCount then
+			begin
 				{$IFDEF OutputDebugGCFree}
-				OutputDebugString(PWideChar(Format('TAQ freigegeben. Verbleibend im GarbageCollector: %d.',
-					[GarbageCollector.Count])));
+				OutputDebugString(PWideChar(Format('Bereinigungsvorgang findet nicht statt, da das Sparlimit (%d) noch nicht erreicht wurde (%d).',
+					[SpareAQsCount, AQsForDestroy])));
 				{$ENDIF}
+				Exit;
 			end;
-			Result:=TRUE;
+
+			CleanEndTick:=GetTickCount + GarbageCleanTime;
+
+
+			GCC.Each(
+				function(GCC:TAQ; O:TObject):Boolean
+				var
+					CheckAQ:TAQ;
+				begin
+					CheckAQ:=TAQ(O);
+					if not CheckAQ.IsAlive then
+					begin
+						GCC.Remove(CheckAQ);
+						Dec(AQsForDestroy);
+
+						{$IFDEF OutputDebugGCFree}
+						OutputDebugString(PWideChar(Format('TAQ freigegeben. Verbleibend im GarbageCollector: %d.',
+							[GarbageCollector.Count])));
+						{$ENDIF}
+					end;
+					Result:=(AQsForDestroy > SpareAQsCount) or (CleanEndTick >= GetTickCount);
+				end);
+				{$IFDEF OutputDebugGCFree}
+				if CleanEndTick < GetTickCount then
+					OutputDebugString('Bereinigungsvorgang vorzeitig abgebrochen, da das Zeitlimit überschritten wurde.');
+				{$ENDIF}
+
 		end);
 
 	Result:=FGarbageCollector;
@@ -1121,7 +1276,7 @@ begin
 		end);
 end;
 
-function TAQ.HasActors(ActorRole:TActorRole):Boolean;
+function TAQ.HasActors(ActorRole:TActorRole; ID:Integer):Boolean;
 var
 	AnyActors:Boolean;
 begin
@@ -1133,7 +1288,8 @@ begin
 		.Each(
 			function(AQ:TAQ; O:TObject):Boolean
 			begin
-				AnyActors:=(TInterval(O).ActorRole = ActorRole) and not TInterval(O).IsFinished;
+				AnyActors:=(TInterval(O).ActorRole = ActorRole) and
+					((ID = 0) or (TInterval(O).ID = ID)) and not TInterval(O).IsFinished;
 				{**
 				 * Die Each soll nur laufen, bis der erste Actor gefunden wird
 				 *}
@@ -1319,9 +1475,7 @@ begin
 	if SupervisorLock(Result, 'IfThen') then
 		Exit;
 
-	if ConditionLock then
-		Result:=Self
-	else
+	if not ConditionLock then
 	begin
 		Result:=NewChain;
 		Result.ConditionLock:=not Condition;
@@ -1332,25 +1486,16 @@ begin
 	Inc(Result.FConditionCount);
 end;
 
-function TAQ.IntervalActors(IncludeOrphans:Boolean):TAQ;
+function TAQ.IntervalActorsChain(ID:Integer; IncludeOrphans:Boolean):TAQ;
 begin
-	if SupervisorLock(Result, 'IntervalActors') then
+	if SupervisorLock(Result, 'IntervalActorsChain') then
 		Exit;
-	Result:=CustomActors(arInterval, IncludeOrphans);
+	Result:=CustomActors(arInterval, ID, IncludeOrphans);
 end;
 
 function TAQ.IsAlive:Boolean;
 begin
 	Result:=(FLifeTick + MaxLifeTime) > TAQ.Tick;
-end;
-
-function TAQ.Last:TAQ;
-begin
-	if SupervisorLock(Result, 'Last') then
-		Exit;
-	Result:=NewChain;
-	if Count > 0 then
-		Result.Append(Items[Count - 1]);
 end;
 
 procedure TAQ.LocalIntervalTimerEvent(Sender:TObject);
@@ -1412,11 +1557,11 @@ begin
 	{$ENDIF}
 end;
 
-function TAQ.Multiplex:TAQ;
+function TAQ.MultiplexChain:TAQ;
 var
 	MultiAQ:TAQ;
 begin
-	if SupervisorLock(Result, 'Multiplex') then
+	if SupervisorLock(Result, 'MultiplexChain') then
 		Exit;
 	MultiAQ:=NewChain;
 	Result:=MultiAQ;
@@ -1430,19 +1575,30 @@ begin
 		end);
 end;
 
-function TAQ.Parents(Append, Recurse:Boolean; ParentsFiller:TEachFunction):TAQ;
+function TAQ.ParentsAppend(Recurse: Boolean; ParentsFiller: TEachFunction): TAQ;
 begin
-	if SupervisorLock(Result, 'Parents') then
+	if SupervisorLock(Result, 'ParentsAppend') then
 		Exit;
 	if not Assigned(ParentsFiller) then
-		ParentsFiller:=function(AQ:TAQ; O:TObject):Boolean
-		begin
-			Result:=TRUE;
-			if not ((O is TComponent) and (TComponent(O).HasParent)) then
-				Exit;
-			AQ.Add(TComponent(O).GetParentComponent);
-		end;
-	Result:=CustomFiller(ParentsFiller, Append, Recurse);
+		ParentsFiller:=Self.ParentsFiller;
+	Result:=CustomFiller(ParentsFiller, TRUE, Recurse);
+end;
+
+function TAQ.ParentsChain(Recurse:Boolean; ParentsFiller:TEachFunction):TAQ;
+begin
+	if SupervisorLock(Result, 'ParentsChain') then
+		Exit;
+	if not Assigned(ParentsFiller) then
+		ParentsFiller:=Self.ParentsFiller;
+	Result:=CustomFiller(ParentsFiller, FALSE, Recurse);
+end;
+
+function TAQ.ParentsFiller(AQ:TAQ; O:TObject):Boolean;
+begin
+	Result:=TRUE;
+	if not ((O is TComponent) and (TComponent(O).HasParent)) then
+		Exit;
+	AQ.Add(TComponent(O).GetParentComponent);
 end;
 
 function TAQ.EndChain:TAQ;
@@ -1494,19 +1650,13 @@ begin
 	SetBit(FBools, RecurseBitMask, Value);
 end;
 
-function TAQ.ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration:Integer;
+function TAQ.ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration:Integer; ID:Integer;
 	OnComplete:TAnonymNotifyEvent):TAQ;
 var
 	WholeEach:TEachFunction;
 begin
 	if SupervisorLock(Result, 'ShakeAnimation') then
 		Exit;
-	with Self.Filter(TControl) do
-	begin
-		Result:=Multiplex;
-		Result.FChainedTo:=Self;
-		Die; // Die gefilterte TAQ sterben lassen
-	end;
 
 	WholeEach:=function(AQ:TAQ; O:TObject):Boolean
 	var
@@ -1551,12 +1701,9 @@ begin
 
 			if Progress = 1 then
 			begin
-
 				{$IFDEF OutputDebugAnimation}
-
 				OutputDebugString(PWideChar('ShakeAnimation beendet für $' + IntToHex(Integer(O),
-							SizeOf(Integer) * 2)));
-
+					SizeOf(Integer) * 2)));
 				{$ENDIF}
 
 				if Assigned(OnComplete) then
@@ -1564,10 +1711,49 @@ begin
 			end;
 		end;
 
-		AQ.Animate(Duration, EachF);
+		AQ.Animate(Duration, EachF, nil, ID);
 	end;
 
-	Result.Each(WholeEach);
+	MultiplexChain.Each(WholeEach).Die;
+end;
+
+{**
+ * Beispiele:
+ * - SliceChain(0, 1)    // Liefert das erste Objekt
+ * - SliceChain(1, 1)    // Liefert das 2. Objekt
+ * - SliceChain(-1)      // Liefert das letzte Objekt
+ * - SliceChain(-2, 1)   // Liefert das vorletzte Objekt
+ * - SliceChain(-2)      // Liefert die letzten 2 Objekte
+ * - SliceChain(-3)      // Liefert die letzten 3 Objekte
+ * - SliceChain(1)       // Liefert alle vom 2. Objekt aus
+ *
+ * @param StartIndex 0-basierter Index. Ist der Index negativ, so bezieht er sich auf die Position
+ *        vom letzten Objekt aus rückwärts: -1 = letzter, -2 = vorletzter ...
+ * @param Count Anzahl der Objekte. Besonderheit stellt 0 (Standard) dar, welches Gleichbedeutend
+ *        mit "Bis zum Ende" ist.
+ *}
+function TAQ.SliceChain(StartIndex, Count:Integer):TAQ;
+var
+	EndIndex, TotalCount, cc:Integer;
+begin
+	if SupervisorLock(Result, 'SliceChain') then
+		Exit;
+	Result:=NewChain;
+	TotalCount:=Self.Count;
+	if TotalCount = 0 then
+		Exit;
+	if StartIndex < 0 then
+		StartIndex:=TotalCount + StartIndex;
+	if Count = 0 then
+		EndIndex:=TotalCount
+	else
+		EndIndex:=StartIndex + Count;
+
+	StartIndex:=Max(0, StartIndex);
+	EndIndex:=Min(EndIndex, Self.Count);
+
+	for cc:=StartIndex to EndIndex - 1 do
+		Result.Add(Items[cc]);
 end;
 
 function TAQ.SupervisorLock(out AQ:TAQ; MethodName:String):Boolean;
@@ -1593,11 +1779,11 @@ begin
 	Result:=Managed.Append(AObject);
 end;
 
-function TAQ.TimerActors(IncludeOrphans:Boolean):TAQ;
+function TAQ.TimerActorsChain(ID:Integer; IncludeOrphans:Boolean):TAQ;
 begin
-	if SupervisorLock(Result, 'TimerActors') then
+	if SupervisorLock(Result, 'TimerActorsChain') then
 		Exit;
-	Result:=CustomActors(arTimer, IncludeOrphans);
+	Result:=CustomActors(arTimer, ID, IncludeOrphans);
 end;
 
 class function TAQ.Unmanaged:TAQ;
@@ -1658,8 +1844,10 @@ begin
 		FLastTick:=TAQ.Tick;
 end;
 
-constructor TInterval.Finite(Duration:Integer; Each, LastEach:TEachFunction; ActorRole:TActorRole);
+constructor TInterval.Finite(Duration:Integer; Each, LastEach:TEachFunction; ActorRole:TActorRole;
+	ID:Integer);
 begin
+	FID:=ID;
 	FActorRole:=ActorRole;
 	FNextEach:=Each;
 	FLastEach:=LastEach;
@@ -1671,8 +1859,10 @@ begin
 	UpdateNextTick;
 end;
 
-constructor TInterval.Infinite(Interval:Integer; Each:TEachFunction; ActorRole:TActorRole);
+constructor TInterval.Infinite(Interval:Integer; Each:TEachFunction; ActorRole:TActorRole;
+	ID:Integer);
 begin
+	FID:=ID;
 	FActorRole:=ActorRole;
 	FFirstTick:=TAQ.Tick;
 	FNextEach:=Each;
@@ -1708,6 +1898,28 @@ end;
 procedure TInterval.UpdateNextTick;
 begin
 	FNextTick:=TAQ.Tick + Cardinal(FInterval);
+end;
+
+{** TControlRobin **}
+
+function TControlRobin.GetBackgroundColor:TColor;
+begin
+	Result:=Color;
+end;
+
+function TControlRobin.GetFontColor: TColor;
+begin
+	Result:=Font.Color;
+end;
+
+procedure TControlRobin.SetBackgroundColor(NewColor:TColor);
+begin
+	Color:=NewColor;
+end;
+
+procedure TControlRobin.SetFontColor(NewColor:TColor);
+begin
+	Font.Color:=NewColor;
 end;
 
 initialization
