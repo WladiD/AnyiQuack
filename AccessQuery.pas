@@ -57,6 +57,7 @@ type
 		FIntervalTimer:TTimer;
 		FActiveIntervalAQs:TAQ;
 		FTick:Cardinal;
+		FComponentsNotifier:TComponentList;
 	protected
 		var
 		FLifeTick:Cardinal;
@@ -66,8 +67,14 @@ type
 		FConditionCount:Byte;
 		FBools:Byte;
 
+		class procedure Initialize;
+		class procedure Finalize;
+
 		class function GarbageCollector:TAQ;
 		class procedure GlobalIntervalTimerEvent(Sender:TObject);
+		class procedure ComponentsNotification(AComponent:TComponent; Operation:TOperation);
+
+		procedure Notify(Ptr:Pointer; Action:TListNotification); override;
 
 		function HasActors(ActorRole:TActorRole; ID:Integer = 0):Boolean;
 
@@ -272,6 +279,11 @@ type
 		property FontColor:TColor read GetFontColor write SetFontColor;
 	end;
 
+	TComponentsNotifier = class(TComponentList)
+	protected
+		procedure Notify(Ptr:Pointer; Action:TListNotification); override;
+	end;
+
 function LinearEase(StartValue, EndValue, Progress:Real):Real;
 var
 	Delta:Real;
@@ -422,21 +434,19 @@ function TAQ.BackgroundColorAnimation(ToColor:TColor; Duration:Integer; ID:Integ
 begin
 	if SupervisorLock(Result, 'BackgroundColorAnimation') then
 		Exit;
-	MultiplexChain
-		.Each(
-			function(AQ:TAQ; O:TObject):Boolean
-			begin
-				Result:=TRUE; // Komplett durchlaufen
-				if O is TControl then
-					AQ.CustomColorAnimation(TControl(O).BackgroundColor, ToColor, Duration, ID,
-						function(AQ:TAQ; O:TObject; Color:TColor):Boolean
-						begin
-							TControl(O).BackgroundColor:=Color;
-							Result:=TRUE;
-						end,
-						EaseFunction, OnComplete);
-			end)
-		.Die;
+	Each(
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			Result:=TRUE; // Komplett durchlaufen
+			if O is TControl then
+				Take(O).CustomColorAnimation(TControl(O).BackgroundColor, ToColor, Duration, ID,
+					function(AQ:TAQ; O:TObject; Color:TColor):Boolean
+					begin
+						TControl(O).BackgroundColor:=Color;
+						Result:=TRUE;
+					end,
+					EaseFunction, OnComplete);
+		end);
 end;
 
 function TAQ.BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Duration:Integer;
@@ -497,10 +507,10 @@ begin
 			end;
 		end;
 
-		AQ.Animate(Duration, EachF, nil, ID);
+		Take(O).Animate(Duration, EachF, nil, ID);
 	end;
 
-	MultiplexChain.Each(WholeEach).Die;
+	Each(WholeEach);
 end;
 
 
@@ -538,6 +548,21 @@ begin
 		Exit;
 	Result:=Managed;
 	Result.FChainedTo:=Self;
+end;
+
+procedure TAQ.Notify(Ptr:Pointer; Action:TListNotification);
+begin
+	if (Action = lnAdded) and (TObject(Ptr) is TComponent) and
+		(FComponentsNotifier.IndexOf(TComponent(Ptr)) < 0) then
+		FComponentsNotifier.Add(TComponent(Ptr));
+
+	inherited Notify(Ptr, Action);
+
+	if (Action in [lnExtracted, lnDeleted]) and (Count = 0) then
+	begin
+		Clean;
+		Die;
+	end;
 end;
 
 function TAQ.ChildrenAppend(Recurse:Boolean; ChildrenFiller:TEachFunction):TAQ;
@@ -603,6 +628,21 @@ var
 begin
 	for cc:=FIntervals.Count - 1 downto 0 do
 		RemoveInterval(TInterval(FIntervals[cc]));
+end;
+
+class procedure TAQ.ComponentsNotification(AComponent:TComponent; Operation:TOperation);
+begin
+	if Operation = opRemove then
+		{**
+		 * Die Verbindung zu einer Komponente in allen lebenden TAQ-Instanzen aufheben
+		 *}
+		GarbageCollector.Each(
+			function(GCC:TAQ; O:TObject):Boolean
+			begin
+				if TAQ(O).IsAlive then
+					TAQ(O).Remove(AComponent);
+				Result:=TRUE;
+			end);
 end;
 
 function TAQ.Contains(AObject:TObject):Boolean;
@@ -797,7 +837,8 @@ begin
 
 			if (Progress = 1) and Assigned(OnComplete) then
 				OnComplete(O);
-		end, nil, ID);
+		end,
+		nil, ID);
 end;
 
 function TAQ.CustomFiller(Filler:TEachFunction; Append, Recurse:Boolean):TAQ;
@@ -1121,6 +1162,33 @@ begin
 	Result:=NewAQ;
 end;
 
+class procedure TAQ.Finalize;
+begin
+	if not Assigned(FGarbageCollector) then
+		Exit;
+	{**
+	 * Freigabe von allem, was in der Klassenmethode TAQ.Initialize instanziert wurde
+	 *}
+	{**
+	 * Alle offenen TAQ-Instanzen freigeben
+	 *}
+	FGarbageCollector.Free;
+	{**
+	 * Dieser Timer wird zusammen mit FGarbageCollector erstellt, muss auch dementsprechend zusammen
+	 * freigegeben werden.
+	 *}
+	FIntervalTimer.Free;
+	{**
+	 * Diese unverwaltete TAQ-Instanz wird ebenfalls mit dem FGarbageCollector erstellt und muss
+	 * hier manuell freigegeben werden.
+	 *}
+	FActiveIntervalAQs.Free;
+	{**
+	 * Komponentenhelfer freigeben
+	 *}
+	FComponentsNotifier.Free;
+end;
+
 function TAQ.FinishAnimations(ID:Integer):TAQ;
 begin
 	if SupervisorLock(Result, 'FinishAnimations') then
@@ -1140,21 +1208,19 @@ function TAQ.FontColorAnimation(ToColor:TColor; Duration:Integer; ID:Integer;
 begin
 	if SupervisorLock(Result, 'FontColorAnimation') then
 		Exit;
-	MultiplexChain
-		.Each(
-			function(AQ:TAQ; O:TObject):Boolean
-			begin
-				Result:=TRUE; // Komplett durchlaufen
-				if O is TControl then
-					AQ.CustomColorAnimation(TControl(O).FontColor, ToColor, Duration, ID,
-						function(AQ:TAQ; O:TObject; Color:TColor):Boolean
-						begin
-							TControl(O).FontColor:=Color;
-							Result:=TRUE;
-						end,
-						EaseFunction, OnComplete);
-			end)
-		.Die;
+	Each(
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			Result:=TRUE; // Komplett durchlaufen
+			if O is TControl then
+				Take(O).CustomColorAnimation(TControl(O).FontColor, ToColor, Duration, ID,
+					function(AQ:TAQ; O:TObject; Color:TColor):Boolean
+					begin
+						TControl(O).FontColor:=Color;
+						Result:=TRUE;
+					end,
+					EaseFunction, OnComplete);
+		end);
 end;
 
 class function TAQ.GarbageCollector:TAQ;
@@ -1162,26 +1228,7 @@ begin
 	if Assigned(FGarbageCollector) then
 		Exit(FGarbageCollector);
 
-	{**
-	 * Ab hier fängt die Instanzierung der gesamten Klasse an
-	 *}
-
-	FTick:=GetTickCount;
-
-	FIntervalTimer:=TTimer.Create(nil);
-	with FIntervalTimer do
-	begin
-		Enabled:=TRUE;
-		Interval:=IntervalResolution;
-		OnTimer:=GlobalIntervalTimerEvent;
-	end;
-
-	FActiveIntervalAQs:=TAQ.Create;
-	FActiveIntervalAQs.Recurse:=FALSE;
-
-	FGarbageCollector:=TAQ.Create;
-	FGarbageCollector.OwnsObjects:=TRUE;
-	FGarbageCollector.Recurse:=FALSE;
+	Initialize;
 
 	FGarbageCollector.EachInterval(GarbageCleanInterval,
 		{**
@@ -1207,14 +1254,13 @@ begin
 			if AQsForDestroy < SpareAQsCount then
 			begin
 				{$IFDEF OutputDebugGCFree}
-				OutputDebugString(PWideChar(Format('Bereinigungsvorgang findet nicht statt, da das Sparlimit (%d) noch nicht erreicht wurde (%d).',
+				OutputDebugString(PWideChar(Format('Bereinigungsvorgang findet nicht statt, da das Sparlimit (%d) nicht erreicht wurde (%d).',
 					[SpareAQsCount, AQsForDestroy])));
 				{$ENDIF}
 				Exit;
 			end;
 
 			CleanEndTick:=GetTickCount + GarbageCleanTime;
-
 
 			GCC.Each(
 				function(GCC:TAQ; O:TObject):Boolean
@@ -1226,7 +1272,6 @@ begin
 					begin
 						GCC.Remove(CheckAQ);
 						Dec(AQsForDestroy);
-
 						{$IFDEF OutputDebugGCFree}
 						OutputDebugString(PWideChar(Format('TAQ freigegeben. Verbleibend im GarbageCollector: %d.',
 							[GarbageCollector.Count])));
@@ -1238,7 +1283,6 @@ begin
 				if CleanEndTick < GetTickCount then
 					OutputDebugString('Bereinigungsvorgang vorzeitig abgebrochen, da das Zeitlimit überschritten wurde.');
 				{$ENDIF}
-
 		end);
 
 	Result:=FGarbageCollector;
@@ -1486,6 +1530,39 @@ begin
 	Inc(Result.FConditionCount);
 end;
 
+class procedure TAQ.Initialize;
+begin
+	{**
+	 * Der Garbage-Collector fungiert auch als Singleton-Sperre
+	 *}
+	if Assigned(FGarbageCollector) then
+		Exit;
+
+	{**
+	 * Die Initialisierung der gesamten Klasse
+	 **********************************************************************************************}
+
+	FTick:=GetTickCount;
+
+	FIntervalTimer:=TTimer.Create(nil);
+	with FIntervalTimer do
+	begin
+		Enabled:=TRUE;
+		Interval:=IntervalResolution;
+		OnTimer:=GlobalIntervalTimerEvent;
+	end;
+
+	FActiveIntervalAQs:=TAQ.Create;
+	FActiveIntervalAQs.Recurse:=FALSE;
+
+	FGarbageCollector:=TAQ.Create;
+	FGarbageCollector.OwnsObjects:=TRUE;
+	FGarbageCollector.Recurse:=FALSE;
+
+	FComponentsNotifier:=TComponentsNotifier.Create;
+	FComponentsNotifier.OwnsObjects:=FALSE;
+end;
+
 function TAQ.IntervalActorsChain(ID:Integer; IncludeOrphans:Boolean):TAQ;
 begin
 	if SupervisorLock(Result, 'IntervalActorsChain') then
@@ -1711,10 +1788,10 @@ begin
 			end;
 		end;
 
-		AQ.Animate(Duration, EachF, nil, ID);
+		Take(O).Animate(Duration, EachF, nil, ID);
 	end;
 
-	MultiplexChain.Each(WholeEach).Die;
+	Each(WholeEach);
 end;
 
 {**
@@ -1922,29 +1999,19 @@ begin
 	Font.Color:=NewColor;
 end;
 
+{** TComponentsNotifier **}
+
+procedure TComponentsNotifier.Notify(Ptr:Pointer; Action:TListNotification);
+begin
+	if Action = lnExtracted then
+		TAQ.ComponentsNotification(TComponent(Ptr), opRemove);
+	inherited Notify(Ptr, Action);
+end;
+
 initialization
 
 finalization
 
-{**
- * Freigabe von allem, was in der Klassenmethode TAQ.GarbageCollector instanziert wurde
- *}
-if Assigned(TAQ.FGarbageCollector) then
-begin
-	{**
-	 * Alle offenen TAQ-Instanzen freigeben
-	 *}
-	TAQ.FGarbageCollector.Free;
-	{**
-	 * Dieser Timer wird zusammen mit FGarbageCollector erstellt, muss auch dementsprechend zusammen
-	 * freigegeben werden.
-	 *}
-	TAQ.FIntervalTimer.Free;
-	{**
-	 * Diese unverwaltete TAQ-Instanz wird ebenfalls mit dem FGarbageCollector erstellt und muss
-	 * hier manuell freigegeben werden.
-	 *}
-	TAQ.FActiveIntervalAQs.Free;
-end;
+TAQ.Finalize;
 
 end.
