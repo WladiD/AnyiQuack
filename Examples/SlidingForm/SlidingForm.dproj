@@ -3,7 +3,7 @@
 			<ProjectGuid>{94F1581B-D98E-425F-B345-E592FE2B7343}</ProjectGuid>
 			<ProjectVersion>12.0</ProjectVersion>
 			<MainSource>SlidingForm.dpr</MainSource>
-			<Config Condition="'$(Config)'==''">Debug</Config>
+			<Config Condition="'$(Config)'==''">Release</Config>
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Basis' or '$(Base)'!=''">

@@ -65,6 +65,13 @@ object MainForm: TMainForm
       Height = 13
       Caption = 'Animation duration (msec)'
     end
+    object Label6: TLabel
+      Left = 474
+      Top = 1
+      Width = 55
+      Height = 13
+      Caption = 'Hover color'
+    end
     object DisturbedComboBox: TComboBox
       Left = 164
       Top = 17
@@ -102,6 +109,13 @@ object MainForm: TMainForm
       PositionToolTip = ptBottom
       TabOrder = 2
     end
+    object HoverColorBox: TColorBox
+      Left = 474
+      Top = 17
+      Width = 145
+      Height = 22
+      TabOrder = 3
+    end
   end
   object BottomPanel: TPanel
     Tag = 1
@@ -119,30 +133,32 @@ object MainForm: TMainForm
       635
       31)
     object Label4: TLabel
-      Left = 3
-      Top = 4
+      Left = 8
+      Top = 10
       Width = 158
       Height = 13
       Anchors = [akLeft, akBottom]
       Caption = 'Note: Flickering is a issue of VCL.'
-      ExplicitTop = 320
+      ExplicitTop = 14
     end
     object AddPanelButton: TButton
-      Left = 552
+      AlignWithMargins = True
+      Left = 557
       Top = 3
       Width = 75
       Height = 25
-      Anchors = [akRight, akBottom]
+      Align = alRight
       Caption = 'Add Panel'
       TabOrder = 0
       OnClick = AddPanelButtonClick
     end
     object RemovePanelButton: TButton
-      Left = 464
+      AlignWithMargins = True
+      Left = 469
       Top = 3
       Width = 82
       Height = 25
-      Anchors = [akRight, akBottom]
+      Align = alRight
       Caption = 'Remove Panel'
       Enabled = False
       TabOrder = 1

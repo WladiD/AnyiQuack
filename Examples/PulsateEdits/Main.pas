@@ -37,9 +37,9 @@ procedure TForm1.CheckButtonClick(Sender: TObject);
 var
 	Incorrect:TAQ;
 begin
-	Incorrect:=TAQ.Take(Self)
-		.Children(TRUE, TRUE)
-		.Filter(
+	Incorrect:=Take(Self)
+		.ChildrenChain(TRUE)
+		.FilterChain(
 			function(AQ:TAQ; O:TObject):Boolean
 			var
 				Number:Integer;
@@ -71,14 +71,14 @@ begin
 			{**
 			 * Diese Bedingung stellt sicher, dass keine weiteren Animationen für das Objekt laufen
 			 *}
-			(SenderAQ.AnimationActors.Die.Count = 0) then
-			SenderAQ.ShakeAnimation(0, 0, 1, 5, 1000, Pulsate).Die;
+			(SenderAQ.AnimationActorsChain.Die.Count = 0) then
+			SenderAQ.ShakeAnimation(0, 0, 1, 5, 1000, 0, Pulsate).Die;
 		SenderAQ.Die;
 	end;
 
 	TAQ.Take(Self)
-		.Children(TRUE, TRUE)
-		.Filter(TEdit)
+		.ChildrenChain(TRUE)
+		.FilterChain(TEdit)
 		.EachInterval(333,
 			function(AQ:TAQ; O:TObject):Boolean
 			begin

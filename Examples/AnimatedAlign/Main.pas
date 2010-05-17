@@ -20,6 +20,8 @@ type
 		BottomPanel:TPanel;
 		Label5:TLabel;
 		AnimationDurationTrackBar:TTrackBar;
+		HoverColorBox:TColorBox;
+		Label6:TLabel;
 		procedure AddPanelButtonClick(Sender:TObject);
 		procedure FormResize(Sender:TObject);
 		procedure PanelSizeTrackBarChange(Sender:TObject);
@@ -27,6 +29,10 @@ type
 	private
 		FPanelCounter:Integer;
 	public
+		procedure PanelMouseEnter(Sender:TObject);
+		procedure PanelMouseLeave(Sender:TObject);
+		procedure PanelHoverHandler(Sender:TObject; MouseOver:Boolean);
+
 		procedure UpdateAlign;
 
 		function GetPanelsAQ:TAQ;
@@ -39,6 +45,11 @@ implementation
 
 {$R *.dfm}
 
+const
+	UpdateAnimationID = 1;
+	HoverAnimationID = 2;
+
+
 procedure TMainForm.AddPanelButtonClick(Sender:TObject);
 begin
 	Inc(FPanelCounter);
@@ -49,6 +60,8 @@ begin
 		ParentBackground:=FALSE;
 		Color:=clBtnFace;
 		Caption:=Format('Panel #%d', [FPanelCounter]);
+		OnMouseEnter:=PanelMouseEnter;
+		OnMouseLeave:=PanelMouseLeave;
 		BringToFront;
 	end;
 	TopPanel.BringToFront;
@@ -64,8 +77,8 @@ end;
 function TMainForm.GetPanelsAQ:TAQ;
 begin
 	Result:=TAQ.Take(MainForm)
-		.Children
-		.Filter(
+		.ChildrenChain
+		.FilterChain(
 			function(AQ:TAQ; O:TObject):Boolean
 			begin
 				Result:=(O is TPanel) and (TControl(O).Tag = 0);
@@ -80,21 +93,47 @@ end;
 procedure TMainForm.RemovePanelButtonClick(Sender:TObject);
 begin
 	GetPanelsAQ
-		.Last
+		.SliceChain(-1)
 		.Each(
 			function(AQ:TAQ; O:TObject):Boolean
 			begin
 				Result:=TRUE;
 				Dec(FPanelCounter);
 				TControl(O).Tag:=1; // Dadurch wird es für GetPanelsAQ nicht greifbar
-				AQ.CancelAnimations.BoundsAnimation(TControl(O).Left, Height, -1, -1,
-					AnimationDurationTrackBar.Position, TAQ.Ease(etQuadratic),
-					procedure(Sender:TObject)
-					begin
-						Sender.Free;
-					end);
+				AQ
+					.CancelAnimations
+					.BoundsAnimation(TControl(O).Left, Height, -1, -1,
+						AnimationDurationTrackBar.Position, 0, TAQ.Ease(etQuadratic),
+						procedure(Sender:TObject)
+						begin
+							Sender.Free;
+						end);
 			end);
 	UpdateAlign;
+end;
+
+procedure TMainForm.PanelHoverHandler(Sender:TObject; MouseOver:Boolean);
+begin
+	Take(Sender)
+		.IfThen(MouseOver)
+			.CancelAnimations(HoverAnimationID)
+			.FontColorAnimation(ColorToRGB(HoverColorBox.Selected) xor $FFFFFF, 600, HoverAnimationID, TAQ.Ease(etMassiveQuadratic))
+			.BackgroundColorAnimation(HoverColorBox.Selected, 300, HoverAnimationID, TAQ.Ease(etSinus))
+		.IfElse
+			.FinishAnimations(HoverAnimationID)
+			.FontColorAnimation(clWindowText, 750, HoverAnimationID, TAQ.Ease(etMassiveQuadratic))
+			.BackgroundColorAnimation(clBtnFace, 1500, HoverAnimationID, TAQ.Ease(etSinus))
+		.IfEnd;
+end;
+
+procedure TMainForm.PanelMouseEnter(Sender:TObject);
+begin
+	PanelHoverHandler(Sender, TRUE);
+end;
+
+procedure TMainForm.PanelMouseLeave(Sender:TObject);
+begin
+	PanelHoverHandler(Sender, FALSE);
 end;
 
 procedure TMainForm.UpdateAlign;
@@ -120,7 +159,7 @@ begin
 	PIndex:=0;
 
 	PanelsAQ
-		.CancelDelays
+		.CancelDelays(UpdateAnimationID)
 		.EachDelay(50,
 			function(AQ:TAQ; O:TObject):Boolean
 			var
@@ -134,9 +173,9 @@ begin
 				if PIndex = 0 then
 				begin
 					if DisturbedComboBox.ItemIndex = 0 then
-						AQ.CancelAnimations
+						AQ.CancelAnimations(UpdateAnimationID)
 					else
-						AQ.FinishAnimations;
+						AQ.FinishAnimations(UpdateAnimationID);
 				end;
 
 				YTile:=Floor(PIndex/PColumns);
@@ -146,9 +185,9 @@ begin
 				TargetTop:=(YTile * PQSize) + TopOffset;
 
 				TAQ.Take(O).BoundsAnimation(TargetLeft, TargetTop, PQSize, PQSize,
-					AnimationDurationTrackBar.Position, TAQ.Ease(etSinus));
+					AnimationDurationTrackBar.Position, UpdateAnimationID, TAQ.Ease(etSinus));
 				Inc(PIndex);
-			end)
+			end, UpdateAnimationID)
 		.Die;
 end;
 

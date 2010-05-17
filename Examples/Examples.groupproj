@@ -15,6 +15,9 @@
 			<Projects Include="SlidingForm\SlidingForm.dproj">
 				<Dependencies/>
 			</Projects>
+			<Projects Include="MethodTests\MethodTests.dproj">
+				<Dependencies/>
+			</Projects>
 		</ItemGroup>
 		<ProjectExtensions>
 			<Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -59,14 +62,23 @@
 		<Target Name="SlidingForm:Make">
 			<MSBuild Targets="Make" Projects="SlidingForm\SlidingForm.dproj"/>
 		</Target>
+		<Target Name="MethodTests">
+			<MSBuild Projects="MethodTests\MethodTests.dproj"/>
+		</Target>
+		<Target Name="MethodTests:Clean">
+			<MSBuild Targets="Clean" Projects="MethodTests\MethodTests.dproj"/>
+		</Target>
+		<Target Name="MethodTests:Make">
+			<MSBuild Targets="Make" Projects="MethodTests\MethodTests.dproj"/>
+		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign;SlidingForm"/>
+			<CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign;SlidingForm;MethodTests"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean;SlidingForm:Clean"/>
+			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make;SlidingForm:Make"/>
+			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make"/>
 		</Target>
 		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 	</Project>

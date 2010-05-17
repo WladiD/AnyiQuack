@@ -85,8 +85,8 @@ function TForm1.ListBoxesAQ:TAQ;
 begin
 	Result:=TAQ
 		.Take(Form1)
-		.Children(TRUE, TRUE)
-		.Filter(TListBox);
+		.ChildrenChain(TRUE)
+		.FilterChain(TListBox);
 end;
 
 procedure TForm1.SyncScrollBarChange(Sender:TObject);
