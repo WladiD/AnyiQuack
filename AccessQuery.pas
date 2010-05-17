@@ -1794,21 +1794,6 @@ begin
 	Each(WholeEach);
 end;
 
-{**
- * Beispiele:
- * - SliceChain(0, 1)    // Liefert das erste Objekt
- * - SliceChain(1, 1)    // Liefert das 2. Objekt
- * - SliceChain(-1)      // Liefert das letzte Objekt
- * - SliceChain(-2, 1)   // Liefert das vorletzte Objekt
- * - SliceChain(-2)      // Liefert die letzten 2 Objekte
- * - SliceChain(-3)      // Liefert die letzten 3 Objekte
- * - SliceChain(1)       // Liefert alle vom 2. Objekt aus
- *
- * @param StartIndex 0-basierter Index. Ist der Index negativ, so bezieht er sich auf die Position
- *        vom letzten Objekt aus rückwärts: -1 = letzter, -2 = vorletzter ...
- * @param Count Anzahl der Objekte. Besonderheit stellt 0 (Standard) dar, welches Gleichbedeutend
- *        mit "Bis zum Ende" ist.
- *}
 function TAQ.SliceChain(StartIndex, Count:Integer):TAQ;
 var
 	EndIndex, TotalCount, cc:Integer;
