@@ -3,7 +3,8 @@ program AnimatedAlign;
 uses
   Forms,
   Main in 'Main.pas' {MainForm},
-  AccessQuery in '..\..\AccessQuery.pas';
+  AccessQuery in '..\..\AccessQuery.pas',
+  AQP.Control.Animations in '..\..\AQP.Control.Animations.pas';
 
 {$R *.res}
 
