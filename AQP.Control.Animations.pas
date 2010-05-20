@@ -59,7 +59,7 @@ type
 		property FontColor:TColor read GetFontColor write SetFontColor;
 	end;
 
-{** TAQCA = AccessQueryControlAnimations **}
+{** TAQPControlAnimations **}
 
 function TAQPControlAnimations.BackgroundColorAnimation(ToColor:TColor; Duration, ID:Integer;
 	EaseFunction:TEaseFunction; OnComplete:TAnonymNotifyEvent):TAQ;

@@ -34,6 +34,6 @@
 		{**
 		 * Meldung, wenn eine gemanagete TAQ-Instanz freigegeben wird
 		 *}
-		{$DEFINE OutputDebugGCFree}
+		{.$DEFINE OutputDebugGCFree}
 	{$ENDIF}
 {$ENDIF}
