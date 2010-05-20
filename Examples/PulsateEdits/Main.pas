@@ -4,7 +4,7 @@ interface
 
 uses
 	Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-	Dialogs, AccessQuery, StdCtrls;
+	Dialogs, AccessQuery, AQP.Control.Animations, StdCtrls;
 
 type
 	TForm1 = class(TForm)
@@ -25,6 +25,8 @@ type
 	public
 		{Public-Deklarationen}
 	end;
+
+
 
 var
 	Form1:TForm1;
@@ -49,13 +51,23 @@ begin
 
 	if Incorrect.Count = 0 then
 	begin
-		TAQ.Take(Self).FinishAnimations.ShakeAnimation(4, 20, 2, 20, 500);
+		Take(Self)
+			.FinishAnimations
+			.Plugin<TAQPControlAnimations>
+			.ShakeAnimation(4, 20, 2, 20, 500);
 		Exit;
 	end;
 
 	Incorrect
 		.FinishAnimations
-		.ShakeAnimation(3, 10, 0, 0, 400);
+		.Plugin<TAQPControlAnimations>
+		.ShakeAnimation(3, 10, 0, 0, 400)
+		.Each(
+			function(AQ:TAQ; O:TObject):Boolean
+			begin
+				TEdit(O).SetFocus;
+				Result:=FALSE; // Es soll nur das 1. nicht ausgefüllte Feld fokussiert werden
+			end);
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
@@ -72,7 +84,9 @@ begin
 			 * Diese Bedingung stellt sicher, dass keine weiteren Animationen für das Objekt laufen
 			 *}
 			(SenderAQ.AnimationActorsChain.Die.Count = 0) then
-			SenderAQ.ShakeAnimation(0, 0, 1, 5, 1000, 0, Pulsate).Die;
+			SenderAQ
+				.Plugin<TAQPControlAnimations>
+				.ShakeAnimation(0, 0, 1, 5, 1000, 0, Pulsate);
 		SenderAQ.Die;
 	end;
 

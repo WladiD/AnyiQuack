@@ -4,7 +4,9 @@ interface
 
 uses
 	Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-	Dialogs, StdCtrls, ExtCtrls, AccessQuery, ComCtrls, Math;
+	Dialogs, StdCtrls, ExtCtrls, ComCtrls, Math,
+	AccessQuery,
+	AQP.Control.Animations;
 
 type
 	TMainForm = class(TForm)
@@ -102,6 +104,7 @@ begin
 				TControl(O).Tag:=1; // Dadurch wird es für GetPanelsAQ nicht greifbar
 				AQ
 					.CancelAnimations
+					.Plugin<TAQPControlAnimations>
 					.BoundsAnimation(TControl(O).Left, Height, -1, -1,
 						AnimationDurationTrackBar.Position, 0, TAQ.Ease(etQuadratic),
 						procedure(Sender:TObject)
@@ -114,16 +117,30 @@ end;
 
 procedure TMainForm.PanelHoverHandler(Sender:TObject; MouseOver:Boolean);
 begin
-	Take(Sender)
-		.IfThen(MouseOver)
-			.CancelAnimations(HoverAnimationID)
-			.FontColorAnimation(ColorToRGB(HoverColorBox.Selected) xor $FFFFFF, 600, HoverAnimationID, TAQ.Ease(etMassiveQuadratic))
-			.BackgroundColorAnimation(HoverColorBox.Selected, 300, HoverAnimationID, TAQ.Ease(etSinus))
-		.IfElse
-			.FinishAnimations(HoverAnimationID)
-			.FontColorAnimation(clWindowText, 750, HoverAnimationID, TAQ.Ease(etMassiveQuadratic))
-			.BackgroundColorAnimation(clBtnFace, 1500, HoverAnimationID, TAQ.Ease(etSinus))
-		.IfEnd;
+	with Take(Sender) do
+	begin
+		if MouseOver then
+		begin
+			with CancelAnimations(HoverAnimationID)
+				.Plugin<TAQPControlAnimations> do
+			begin
+				FontColorAnimation(ColorToRGB(HoverColorBox.Selected) xor $FFFFFF, 600,
+					HoverAnimationID, TAQ.Ease(etMassiveQuadratic));
+				BackgroundColorAnimation(HoverColorBox.Selected, 300, HoverAnimationID,
+					TAQ.Ease(etSinus));
+			end;
+		end
+		else
+		begin
+			with FinishAnimations(HoverAnimationID)
+				.Plugin<TAQPControlAnimations> do
+			begin
+				FontColorAnimation(clWindowText, 750, HoverAnimationID,
+					TAQ.Ease(etMassiveQuadratic));
+				BackgroundColorAnimation(clBtnFace, 1500, HoverAnimationID, TAQ.Ease(etSinus));
+			end;
+		end;
+	end;
 end;
 
 procedure TMainForm.PanelMouseEnter(Sender:TObject);
@@ -184,8 +201,10 @@ begin
 				TargetLeft:=(XTile * PQSize) + LeftOffset;
 				TargetTop:=(YTile * PQSize) + TopOffset;
 
-				TAQ.Take(O).BoundsAnimation(TargetLeft, TargetTop, PQSize, PQSize,
-					AnimationDurationTrackBar.Position, UpdateAnimationID, TAQ.Ease(etSinus));
+				Take(O)
+					.Plugin<TAQPControlAnimations>
+					.BoundsAnimation(TargetLeft, TargetTop, PQSize, PQSize,
+						AnimationDurationTrackBar.Position, UpdateAnimationID, TAQ.Ease(etSinus));
 				Inc(PIndex);
 			end, UpdateAnimationID)
 		.Die;

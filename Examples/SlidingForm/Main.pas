@@ -4,7 +4,7 @@ interface
 
 uses
 	Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-	Dialogs, AccessQuery, StdCtrls, ExtCtrls;
+	Dialogs, StdCtrls, ExtCtrls, AccessQuery, AQP.Control.Animations;
 
 type
 	TForm1 = class(TForm)
@@ -27,6 +27,7 @@ implementation
 procedure TForm1.ColorListBox1Click(Sender:TObject);
 begin
 	Take(Form1)
+		.Plugin<TAQPControlAnimations>
 		.BackgroundColorAnimation(ColorListBox1.Selected, 500, 0, TAQ.Ease(etSinus));
 end;
 
@@ -47,15 +48,18 @@ begin
 		NewColor:=clWhite;
 	end;
 
-	Take(Sender)
+	with Take(Sender)
 		.FinishAnimations
-		.BoundsAnimation(NewLeft, 0, NewWidth, Screen.WorkAreaHeight,
-			500, 0, TAQ.Ease(etMassiveQuadratic))
-		.BackgroundColorAnimation(NewColor, 1000, 0, TAQ.Ease(etMassiveQuadratic),
+		.Plugin<TAQPControlAnimations> do
+	begin
+		BoundsAnimation(NewLeft, 0, NewWidth, Screen.WorkAreaHeight,
+			500, 0, TAQ.Ease(etMassiveQuadratic));
+		BackgroundColorAnimation(NewColor, 1000, 0, TAQ.Ease(etMassiveQuadratic),
 			procedure(Sender:TObject)
 			begin
 				ColorListBox1.Selected:=NewColor;
 			end);
+	end;
 end;
 
 end.

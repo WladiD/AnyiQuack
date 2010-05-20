@@ -24,6 +24,5 @@ object Form1: TForm1
     Selected = clBtnFace
     TabOrder = 0
     OnClick = ColorListBox1Click
-    ExplicitLeft = 0
   end
 end

@@ -83,8 +83,7 @@ end;
 
 function TForm1.ListBoxesAQ:TAQ;
 begin
-	Result:=TAQ
-		.Take(Form1)
+	Result:=Take(Form1)
 		.ChildrenChain(TRUE)
 		.FilterChain(TListBox);
 end;

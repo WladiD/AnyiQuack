@@ -4,7 +4,7 @@ interface
 
 uses
 	Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-	Dialogs, StdCtrls, AccessQuery;
+	Dialogs, StdCtrls, AccessQuery, AQP.Control.Animations;
 
 type
 	TForm1 = class(TForm)
@@ -100,7 +100,7 @@ begin
 		.FilterChain(TButton)
 		.SliceChain(StartIndex, Count)
 		.FinishAnimations
-		.ShakeAnimation(1, 10, 0, 0, 300)
+		.Plugin<TAQPControlAnimations>.ShakeAnimation(1, 10, 0, 0, 300)
 		.IfThen(CheckBox1.Checked)
 			.DebugMessage
 		.IfEnd;
