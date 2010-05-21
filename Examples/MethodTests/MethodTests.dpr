@@ -4,7 +4,7 @@ uses
   Forms,
   SliceChain in 'SliceChain.pas' {Form1},
   AccessQuery in '..\..\AccessQuery.pas',
-  AQP.Control.Animations in '..\..\AQP.Control.Animations.pas';
+  AQPControlAnimations in '..\..\AQPControlAnimations.pas';
 
 {$R *.res}
 

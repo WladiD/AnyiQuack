@@ -4,7 +4,7 @@ uses
   Forms,
   Main in 'Main.pas' {MainForm},
   AccessQuery in '..\..\AccessQuery.pas',
-  AQP.Control.Animations in '..\..\AQP.Control.Animations.pas';
+  AQPControlAnimations in '..\..\AQPControlAnimations.pas';
 
 {$R *.res}
 

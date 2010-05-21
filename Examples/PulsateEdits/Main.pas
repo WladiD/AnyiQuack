@@ -4,7 +4,9 @@ interface
 
 uses
 	Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-	Dialogs, AccessQuery, AQP.Control.Animations, StdCtrls;
+	Dialogs, StdCtrls,
+	AccessQuery,
+	AQPControlAnimations; // AccessQuery-Plugin
 
 type
 	TForm1 = class(TForm)

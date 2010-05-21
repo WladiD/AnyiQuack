@@ -6,7 +6,7 @@ uses
 	Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
 	Dialogs, StdCtrls, ExtCtrls, ComCtrls, Math,
 	AccessQuery,
-	AQP.Control.Animations;
+	AQPControlAnimations; // AccessQuery-Plugin
 
 type
 	TMainForm = class(TForm)

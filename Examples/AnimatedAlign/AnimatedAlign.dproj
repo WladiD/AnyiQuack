@@ -42,7 +42,7 @@
 				<Form>MainForm</Form>
 			</DCCReference>
 			<DCCReference Include="..\..\AccessQuery.pas"/>
-			<DCCReference Include="..\..\AQP.Control.Animations.pas"/>
+			<DCCReference Include="..\..\AQPControlAnimations.pas"/>
 			<BuildConfiguration Include="Basis">
 				<Key>Base</Key>
 			</BuildConfiguration>

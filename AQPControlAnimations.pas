@@ -20,7 +20,7 @@
  * @version $Id$
  *}
 
-unit AQP.Control.Animations;
+unit AQPControlAnimations;
 
 interface
 

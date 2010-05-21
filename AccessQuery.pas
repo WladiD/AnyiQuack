@@ -265,7 +265,7 @@ implementation
 
 const
 	MaxLifeTime = 10000;
-	IntervalResolution = 40;
+	IntervalResolution = 31;
 	GarbageCleanInterval = 5000;
 	GarbageCleanTime = 100;
 	SpareAQsCount = 1000;
