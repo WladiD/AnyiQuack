@@ -9,7 +9,7 @@
  * License for the specific language governing rights and limitations
  * under the License.
  *
- * The Original Code is AQP.Control.Animations.pas.
+ * The Original Code is AQPControlAnimations.pas.
  *
  * The Initial Developer of the Original Code is Waldemar Derr.
  * Portions created by Waldemar Derr are Copyright (C) 2010 Waldemar Derr.
@@ -142,8 +142,8 @@ begin
 	Result:=Each(WholeEach);
 end;
 
-procedure TAQPControlAnimations.CustomColorAnimation(FromColor, ToColor:TColor; Duration, ID:Integer;
-	ColorAssignFunction:TEachMiscFunction<TColor>; EaseFunction:TEaseFunction;
+procedure TAQPControlAnimations.CustomColorAnimation(FromColor, ToColor:TColor; Duration,
+	ID:Integer; ColorAssignFunction:TEachMiscFunction<TColor>; EaseFunction:TEaseFunction;
 	OnComplete:TAnonymNotifyEvent);
 var
 	FromR, FromG, FromB,

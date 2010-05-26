@@ -78,7 +78,7 @@ end;
 
 function TMainForm.GetPanelsAQ:TAQ;
 begin
-	Result:=TAQ.Take(MainForm)
+	Result:=Take(MainForm)
 		.ChildrenChain
 		.FilterChain(
 			function(AQ:TAQ; O:TObject):Boolean

@@ -134,7 +134,7 @@ object MainForm: TMainForm
       31)
     object Label4: TLabel
       Left = 8
-      Top = 2
+      Top = 0
       Width = 158
       Height = 13
       Anchors = [akLeft, akBottom]

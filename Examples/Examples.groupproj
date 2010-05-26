@@ -18,6 +18,9 @@
 			<Projects Include="MethodTests\MethodTests.dproj">
 				<Dependencies/>
 			</Projects>
+			<Projects Include="CustomPlugin\CustomPlugin.dproj">
+				<Dependencies/>
+			</Projects>
 		</ItemGroup>
 		<ProjectExtensions>
 			<Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -71,14 +74,23 @@
 		<Target Name="MethodTests:Make">
 			<MSBuild Targets="Make" Projects="MethodTests\MethodTests.dproj"/>
 		</Target>
+		<Target Name="CustomPlugin">
+			<MSBuild Projects="CustomPlugin\CustomPlugin.dproj"/>
+		</Target>
+		<Target Name="CustomPlugin:Clean">
+			<MSBuild Targets="Clean" Projects="CustomPlugin\CustomPlugin.dproj"/>
+		</Target>
+		<Target Name="CustomPlugin:Make">
+			<MSBuild Targets="Make" Projects="CustomPlugin\CustomPlugin.dproj"/>
+		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign;SlidingForm;MethodTests"/>
+			<CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign;SlidingForm;MethodTests;CustomPlugin"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean"/>
+			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean;CustomPlugin:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make"/>
+			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make;CustomPlugin:Make"/>
 		</Target>
 		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 	</Project>
