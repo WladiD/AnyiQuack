@@ -23,7 +23,7 @@ type
 		procedure ShowButtonClick(Sender: TObject);
 		procedure HideButtonClick(Sender: TObject);
 	private
-		{ Private-Deklarationen }
+		function TargetButtons:TAQ;
 	public
 		{ Public-Deklarationen }
 	end;
@@ -37,22 +37,24 @@ implementation
 
 procedure TForm1.HideButtonClick(Sender: TObject);
 begin
-	Take(Form1)
-		.ChildrenChain
-		.FilterChain(TButton)
-		.ExcludeChain(OA([HideButton, ShowButton]))
+	TargetButtons
 		.Plugin<TAQPCustomPlugin>
 		.Hide;
 end;
 
 procedure TForm1.ShowButtonClick(Sender: TObject);
 begin
-	Take(Form1)
-		.ChildrenChain
-		.FilterChain(TButton)
-		.ExcludeChain(OA([HideButton, ShowButton]))
+	TargetButtons
 		.Plugin<TAQPCustomPlugin>
 		.Show;
+end;
+
+function TForm1.TargetButtons:TAQ;
+begin
+	Result:=Take(Form1)
+		.ChildrenChain
+		.FilterChain(TButton)
+		.ExcludeChain(OA([HideButton, ShowButton]));
 end;
 
 end.
