@@ -3,7 +3,8 @@ program CustomPlugin;
 uses
   Forms,
   Main in 'Main.pas' {Form1},
-  AQPCustomPlugin in 'AQPCustomPlugin.pas';
+  AQPCustomPlugin in 'AQPCustomPlugin.pas',
+  AccessQuery in '..\..\AccessQuery.pas';
 
 {$R *.res}
 

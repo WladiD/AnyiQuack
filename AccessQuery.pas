@@ -63,14 +63,22 @@ type
 	protected
 		FWorkAQ:TAQ;
 
+		function GarbageCollector:TAQ;
 		function Each(EachFunction:TEachFunction):TAQ; override;
+
+		procedure Autorun; virtual;
+
+		procedure SetImmortally(Value:Boolean);
+		function GetImmortally:Boolean;
+
+		property Immortally:Boolean read GetImmortally write SetImmortally;
 	public
 		property WorkAQ:TAQ read FWorkAQ;
 	end;
 
 	TAQ = class sealed (TAQBase)
 	private
-	class var
+		class var
 		FGarbageCollector:TAQ;
 		FIntervalTimer:TTimer;
 		FActiveIntervalAQs:TAQ;
@@ -125,11 +133,13 @@ type
 		function GetRecurse:Boolean;
 		procedure SetConditionLock(Value:Boolean);
 		function GetConditionLock:Boolean;
+		procedure SetImmortally(Value:Boolean);
+		function GetImmortally:Boolean;
 
 		class property Tick:Cardinal read FTick;
 		property Recurse:Boolean read GetRecurse write SetRecurse;
 		property ConditionLock:Boolean read GetConditionLock write SetConditionLock;
-
+		property Immortally:Boolean read GetImmortally write SetImmortally;
 	public
 		constructor Create; override;
 		destructor Destroy; override;
@@ -261,6 +271,8 @@ type
 
 	function OA(Objects:array of TObject):TObjectArray;
 
+	function MatchID(CompareID, CurrentID:Integer):Boolean;
+
 implementation
 
 const
@@ -273,6 +285,7 @@ const
 const
 	RecurseBitMask       = $01;
 	ConditionLockBitMask = $02;
+	ImmortallyBitMask    = $04;
 
 type
 	TComponentsNotifier = class(TComponentList)
@@ -334,6 +347,24 @@ begin
 	SetLength(Result, Length(Objects));
 	for cc:=0 to Length(Objects) - 1 do
 		Result[cc]:=Objects[cc];
+end;
+
+{**
+ * Sagt aus, ob CompareID die CurrentID greift
+ *
+ * Folgende Regeln werden angewendet:
+ * - ist CompareID = 0,  so wird CurrentID nicht verglichen
+ *                       und es wird TRUE geliefert
+ * - ist CompareID > 0,  so muss CurrentID gleich sein
+ * - ist CompareID = -1, so muss CurrentID = 0 sein
+ * - ist CompareID = -2, so muss CurrentID > 0 sein
+ *}
+function MatchID(CompareID, CurrentID:Integer):Boolean;
+begin
+	Result:=(CompareID = 0) or
+		((CompareID > 0) and (CompareID = CurrentID)) or
+		((CompareID = -1) and (CurrentID = 0)) or
+		((CompareID = -2) and (CurrentID > 0));
 end;
 
 procedure SetBit(var Container:Byte; BitMask:Byte; Value:Boolean);
@@ -509,11 +540,6 @@ end;
 
 procedure TAQ.Clean;
 begin
-	Clear;
-	FConditionCount:=0;
-	FBools:=0;
-	Recurse:=TRUE;
-	FCurrentInterval:=nil;
 	{**
 	 * Globale Auswirkungen
 	 *}
@@ -533,6 +559,12 @@ begin
 				TAQ(O).FChainedTo:=nil;
 			Result:=TRUE; // Kompletter Scan
 		end);
+
+	Clear;
+	FConditionCount:=0;
+	FBools:=0;
+	Recurse:=TRUE;
+	FCurrentInterval:=nil;
 	FChainedTo:=nil;
 
 	if Assigned(FIntervals) then
@@ -840,7 +872,7 @@ begin
 		if not EachFunction(Self, O) then
 			Break
 		else if cc > Count then
-			cc:=Count;
+			cc:=Count + 1;
 		Dec(cc);
 	end;
 end;
@@ -1157,6 +1189,11 @@ begin
 	Result:=GetBit(FBools, ConditionLockBitMask);
 end;
 
+function TAQ.GetImmortally:Boolean;
+begin
+	Result:=GetBit(FBools, ImmortallyBitMask);
+end;
+
 function TAQ.GetIntervals:TObjectList;
 begin
 	if not Assigned(FIntervals) then
@@ -1436,7 +1473,7 @@ end;
 
 function TAQ.IsAlive:Boolean;
 begin
-	Result:=(FLifeTick + MaxLifeTime) >= TAQ.Tick;
+	Result:=((FLifeTick + MaxLifeTime) >= TAQ.Tick) or Immortally;
 end;
 
 procedure TAQ.LocalIntervalTimerEvent(Sender:TObject);
@@ -1544,6 +1581,7 @@ begin
 	Result:=T.Create;
 	TAQPlugin(Result).FWorkAQ:=Self;
 	GarbageCollector.Add(Result);
+	TAQPlugin(Result).Autorun;
 end;
 
 function TAQ.EndChain:TAQ;
@@ -1588,6 +1626,13 @@ begin
 	if Value = ConditionLock then
 		Exit;
 	SetBit(FBools, ConditionLockBitMask, Value);
+end;
+
+procedure TAQ.SetImmortally(Value:Boolean);
+begin
+	if Value = Immortally then
+		Exit;
+	SetBit(FBools, ImmortallyBitMask, Value);
 end;
 
 procedure TAQ.SetRecurse(Value:Boolean);
@@ -1661,9 +1706,29 @@ end;
 
 {** TAQPlugin **}
 
+procedure TAQPlugin.Autorun;
+begin
+	// Can be implemented in custom plugins
+end;
+
 function TAQPlugin.Each(EachFunction:TEachFunction):TAQ;
 begin
 	Result:=WorkAQ.Each(EachFunction);
+end;
+
+function TAQPlugin.GarbageCollector:TAQ;
+begin
+	Result:=TAQ.GarbageCollector;
+end;
+
+function TAQPlugin.GetImmortally:Boolean;
+begin
+	Result:=WorkAQ.Immortally;
+end;
+
+procedure TAQPlugin.SetImmortally(Value:Boolean);
+begin
+	WorkAQ.Immortally:=Value;
 end;
 
 {** TInterval **}

@@ -1,8 +1,8 @@
 ﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{037C823E-E913-459C-BBE0-F29EA35721C3}</ProjectGuid>
+			<ProjectGuid>{6D8B1345-5AA2-48F0-B518-E4F5C15F0783}</ProjectGuid>
 			<ProjectVersion>12.0</ProjectVersion>
-			<MainSource>CustomPlugin.dpr</MainSource>
+			<MainSource>StickyTools.dpr</MainSource>
 			<Config Condition="'$(Config)'==''">Debug</Config>
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
 		</PropertyGroup>
@@ -21,7 +21,7 @@
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
 			<DCC_UnitAlias>WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;$(DCC_UnitAlias)</DCC_UnitAlias>
-			<DCC_DependencyCheckOutputName>CustomPlugin.exe</DCC_DependencyCheckOutputName>
+			<DCC_DependencyCheckOutputName>StickyTools.exe</DCC_DependencyCheckOutputName>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
 			<DCC_Platform>x86</DCC_Platform>
 		</PropertyGroup>
@@ -35,14 +35,19 @@
 			<DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
 		</PropertyGroup>
 		<ItemGroup>
-			<DelphiCompile Include="CustomPlugin.dpr">
+			<DelphiCompile Include="StickyTools.dpr">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
 			<DCCReference Include="Main.pas">
-				<Form>Form1</Form>
+				<Form>MainForm</Form>
 			</DCCReference>
-			<DCCReference Include="AQPCustomPlugin.pas"/>
+			<DCCReference Include="Tools.pas">
+				<Form>ToolsForm</Form>
+			</DCCReference>
 			<DCCReference Include="..\..\AccessQuery.pas"/>
+			<DCCReference Include="..\..\AQPControlAnimations.pas"/>
+			<DCCReference Include="..\..\AQPMessages.pas"/>
+			<DCCReference Include="AQPStickyTools.pas"/>
 			<BuildConfiguration Include="Basis">
 				<Key>Base</Key>
 			</BuildConfiguration>
@@ -62,7 +67,7 @@
 			<BorlandProject>
 				<Delphi.Personality>
 					<Source>
-						<Source Name="MainSource">CustomPlugin.dpr</Source>
+						<Source Name="MainSource">StickyTools.dpr</Source>
 					</Source>
 					<Parameters>
 						<Parameters Name="UseLauncher">False</Parameters>

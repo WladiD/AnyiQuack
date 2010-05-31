@@ -21,6 +21,9 @@
 			<Projects Include="CustomPlugin\CustomPlugin.dproj">
 				<Dependencies/>
 			</Projects>
+			<Projects Include="StickyTools\StickyTools.dproj">
+				<Dependencies/>
+			</Projects>
 		</ItemGroup>
 		<ProjectExtensions>
 			<Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -83,14 +86,23 @@
 		<Target Name="CustomPlugin:Make">
 			<MSBuild Targets="Make" Projects="CustomPlugin\CustomPlugin.dproj"/>
 		</Target>
+		<Target Name="StickyTools">
+			<MSBuild Projects="StickyTools\StickyTools.dproj"/>
+		</Target>
+		<Target Name="StickyTools:Clean">
+			<MSBuild Targets="Clean" Projects="StickyTools\StickyTools.dproj"/>
+		</Target>
+		<Target Name="StickyTools:Make">
+			<MSBuild Targets="Make" Projects="StickyTools\StickyTools.dproj"/>
+		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign;SlidingForm;MethodTests;CustomPlugin"/>
+			<CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign;SlidingForm;MethodTests;CustomPlugin;StickyTools"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean;CustomPlugin:Clean"/>
+			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean;CustomPlugin:Clean;StickyTools:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make;CustomPlugin:Make"/>
+			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make;CustomPlugin:Make;StickyTools:Make"/>
 		</Target>
 		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 	</Project>
