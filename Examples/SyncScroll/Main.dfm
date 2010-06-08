@@ -117,14 +117,15 @@ object Form1: TForm1
       Height = 21
       Style = csDropDownList
       Anchors = [akLeft, akBottom]
-      ItemIndex = 0
+      ItemIndex = 3
       TabOrder = 2
-      Text = 'etLinear'
+      Text = 'etSinus'
       Items.Strings = (
         'etLinear'
         'etQuadratic'
         'etMassiveQuadratic'
-        'etSinus')
+        'etSinus'
+        'etElastic')
     end
     object AnimationDurationComboBox: TComboBox
       Left = 372
@@ -146,6 +147,14 @@ object Form1: TForm1
         '800 msec'
         '900 msec'
         '1000 msec')
+    end
+    object AnimationDirectionOutCheckBox: TCheckBox
+      Left = 511
+      Top = 1
+      Width = 97
+      Height = 17
+      Caption = 'Out'
+      TabOrder = 4
     end
   end
   object Panel2: TPanel

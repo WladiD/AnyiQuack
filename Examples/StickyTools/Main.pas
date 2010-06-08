@@ -101,6 +101,18 @@ begin
 				Caption:='WM_WINDOWPOSCHANGED ' + IntToStr(WindowPosChangedCount);
 				Result:=TRUE;
 			end, 111);
+		EachMessage(WM_LBUTTONDOWN,
+			function(AQ:TAQ; O:TObject; Message:TMessage):Boolean
+			begin
+				TForm(O).Color:=clBlack;
+				Result:=TRUE;
+			end);
+		EachMessage(WM_LBUTTONUP,
+			function(AQ:TAQ; O:TObject; Message:TMessage):Boolean
+			begin
+				TForm(O).Color:=clBtnFace;
+				Result:=TRUE;
+			end);
 	end;
 
 	BlinkEach:=function(AQ:TAQ; O:TObject):Boolean
@@ -121,7 +133,6 @@ begin
 			 end);
 		Result:=FALSE;
 	end;
-
 	Take(Label1).Each(BlinkEach);
 end;
 

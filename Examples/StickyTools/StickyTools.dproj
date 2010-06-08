@@ -3,7 +3,7 @@
 			<ProjectGuid>{6D8B1345-5AA2-48F0-B518-E4F5C15F0783}</ProjectGuid>
 			<ProjectVersion>12.0</ProjectVersion>
 			<MainSource>StickyTools.dpr</MainSource>
-			<Config Condition="'$(Config)'==''">Debug</Config>
+			<Config Condition="'$(Config)'==''">Release</Config>
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Basis' or '$(Base)'!=''">

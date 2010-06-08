@@ -48,10 +48,7 @@ begin
 						begin
 							AQ
 								.ChildrenChain
-									.FilterChain(TToolsForm)
-										.Each(StickyEach)
-										.Die
-									.EndChain
+									.Each(StickyEach)
 									.Die
 								.EndChain
 							.Die;
@@ -65,6 +62,9 @@ var
 	LocalTargetPos:TPoint;
 	ToolsForm:TToolsForm;
 begin
+	Result:=TRUE;
+	if not (O is TToolsForm) then
+		Exit;
 	ToolsForm:=TToolsForm(O);
 	LocalTargetPos:=ToolsForm.TargetPos;
 
@@ -74,13 +74,13 @@ begin
 			.CancelAnimations
 			.Plugin<TAQPControlAnimations>
 			.BoundsAnimation(LocalTargetPos.X, LocalTargetPos.Y, -1, -1, 350, 0,
-				TAQ.Ease(etSinus))
+				TAQ.Ease(etMassiveQuadratic, edOut))
 		.Die;
 	end
 	else
 		with ToolsForm do
 			SetBounds(LocalTargetPos.X, LocalTargetPos.Y, Width, Height);
-	Result:=TRUE;
+
 end;
 
 initialization

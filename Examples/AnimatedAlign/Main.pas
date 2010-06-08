@@ -204,7 +204,7 @@ begin
 				Take(O)
 					.Plugin<TAQPControlAnimations>
 					.BoundsAnimation(TargetLeft, TargetTop, PQSize, PQSize,
-						AnimationDurationTrackBar.Position, UpdateAnimationID, TAQ.Ease(etSinus));
+						AnimationDurationTrackBar.Position, UpdateAnimationID, TAQ.Ease(etElastic));
 				Inc(PIndex);
 			end, UpdateAnimationID)
 		.Die;

@@ -218,8 +218,7 @@ begin
 						Result:=TRUE;
 					end);
 		end;
-		if cc < FListeners.Count then
-			Inc(cc);
+		Inc(cc);
 	end;
 end;
 

@@ -18,12 +18,13 @@ type
 		ItemsCountTrackBar: TTrackBar;
 		Label1:TLabel;
 		Label2:TLabel;
-		AnimatedScrollCheckBox: TCheckBox;
-		Label3: TLabel;
-		AnimationStyleComboBox: TComboBox;
-		Panel3: TPanel;
-		Label4: TLabel;
-		AnimationDurationComboBox: TComboBox;
+		AnimatedScrollCheckBox:TCheckBox;
+		Label3:TLabel;
+		AnimationStyleComboBox:TComboBox;
+		Panel3:TPanel;
+		Label4:TLabel;
+		AnimationDurationComboBox:TComboBox;
+		AnimationDirectionOutCheckBox:TCheckBox;
 		procedure ItemsCountTrackBarChange(Sender:TObject);
 		procedure FormCreate(Sender:TObject);
 		procedure SyncScrollBarChange(Sender:TObject);
@@ -107,7 +108,9 @@ begin
 		 *}
 		if Assigned(AQ.CurrentInterval) then
 			TListBox(O).TopIndex:=Round(
-				TAQ.Ease(TEaseType(Ord(AnimationStyleComboBox.ItemIndex)))
+				TAQ.Ease(
+					TEaseType(Ord(AnimationStyleComboBox.ItemIndex)),
+					TEaseDirection(Ord(AnimationDirectionOutCheckBox.Checked)))
 					(FirstItemIndex, ScrollItemIndex, AQ.CurrentInterval.Progress))
 		{**
 		 * Sofort

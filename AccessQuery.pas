@@ -42,7 +42,8 @@ type
 	TAQPlugin = class;
 	TInterval = class;
 
-	TEaseType = (etLinear, etQuadratic, etMassiveQuadratic, etSinus);
+	TEaseType = (etLinear, etQuadratic, etMassiveQuadratic, etSinus, etElastic);
+	TEaseDirection = (edIn, edOut, edInOut);
 	TActorRole = (arTimer, arInterval, arDelay, arAnimation);
 
 	TObjectArray = array of TObject;
@@ -151,8 +152,10 @@ type
 		class function Take(Objects:TObjectArray):TAQ; overload;
 		class function Take(Objects:TObjectList):TAQ; overload;
 
-		class function Ease(EaseType:TEaseType):TEaseFunction; overload;
-		class function Ease(EaseFunction:TEaseFunction = nil):TEaseFunction; overload;
+		class function Ease(EaseType:TEaseType;
+			Direction:TEaseDirection = edIn):TEaseFunction; overload;
+		class function Ease(EaseFunction:TEaseFunction = nil;
+			Direction:TEaseDirection = edIn):TEaseFunction; overload;
 
 		function Each(EachFunction:TEachFunction):TAQ; override;
 		function EachInterval(Interval:Integer; Each:TEachFunction; ID:Integer = 0):TAQ;
@@ -162,6 +165,40 @@ type
 			ID:Integer = 0):TAQ;
 		function EachDelay(Delay:Integer; Each:TEachFunction; ID:Integer = 0):TAQ;
 		function EachRepeat(Times:Integer; EachFunction:TEachFunction):TAQ;
+		{**
+		 * !Ist erstmal nur ein Entwurf!
+		 *
+		 * Verarbeitet die Objekte in mehreren Threads
+		 *
+		 * Der Einsatz dieser Methode soll gut überlegt und vorallem gründlich getestet werden. Sie
+		 * lohnt sich nur bei rechenintensiven Verarbeitungsschritten.
+		 * Die Each-Methoden sollten nicht die an sie übergebene TAQ-Instanz manipulieren
+		 * (Add, Remove etc.): Dies würde zu zufälligen Zugriffsverletzungen führen.
+		 *
+		 * @param MainEach Wird im Kontext des Threads für jedes Objekt ausgeführt
+		 * @param ConcurrentThreads Optional. Standard ist 1. Anzahl von gleichzeitigen Threads.
+		 *        Die Werte 0 und 1 haben eine spezielle Bedeutung:
+		 *        = 0 Für jedes Objekt wird sofort ein Thread erstellt
+		 *        = 1 Es werden maximal soviele Threads erstellt, wieviele die CPU ausführen kann,
+		 *            jedoch mindestens 2 (bei einem i7-920 wären es z.B. 8)
+		 *        > 1 Es werden maximal soviele Threads erstellt
+		 * @param Synchronize Sagt aus, ob die Methode die Beendigung aller Threads abwarten soll.
+		 *        - Bei TRUE läuft die Verarbeitung der Objekte zwar über mehrere Threads ab,
+		 *          jedoch wird der Haupt-Thread (Anwendung) blockiert, bis die Verarbeitung
+		 *          abgeschlossen wurde. Dies ermöglicht den Einsatz von nahezu allen Objekten, auch
+		 *          wenn Teile davon nicht Thread-Safe sind.
+		 *        - Bei FALSE wird die Anwendung nicht blockiert und die Threads werden parallel
+		 *          gestartet. Setzt Kenntniss über die Funktionsweise der zu verarbeiteten Objekte
+		 *          voraus.
+		 * @param TerminateEach Optional. Standard ist nil. Wird im Kontext des Haupt-Threads
+		 *        ausgeführt, wenn ein Thread die Verarbeitung beendet hat.
+		 * @param FinalizeEach Optional. Standard ist nil. Wird ebenfalls im Kontext des
+		 *        Haupt-Threads für jedes gehaltene Objekt ausgeführt, wenn die Verarbeitung aller
+		 *        Objekte beendet ist, also wenn alle Threads fertig sind.
+		 *}
+//		function EachThread(MainEach:TEachFunction; ConcurrentThreads:Byte = 1;
+//			Synchronize:Boolean = FALSE;
+//			TerminateEach:TEachFunction = nil; FinalizeEach:TEachFunction = nil):TAQ;
 
 		function NewChain:TAQ;
 		function EndChain:TAQ;
@@ -323,6 +360,16 @@ var
 begin
 	Delta:=EndValue - StartValue;
 	Result:=StartValue + (Delta * (Sin(Progress * (Pi / 2))));
+end;
+
+function ElasticEase(StartValue, EndValue, Progress:Real):Real;
+var
+	Delta:Real;
+begin
+	Delta:=EndValue - StartValue;
+	Progress:=(Sin(Progress * Pi * (0.2 + 2.5 * Progress * Progress * Progress)) *
+		Power(1 - Progress, 2.2) + Progress) * (1 + (1.2 * (1 - Progress)));
+	Result:=StartValue + (Delta * Progress);
 end;
 
 function Take(AObject:TObject):TAQ;
@@ -927,13 +974,7 @@ begin
 	AddInterval(TInterval.Finite(Duration, Each, LastEach, arTimer, ID));
 end;
 
-class function TAQ.Ease(EaseFunction:TEaseFunction):TEaseFunction;
-begin
-	if Assigned(EaseFunction) then
-		Result:=EaseFunction
-	else
-		Result:=LinearEase;
-end;
+
 
 function TAQ.IfEnd:TAQ;
 begin
@@ -1025,7 +1066,7 @@ begin
 		end);
 end;
 
-class function TAQ.Ease(EaseType:TEaseType):TEaseFunction;
+class function TAQ.Ease(EaseType:TEaseType; Direction:TEaseDirection):TEaseFunction;
 begin
 	case EaseType of
 		etQuadratic:
@@ -1034,8 +1075,46 @@ begin
 			Result:=MassiveQuadraticEase;
 		etSinus:
 			Result:=SinusEase;
+		etElastic:
+			Result:=ElasticEase;
 	else
 		Result:=LinearEase;
+	end;
+	Result:=Ease(Result, Direction);
+end;
+
+class function TAQ.Ease(EaseFunction:TEaseFunction; Direction:TEaseDirection):TEaseFunction;
+begin
+	if not Assigned(EaseFunction) then
+		EaseFunction:=LinearEase;
+
+	case Direction of
+		edIn:
+			Result:=EaseFunction;
+		edOut:
+			Result:=function(StartValue, EndValue, Progress:Real):Real
+			begin
+				Result:=EaseFunction(EndValue, StartValue, 1 - Progress);
+			end;
+		edInOut:
+			Result:=function(StartValue, EndValue, Progress:Real):Real
+			var
+				HalfDelta, SubProgress, SubStart, SubEnd:Real;
+			begin
+				HalfDelta:=(EndValue - StartValue) / 2;
+				SubEnd:=StartValue + HalfDelta;
+				if Progress <= 0.5 then
+				begin
+					SubProgress:=Progress / 0.5;
+					SubStart:=StartValue;
+				end
+				else
+				begin
+					SubProgress:=1 - ((Progress - 0.5) / 0.5);
+					SubStart:=EndValue;
+				end;
+				Result:=EaseFunction(SubStart, SubEnd, SubProgress);
+			end;
 	end;
 end;
 

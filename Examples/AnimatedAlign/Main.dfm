@@ -92,6 +92,7 @@ object MainForm: TMainForm
       Height = 21
       Max = 200
       Min = 55
+      PageSize = 10
       Frequency = 20
       Position = 100
       PositionToolTip = ptBottom
@@ -134,7 +135,7 @@ object MainForm: TMainForm
       31)
     object Label4: TLabel
       Left = 8
-      Top = 0
+      Top = -2
       Width = 158
       Height = 13
       Anchors = [akLeft, akBottom]
