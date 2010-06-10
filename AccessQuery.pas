@@ -1867,7 +1867,7 @@ begin
 	FLastEach:=LastEach;
 
 	FFirstTick:=TAQ.Tick;
-	FInterval:=Max(IntervalResolution, Ceil(Duration / IntervalResolution));
+	FInterval:=IntervalResolution;
 
 	FLastTick:=FFirstTick + Cardinal(Duration);
 	UpdateNextTick;

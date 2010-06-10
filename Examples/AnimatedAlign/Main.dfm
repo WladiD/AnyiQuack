@@ -130,17 +130,23 @@ object MainForm: TMainForm
     BevelOuter = bvNone
     ParentBackground = False
     TabOrder = 1
-    DesignSize = (
-      635
-      31)
     object Label4: TLabel
-      Left = 8
-      Top = -2
+      AlignWithMargins = True
+      Left = 5
+      Top = 0
       Width = 158
-      Height = 13
-      Anchors = [akLeft, akBottom]
+      Height = 31
+      Margins.Left = 5
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
+      Align = alLeft
+      AutoSize = False
       Caption = 'Note: Flickering is a issue of VCL.'
+      Layout = tlCenter
+      ExplicitLeft = 8
       ExplicitTop = 14
+      ExplicitHeight = 13
     end
     object AddPanelButton: TButton
       AlignWithMargins = True

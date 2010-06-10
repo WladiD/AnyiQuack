@@ -24,6 +24,9 @@
 			<Projects Include="StickyTools\StickyTools.dproj">
 				<Dependencies/>
 			</Projects>
+			<Projects Include="EaseGraph\EaseGraph.dproj">
+				<Dependencies/>
+			</Projects>
 		</ItemGroup>
 		<ProjectExtensions>
 			<Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -95,14 +98,23 @@
 		<Target Name="StickyTools:Make">
 			<MSBuild Targets="Make" Projects="StickyTools\StickyTools.dproj"/>
 		</Target>
+		<Target Name="EaseGraph">
+			<MSBuild Projects="EaseGraph\EaseGraph.dproj"/>
+		</Target>
+		<Target Name="EaseGraph:Clean">
+			<MSBuild Targets="Clean" Projects="EaseGraph\EaseGraph.dproj"/>
+		</Target>
+		<Target Name="EaseGraph:Make">
+			<MSBuild Targets="Make" Projects="EaseGraph\EaseGraph.dproj"/>
+		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign;SlidingForm;MethodTests;CustomPlugin;StickyTools"/>
+			<CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign;SlidingForm;MethodTests;CustomPlugin;StickyTools;EaseGraph"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean;CustomPlugin:Clean;StickyTools:Clean"/>
+			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean;CustomPlugin:Clean;StickyTools:Clean;EaseGraph:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make;CustomPlugin:Make;StickyTools:Make"/>
+			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make;CustomPlugin:Make;StickyTools:Make;EaseGraph:Make"/>
 		</Target>
 		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 	</Project>
