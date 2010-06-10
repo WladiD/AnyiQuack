@@ -226,6 +226,8 @@ begin
 	StartProgress:=Max(0, Progress - (ProgressStep * FLength));
 	X:=Location.Left + (AvailWidth * Progress);
 	Y:=FEaseFunction(Location.Bottom, Location.Top, Progress);
+	EaseReturn:=0;
+	ValueColor:=clBlack32;
 	{**
 	 * Graph-Linie
 	 *}
