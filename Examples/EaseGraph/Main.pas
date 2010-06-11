@@ -19,6 +19,8 @@ type
 		EaseTypeListBox:TListBox;
 		AnimateOnChangeCheckBox:TCheckBox;
 		AnimateButton:TButton;
+		Panel2:TPanel;
+		Label2:TLabel;
 		procedure FormCreate(Sender:TObject);
 		procedure GraphRecreate(Sender:TObject);
 		procedure AnimateButtonClick(Sender:TObject);
@@ -210,7 +212,7 @@ procedure TTrackerLayer.Paint(Buffer:TBitmap32);
 const
 	CrossSize = 5;
 var
-	StartProgress, EaseReturn, ProgressStep, AvailWidth, X, Y:Real;
+	StartProgress, ProgressStep, X, Y, EaseReturn, AvailWidth:Real;
 	DispWidth, DispHeight:Integer;
 	ValueColor:TColor32;
 	Caption:String;
@@ -235,9 +237,13 @@ begin
 		FEaseFunction(Location.Bottom, Location.Top, StartProgress));
 	while StartProgress < Progress do
 	begin
-		EaseReturn:=FEaseFunction(Location.Bottom, Location.Top, StartProgress);
-
-		if Round(EaseReturn) = Round(Location.Top) then
+		StartProgress:=StartProgress + ProgressStep;
+		if StartProgress > 1 then
+			StartProgress:=1
+		else if StartProgress < 0 then
+			StartProgress:=0;
+		EaseReturn:=FEaseFunction(Trunc(Location.Bottom), Trunc(Location.Top), StartProgress);
+		if EaseReturn = Location.Top then
 			ValueColor:=clTrBlue32
 		else if (EaseReturn > Location.Top) and (EaseReturn < Location.Bottom) then
 			ValueColor:=clTrGreen32
@@ -245,7 +251,6 @@ begin
 			ValueColor:=clTrRed32;
 		Buffer.PenColor:=ValueColor;
 		Buffer.LineToFS(Location.Left + (AvailWidth * StartProgress), EaseReturn);
-		StartProgress:=StartProgress + ProgressStep;
 	end;
 	{**
 	 * Horizontale und vertikale Trackerlinien

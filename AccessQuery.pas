@@ -42,7 +42,8 @@ type
 	TAQPlugin = class;
 	TInterval = class;
 
-	TEaseType = (etLinear, etQuadratic, etMassiveQuadratic, etSinus, etElastic);
+	TEaseType = (etLinear, etQuadratic, etMassiveQuadratic, etSinus, etElastic,
+		etLowWave, etMiddleWave, etHighWave);
 	TEaseDirection = (edIn, edOut, edInOut);
 	TActorRole = (arTimer, arInterval, arDelay, arAnimation);
 
@@ -369,6 +370,33 @@ begin
 	Delta:=EndValue - StartValue;
 	Progress:=(Sin(Progress * Pi * (0.2 + 2.5 * Progress * Progress * Progress)) *
 		Power(1 - Progress, 2.2) + Progress) * (1 + (1.2 * (1 - Progress)));
+	Result:=StartValue + (Delta * Progress);
+end;
+
+function LowWave(StartValue, EndValue, Progress:Real):Real;
+var
+	Delta:Real;
+begin
+	Delta:=EndValue - StartValue;
+	Progress:=Progress + (Sin(Progress * 3 * Pi) * 0.1);
+	Result:=StartValue + (Delta * Progress);
+end;
+
+function MiddleWave(StartValue, EndValue, Progress:Real):Real;
+var
+	Delta:Real;
+begin
+	Delta:=EndValue - StartValue;
+	Progress:=Progress + (Sin(Progress * 3 * Pi) * 0.2);
+	Result:=StartValue + (Delta * Progress);
+end;
+
+function HighWave(StartValue, EndValue, Progress:Real):Real;
+var
+	Delta:Real;
+begin
+	Delta:=EndValue - StartValue;
+	Progress:=Progress + (Sin(Progress * 3 * Pi) * 0.4);
 	Result:=StartValue + (Delta * Progress);
 end;
 
@@ -1077,6 +1105,12 @@ begin
 			Result:=SinusEase;
 		etElastic:
 			Result:=ElasticEase;
+		etLowWave:
+			Result:=LowWave;
+		etMiddleWave:
+			Result:=MiddleWave;
+		etHighWave:
+			Result:=HighWave;
 	else
 		Result:=LinearEase;
 	end;
