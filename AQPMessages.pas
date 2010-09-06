@@ -45,44 +45,22 @@ type
 
 		procedure HookWindowProc(var Message:TMessage);
 	public
+		destructor Destroy; override;
+
 		class function ListenersExistsFor(Control:TControl; Msg:Cardinal = 0;
 			ListenID:Integer = 0):Boolean;
 
 		function EachMessage(Msg:Cardinal; EachMsgFunction:TEachMiscFunction<TMessage>;
-			ListenID:Integer = 0):TAQ;
-		function CancelMessages(Msg:Cardinal; ListenID:Integer = 0):TAQ;
-
-		destructor Destroy; override;
+			ListenID:Integer = 0):TAQ; overload;
+		function EachMessage(Msgs:array of Cardinal; EachMsgFunction:TEachMiscFunction<TMessage>;
+			ListenID:Integer = 0):TAQ; overload;
+		function CancelMessages(Msg:Cardinal; ListenID:Integer = 0):TAQ; overload;
+		function CancelMessages(Msgs:array of Cardinal; ListenID:Integer = 0):TAQ; overload;
 	end;
 
 implementation
 
 {** TAQPMessages **}
-
-function TAQPMessages.CancelMessages(Msg:Cardinal; ListenID:Integer):TAQ;
-begin
-	FListeners
-		.Each(
-			function(AQ:TAQ; O:TObject):Boolean
-			var
-				CheckMsgPlugin:TAQPMessages;
-			begin
-				CheckMsgPlugin:=TAQPMessages(O);
-				if
-					(CheckMsgPlugin.FListenForMsg = Msg) and
-					MatchID(ListenID, CheckMsgPlugin.FListenID) and
-					(CheckMsgPlugin.WorkAQ.IfContainsAny(Self.WorkAQ).Die.Count > 0) then
-				begin
-					{**
-					 * Hierdurch stirbt die verbundene TAQ-Instanz, da keine Ticks gemacht wurden
-					 *}
-					CheckMsgPlugin.Immortally:=FALSE;
-					GarbageCollector.Remove(CheckMsgPlugin);
-				end;
-				Result:=TRUE;
-			end);
-	Result:=WorkAQ;
-end;
 
 class constructor TAQPMessages.Create;
 begin
@@ -132,6 +110,39 @@ begin
 	FListeners.Free;
 end;
 
+function TAQPMessages.CancelMessages(Msg:Cardinal; ListenID:Integer):TAQ;
+begin
+	FListeners
+		.Each(
+			function(AQ:TAQ; O:TObject):Boolean
+			var
+				CheckMsgPlugin:TAQPMessages;
+			begin
+				CheckMsgPlugin:=TAQPMessages(O);
+				if
+					(CheckMsgPlugin.FListenForMsg = Msg) and
+					MatchID(ListenID, CheckMsgPlugin.FListenID) and
+					(CheckMsgPlugin.WorkAQ.IfContainsAny(Self.WorkAQ).Die.Count > 0) then
+				begin
+					{**
+					 * Hierdurch stirbt die verbundene TAQ-Instanz, da keine Ticks gemacht wurden
+					 *}
+					CheckMsgPlugin.Immortally:=FALSE;
+					GarbageCollector.Remove(CheckMsgPlugin);
+				end;
+				Result:=TRUE;
+			end);
+	Result:=WorkAQ;
+end;
+
+function TAQPMessages.CancelMessages(Msgs:array of Cardinal; ListenID:Integer):TAQ;
+var
+	cc:Integer;
+begin
+	for cc:=0 to Length(Msgs) - 1 do
+		CancelMessages(Msgs[cc], ListenID);
+end;
+
 function TAQPMessages.EachMessage(Msg:Cardinal; EachMsgFunction:TEachMiscFunction<TMessage>;
 	ListenID:Integer):TAQ;
 begin
@@ -171,6 +182,15 @@ begin
 			 *}
 			FListeners.Add(MsgPlugin);
 		end);
+end;
+
+function TAQPMessages.EachMessage(Msgs:array of Cardinal;
+	EachMsgFunction:TEachMiscFunction<TMessage>; ListenID:Integer):TAQ;
+var
+	cc:Integer;
+begin
+	for cc:=0 to Length(Msgs) - 1 do
+		EachMessage(Msgs[cc], EachMsgFunction, ListenID);
 end;
 
 class function TAQPMessages.GetNextListenerFor(Control:TControl):TAQPMessages;
