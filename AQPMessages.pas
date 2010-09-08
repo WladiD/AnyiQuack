@@ -141,6 +141,7 @@ var
 begin
 	for cc:=0 to Length(Msgs) - 1 do
 		CancelMessages(Msgs[cc], ListenID);
+	Result:=WorkAQ;
 end;
 
 function TAQPMessages.EachMessage(Msg:Cardinal; EachMsgFunction:TEachMiscFunction<TMessage>;
@@ -191,6 +192,7 @@ var
 begin
 	for cc:=0 to Length(Msgs) - 1 do
 		EachMessage(Msgs[cc], EachMsgFunction, ListenID);
+	Result:=WorkAQ;
 end;
 
 class function TAQPMessages.GetNextListenerFor(Control:TControl):TAQPMessages;
