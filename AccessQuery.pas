@@ -25,7 +25,7 @@ unit AccessQuery;
 interface
 
 uses
-	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Math;
+	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Math, Graphics;
 
 {$IFDEF DEBUG}
 	{$INCLUDE Debug.inc}
@@ -44,15 +44,17 @@ type
 
 	TEaseType = (etLinear, etQuadratic, etMassiveQuadratic, etSinus, etElastic,
 		etLowWave, etMiddleWave, etHighWave);
-	TEaseDirection = (edIn, edOut, edInOut);
+	TEaseModifier = (emIn, emOut, emInOut, emInInverted, emOutInverted, emOutIn,
+		emInOutMirrored, emOutInMirrored, emInFlip, emOutFlip);
 	TActorRole = (arTimer, arInterval, arDelay, arAnimation);
 
 	TObjectArray = array of TObject;
 
 	TEachFunction = reference to function(AQ:TAQ; O:TObject):Boolean;
-	TAnonymNotifyEvent = reference to procedure(Sender:TObject);
-	TEaseFunction = reference to function(StartValue, EndValue, Progress:Real):Real;
 	TEachMiscFunction<T> = reference to function(AQ:TAQ; O:TObject; Misc:T):Boolean;
+	TAnonymNotifyEvent = reference to procedure(Sender:TObject);
+	TEaseFunction = reference to function(Progress:Real):Real;
+
 
 	TAQBase = class(TObjectList)
 	protected
@@ -154,9 +156,34 @@ type
 		class function Take(Objects:TObjectList):TAQ; overload;
 
 		class function Ease(EaseType:TEaseType;
-			Direction:TEaseDirection = edIn):TEaseFunction; overload;
+			EaseModifier:TEaseModifier = emIn):TEaseFunction; overload;
 		class function Ease(EaseFunction:TEaseFunction = nil;
-			Direction:TEaseDirection = edIn):TEaseFunction; overload;
+			EaseModifier:TEaseModifier = emIn):TEaseFunction; overload;
+
+		class function EaseReal(StartValue, EndValue, Progress:Real; EaseType:TEaseType;
+			EaseModifier:TEaseModifier = emIn):Real; overload;
+		class function EaseReal(StartValue, EndValue, Progress:Real;
+			EaseFunction:TEaseFunction):Real; overload;
+
+		class function EaseInteger(StartValue, EndValue:Integer; Progress:Real; EaseType:TEaseType;
+			EaseModifier:TEaseModifier = emIn):Integer; overload;
+		class function EaseInteger(StartValue, EndValue:Integer; Progress:Real;
+			EaseFunction:TEaseFunction):Integer; overload;
+
+		class function EaseColor(StartColor, EndColor:TColor; Progress:Real; EaseType:TEaseType;
+			EaseModifier:TEaseModifier = emIn):TColor; overload;
+		class function EaseColor(StartColor, EndColor:TColor; Progress:Real;
+			EaseFunction:TEaseFunction):TColor; overload;
+
+		class function EasePoint(StartPoint, EndPoint:TPoint; Progress:Real; EaseType:TEaseType;
+			EaseModifier:TEaseModifier = emIn):TPoint; overload;
+		class function EasePoint(StartPoint, EndPoint:TPoint; Progress:Real;
+			EaseFunction:TEaseFunction):TPoint; overload;
+
+		class function EaseRect(StartRect, EndRect:TRect; Progress:Real; EaseType:TEaseType;
+			EaseModifier:TEaseModifier = emIn):TRect; overload;
+		class function EaseRect(StartRect, EndRect:TRect; Progress:Real;
+			EaseFunction:TEaseFunction):TRect; overload;
 
 		function Each(EachFunction:TEachFunction):TAQ; override;
 		function EachInterval(Interval:Integer; Each:TEachFunction; ID:Integer = 0):TAQ;
@@ -315,7 +342,7 @@ implementation
 
 const
 	MaxLifeTime = 10000;
-	IntervalResolution = 31;
+	IntervalResolution = 25;
 	GarbageCleanInterval = 5000;
 	GarbageCleanTime = 100;
 	SpareAQsCount = 1000;
@@ -331,73 +358,45 @@ type
 		procedure Notify(Ptr:Pointer; Action:TListNotification); override;
 	end;
 
-function LinearEase(StartValue, EndValue, Progress:Real):Real;
-var
-	Delta:Real;
+function LinearEase(Progress:Real):Real;
 begin
-	Delta:=EndValue - StartValue;
-	Result:=StartValue + (Delta * Progress);
+	Result:=Progress;
 end;
 
-function QuadraticEase(StartValue, EndValue, Progress:Real):Real;
-var
-	Delta:Real;
+function QuadraticEase(Progress:Real):Real;
 begin
-	Delta:=EndValue - StartValue;
-	Result:=StartValue + (Delta * Sqr(Progress));
+	Result:=Sqr(Progress);
 end;
 
-function MassiveQuadraticEase(StartValue, EndValue, Progress:Real):Real;
-var
-	Delta:Real;
+function MassiveQuadraticEase(Progress:Real):Real;
 begin
-	Delta:=EndValue - StartValue;
-	Result:=StartValue + (Delta * Progress * Sqr(Progress));
+	Result:=Progress * Sqr(Progress);
 end;
 
-function SinusEase(StartValue, EndValue, Progress:Real):Real;
-var
-	Delta:Real;
+function SinusEase(Progress:Real):Real;
 begin
-	Delta:=EndValue - StartValue;
-	Result:=StartValue + (Delta * (Sin(Progress * (Pi / 2))));
+	Result:=Sin(Progress * (Pi / 2));
 end;
 
-function ElasticEase(StartValue, EndValue, Progress:Real):Real;
-var
-	Delta:Real;
+function ElasticEase(Progress:Real):Real;
 begin
-	Delta:=EndValue - StartValue;
-	Progress:=(Sin(Progress * Pi * (0.2 + 2.5 * Progress * Progress * Progress)) *
+	Result:=(Sin(Progress * Pi * (0.2 + 2.5 * Progress * Progress * Progress)) *
 		Power(1 - Progress, 2.2) + Progress) * (1 + (1.2 * (1 - Progress)));
-	Result:=StartValue + (Delta * Progress);
 end;
 
-function LowWave(StartValue, EndValue, Progress:Real):Real;
-var
-	Delta:Real;
+function LowWave(Progress:Real):Real;
 begin
-	Delta:=EndValue - StartValue;
-	Progress:=Progress + (Sin(Progress * 3 * Pi) * 0.1);
-	Result:=StartValue + (Delta * Progress);
+	Result:=Progress + (Sin(Progress * 3 * Pi) * 0.1);
 end;
 
-function MiddleWave(StartValue, EndValue, Progress:Real):Real;
-var
-	Delta:Real;
+function MiddleWave(Progress:Real):Real;
 begin
-	Delta:=EndValue - StartValue;
-	Progress:=Progress + (Sin(Progress * 3 * Pi) * 0.2);
-	Result:=StartValue + (Delta * Progress);
+	Result:=Progress + (Sin(Progress * 3 * Pi) * 0.2);
 end;
 
-function HighWave(StartValue, EndValue, Progress:Real):Real;
-var
-	Delta:Real;
+function HighWave(Progress:Real):Real;
 begin
-	Delta:=EndValue - StartValue;
-	Progress:=Progress + (Sin(Progress * 3 * Pi) * 0.4);
-	Result:=StartValue + (Delta * Progress);
+	Result:=Progress + (Sin(Progress * 3 * Pi) * 0.4);
 end;
 
 function Take(AObject:TObject):TAQ;
@@ -454,6 +453,30 @@ function GetBit(Container:Byte; BitMask:Byte):Boolean;
 begin
 	Result:=(Container and BitMask) <> 0;
 end;
+
+//var
+//	HighPerformanceCounterAvailable:Boolean;
+//	HighPerformanceStartCount:Int64;
+//	HighPerformanceCountPerSecond:Int64;
+//
+//{**
+// * Returns a smoother TickCount
+// *
+// * If the high perfomance counter not supported, it will use Windows.GetTickCount
+// *}
+//function GetTickCount:Cardinal;
+//var
+//	CurrentCount:Int64;
+//begin
+//	if HighPerformanceCounterAvailable then
+//	begin
+//		QueryPerformanceCounter(CurrentCount);
+//		Result:=
+//			Floor(((CurrentCount - HighPerformanceStartCount) / HighPerformanceCountPerSecond) * 1000);
+//	end
+//	else
+//		Result:=Windows.GetTickCount;
+//end;
 
 {** TAQBase **}
 
@@ -1094,7 +1117,7 @@ begin
 		end);
 end;
 
-class function TAQ.Ease(EaseType:TEaseType; Direction:TEaseDirection):TEaseFunction;
+class function TAQ.Ease(EaseType:TEaseType; EaseModifier:TEaseModifier = emIn):TEaseFunction;
 begin
 	case EaseType of
 		etQuadratic:
@@ -1114,42 +1137,176 @@ begin
 	else
 		Result:=LinearEase;
 	end;
-	Result:=Ease(Result, Direction);
+	Result:=Ease(Result, EaseModifier);
 end;
 
-class function TAQ.Ease(EaseFunction:TEaseFunction; Direction:TEaseDirection):TEaseFunction;
+class function TAQ.Ease(EaseFunction:TEaseFunction; EaseModifier:TEaseModifier):TEaseFunction;
 begin
 	if not Assigned(EaseFunction) then
 		EaseFunction:=LinearEase;
 
-	case Direction of
-		edIn:
+	case EaseModifier of
+		emIn:
 			Result:=EaseFunction;
-		edOut:
-			Result:=function(StartValue, EndValue, Progress:Real):Real
+		emOut:
+			Result:=function(Progress:Real):Real
 			begin
-				Result:=EaseFunction(EndValue, StartValue, 1 - Progress);
+				Result:=EaseFunction(1 - Progress);
 			end;
-		edInOut:
-			Result:=function(StartValue, EndValue, Progress:Real):Real
-			var
-				HalfDelta, SubProgress, SubStart, SubEnd:Real;
+		emInOut:
+			Result:=function(Progress:Real):Real
 			begin
-				HalfDelta:=(EndValue - StartValue) / 2;
-				SubEnd:=StartValue + HalfDelta;
 				if Progress <= 0.5 then
-				begin
-					SubProgress:=Progress / 0.5;
-					SubStart:=StartValue;
-				end
+					Progress:=Progress / 0.5
 				else
-				begin
-					SubProgress:=1 - ((Progress - 0.5) / 0.5);
-					SubStart:=EndValue;
-				end;
-				Result:=EaseFunction(SubStart, SubEnd, SubProgress);
+					Progress:=1 - ((Progress - 0.5) / 0.5);
+				Result:=EaseFunction(Progress);
+			end;
+		emInInverted:
+			Result:=function(Progress:Real):Real
+			begin
+				Result:=1 - EaseFunction(1 - Progress);
+			end;
+		emOutInverted:
+			Result:=function(Progress:Real):Real
+			begin
+				Result:=1 - EaseFunction(Progress);
+			end;
+		emOutIn:
+			Result:=function(Progress:Real):Real
+			begin
+				if Progress <= 0.5 then
+					Progress:=Progress / 0.5
+				else
+					Progress:=1 - ((Progress - 0.5) / 0.5);
+				Result:=EaseFunction(1 - Progress);
+			end;
+		emInOutMirrored:
+			Result:=function(Progress:Real):Real
+			begin
+				if Progress <= 0.5 then
+					Progress:=Progress / 0.5
+				else
+					Progress:=1 - ((Progress - 0.5) / 0.5);
+				Result:=1 - EaseFunction(1 - Progress);
+			end;
+		emOutInMirrored:
+			Result:=function(Progress:Real):Real
+			begin
+				if Progress <= 0.5 then
+					Progress:=Progress / 0.5
+				else
+					Progress:=1 - ((Progress - 0.5) / 0.5);
+				Result:=1 - EaseFunction(Progress);
 			end;
 	end;
+end;
+
+class function TAQ.EaseColor(StartColor, EndColor:TColor; Progress:Real; EaseType:TEaseType;
+	EaseModifier:TEaseModifier):TColor;
+begin
+	Result:=EaseColor(StartColor, EndColor, Progress, Ease(EaseType, EaseModifier));
+end;
+
+class function TAQ.EaseColor(StartColor, EndColor:TColor; Progress:Real;
+	EaseFunction:TEaseFunction):TColor;
+var
+	StartR, StartG, StartB,
+	EndR, EndG, EndB:Byte;
+
+	function R(Color:TColor):Byte;
+	begin
+		Result:=Color and $FF;
+	end;
+
+	function G(Color:TColor):Byte;
+	begin
+		Result:=(Color and $FF00) shr 8;
+	end;
+
+	function B(Color:TColor):Byte;
+	begin
+		Result:=(Color and $FF0000) shr 16;
+	end;
+begin
+	if StartColor = EndColor then
+		Exit(StartColor);
+
+	StartColor:=ColorToRGB(StartColor);
+	StartR:=R(StartColor);
+	StartG:=G(StartColor);
+	StartB:=B(StartColor);
+
+	EndColor:=ColorToRGB(EndColor);
+	EndR:=R(EndColor);
+	EndG:=G(EndColor);
+	EndB:=B(EndColor);
+
+	Progress:=EaseFunction(Progress);
+
+	Result:=RGB(
+		EaseInteger(StartR, EndR, Progress, nil),
+		EaseInteger(StartG, EndG, Progress, nil),
+		EaseInteger(StartB, EndB, Progress, nil));
+end;
+
+class function TAQ.EaseInteger(StartValue, EndValue:Integer; Progress:Real;
+	EaseFunction:TEaseFunction):Integer;
+begin
+	if Assigned(EaseFunction) then
+		Progress:=EaseFunction(Progress);
+	Result:=Round(StartValue + ((EndValue - StartValue) * Progress));
+end;
+
+class function TAQ.EasePoint(StartPoint, EndPoint:TPoint; Progress:Real;
+	EaseFunction:TEaseFunction):TPoint;
+begin
+	if Assigned(EaseFunction) then
+		Progress:=EaseFunction(Progress);
+	Result:=Point(
+		EaseInteger(StartPoint.X, EndPoint.X, Progress, nil),
+		EaseInteger(StartPoint.Y, EndPoint.Y, Progress, nil));
+end;
+
+class function TAQ.EasePoint(StartPoint, EndPoint:TPoint; Progress:Real; EaseType:TEaseType;
+	EaseModifier:TEaseModifier):TPoint;
+begin
+	Result:=EasePoint(StartPoint, EndPoint, Progress, Ease(EaseType, EaseModifier));
+end;
+
+class function TAQ.EaseInteger(StartValue, EndValue:Integer; Progress:Real; EaseType:TEaseType;
+	EaseModifier:TEaseModifier):Integer;
+begin
+	Result:=EaseInteger(StartValue, EndValue, Progress, Ease(EaseType, EaseModifier));
+end;
+
+class function TAQ.EaseReal(StartValue, EndValue, Progress:Real; EaseFunction:TEaseFunction):Real;
+begin
+	if Assigned(EaseFunction) then
+		Progress:=EaseFunction(Progress);
+	Result:=StartValue + ((EndValue - StartValue) * Progress);
+end;
+
+class function TAQ.EaseRect(StartRect, EndRect:TRect; Progress:Real;
+	EaseFunction:TEaseFunction):TRect;
+begin
+	if Assigned(EaseFunction) then
+		Progress:=EaseFunction(Progress);
+	Result:=Rect(
+		EasePoint(StartRect.TopLeft, EndRect.TopLeft, Progress, nil),
+		EasePoint(StartRect.BottomRight, EndRect.BottomRight, Progress, nil));
+end;
+
+class function TAQ.EaseRect(StartRect, EndRect:TRect; Progress:Real; EaseType:TEaseType;
+	EaseModifier:TEaseModifier):TRect;
+begin
+	Result:=EaseRect(StartRect, EndRect, Progress, Ease(EaseType, EaseModifier));
+end;
+
+class function TAQ.EaseReal(StartValue, EndValue, Progress:Real; EaseType:TEaseType;
+	EaseModifier:TEaseModifier):Real;
+begin
+	Result:=EaseReal(StartValue, EndValue, Progress, Ease(EaseType, EaseModifier));
 end;
 
 function TAQ.FilterChain(ByClass:TClass):TAQ;
@@ -1958,6 +2115,10 @@ begin
 end;
 
 initialization
+
+//HighPerformanceCounterAvailable:=QueryPerformanceFrequency(HighPerformanceCountPerSecond);
+//if HighPerformanceCounterAvailable then
+//	QueryPerformanceCounter(HighPerformanceStartCount);
 
 finalization
 

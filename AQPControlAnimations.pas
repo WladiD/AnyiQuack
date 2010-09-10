@@ -111,14 +111,14 @@ begin
 			Result:=TRUE;
 			Progress:=AQ.CurrentInterval.Progress;
 
-			AniLeft:=Ceil(TAQ.Ease(EaseFunction)(PrevLeft, NewLeft, Progress));
-			AniTop:=Ceil(TAQ.Ease(EaseFunction)(PrevTop, NewTop, Progress));
+			AniLeft:=TAQ.EaseInteger(PrevLeft, NewLeft, Progress, EaseFunction);
+			AniTop:=TAQ.EaseInteger(PrevTop, NewTop, Progress, EaseFunction);
 			if NewWidth >= 0 then
-				AniWidth:=Ceil(TAQ.Ease(EaseFunction)(PrevWidth, NewWidth, Progress))
+				AniWidth:=TAQ.EaseInteger(PrevWidth, NewWidth, Progress, EaseFunction)
 			else
 				AniWidth:=TControl(O).Width;
 			if NewHeight >= 0 then
-				AniHeight:=Ceil(TAQ.Ease(EaseFunction)(PrevHeight, NewHeight, Progress))
+				AniHeight:=TAQ.EaseInteger(PrevHeight, NewHeight, Progress, EaseFunction)
 			else
 				AniHeight:=TControl(O).Height;
 
@@ -145,53 +145,19 @@ end;
 procedure TAQPControlAnimations.CustomColorAnimation(FromColor, ToColor:TColor; Duration,
 	ID:Integer; ColorAssignFunction:TEachMiscFunction<TColor>; EaseFunction:TEaseFunction;
 	OnComplete:TAnonymNotifyEvent);
-var
-	FromR, FromG, FromB,
-	ToR, ToG, ToB:Byte;
-
-	function R(Color:TColor):Byte;
-	begin
-		Result:=Color and $FF;
-	end;
-
-	function G(Color:TColor):Byte;
-	begin
-		Result:=(Color and $FF00) shr 8;
-	end;
-
-	function B(Color:TColor):Byte;
-	begin
-		Result:=(Color and $FF0000) shr 16;
-	end;
 begin
 	if FromColor = ToColor then
 		Exit;
-	FromColor:=ColorToRGB(FromColor);
-	FromR:=R(FromColor);
-	FromG:=G(FromColor);
-	FromB:=B(FromColor);
-	ToColor:=ColorToRGB(ToColor);
-	ToR:=R(ToColor);
-	ToG:=G(ToColor);
-	ToB:=B(ToColor);
 
 	EaseFunction:=(TAQ.Ease(EaseFunction));
 	WorkAQ.EachAnimation(Duration,
 		function(AQ:TAQ; O:TObject):Boolean
 		var
-			NewR:Byte;
-			NewG:Byte;
-			NewB:Byte;
-			NewColor:TColor;
 			Progress:Real;
 		begin
 			Progress:=AQ.CurrentInterval.Progress;
-
-			NewR:=Round(EaseFunction(FromR, ToR, Progress));
-			NewG:=Round(EaseFunction(FromG, ToG, Progress));
-			NewB:=Round(EaseFunction(FromB, ToB, Progress));
-			NewColor:=RGB(NewR, NewG, NewB);
-			Result:=ColorAssignFunction(AQ, O, NewColor);
+			Result:=ColorAssignFunction(AQ, O,
+				TAQ.EaseColor(FromColor, ToColor, Progress, EaseFunction));
 
 			if (Progress = 1) and Assigned(OnComplete) then
 				OnComplete(O);
