@@ -107,11 +107,9 @@ begin
 		 * Animiert
 		 *}
 		if Assigned(AQ.CurrentInterval) then
-			TListBox(O).TopIndex:=Round(
-				TAQ.Ease(
-					TEaseType(Ord(AnimationStyleComboBox.ItemIndex)),
-					TEaseDirection(Ord(AnimationDirectionOutCheckBox.Checked)))
-					(FirstItemIndex, ScrollItemIndex, AQ.CurrentInterval.Progress))
+			TListBox(O).TopIndex:=TAQ.EaseInteger(FirstItemIndex, ScrollItemIndex,
+				AQ.CurrentInterval.Progress, TEaseType(Ord(AnimationStyleComboBox.ItemIndex)),
+				TEaseDirection(Ord(AnimationDirectionOutCheckBox.Checked)))
 		{**
 		 * Sofort
 		 *}

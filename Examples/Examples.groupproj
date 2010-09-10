@@ -24,7 +24,7 @@
 			<Projects Include="StickyTools\StickyTools.dproj">
 				<Dependencies/>
 			</Projects>
-			<Projects Include="EaseGraph\EaseGraph.dproj">
+			<Projects Include="EasingSuite\EasingSuite.dproj">
 				<Dependencies/>
 			</Projects>
 		</ItemGroup>
@@ -98,23 +98,23 @@
 		<Target Name="StickyTools:Make">
 			<MSBuild Targets="Make" Projects="StickyTools\StickyTools.dproj"/>
 		</Target>
-		<Target Name="EaseGraph">
-			<MSBuild Projects="EaseGraph\EaseGraph.dproj"/>
+		<Target Name="EasingSuite">
+			<MSBuild Projects="EasingSuite\EasingSuite.dproj"/>
 		</Target>
-		<Target Name="EaseGraph:Clean">
-			<MSBuild Targets="Clean" Projects="EaseGraph\EaseGraph.dproj"/>
+		<Target Name="EasingSuite:Clean">
+			<MSBuild Targets="Clean" Projects="EasingSuite\EasingSuite.dproj"/>
 		</Target>
-		<Target Name="EaseGraph:Make">
-			<MSBuild Targets="Make" Projects="EaseGraph\EaseGraph.dproj"/>
+		<Target Name="EasingSuite:Make">
+			<MSBuild Targets="Make" Projects="EasingSuite\EasingSuite.dproj"/>
 		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign;SlidingForm;MethodTests;CustomPlugin;StickyTools;EaseGraph"/>
+			<CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign;SlidingForm;MethodTests;CustomPlugin;StickyTools;EasingSuite"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean;CustomPlugin:Clean;StickyTools:Clean;EaseGraph:Clean"/>
+			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean;CustomPlugin:Clean;StickyTools:Clean;EasingSuite:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make;CustomPlugin:Make;StickyTools:Make;EaseGraph:Make"/>
+			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make;CustomPlugin:Make;StickyTools:Make;EasingSuite:Make"/>
 		</Target>
 		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 	</Project>

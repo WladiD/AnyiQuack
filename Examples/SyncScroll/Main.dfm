@@ -18,7 +18,7 @@ object Form1: TForm1
   PixelsPerInch = 96
   TextHeight = 13
   object ListBox1: TListBox
-    Left = 3
+    Left = 47
     Top = 57
     Width = 121
     Height = 241
@@ -27,7 +27,7 @@ object Form1: TForm1
     TabOrder = 0
   end
   object ListBox2: TListBox
-    Left = 130
+    Left = 174
     Top = 57
     Width = 121
     Height = 241
@@ -36,7 +36,7 @@ object Form1: TForm1
     TabOrder = 1
   end
   object ListBox3: TListBox
-    Left = 257
+    Left = 301
     Top = 57
     Width = 121
     Height = 241
@@ -45,7 +45,7 @@ object Form1: TForm1
     TabOrder = 2
   end
   object ListBox4: TListBox
-    Left = 384
+    Left = 428
     Top = 57
     Width = 121
     Height = 241
@@ -158,13 +158,14 @@ object Form1: TForm1
     end
   end
   object Panel2: TPanel
-    Left = 512
+    Left = 0
     Top = 49
     Width = 41
     Height = 255
-    Align = alRight
+    Align = alLeft
     ParentBackground = False
     TabOrder = 5
+    ExplicitLeft = 512
     object SyncScrollBar: TScrollBar
       AlignWithMargins = True
       Left = 4
