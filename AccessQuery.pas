@@ -42,10 +42,13 @@ type
 	TAQPlugin = class;
 	TInterval = class;
 
-	TEaseType = (etLinear, etQuadratic, etMassiveQuadratic, etSinus, etElastic,
+	TEaseType = (etLinear, etQuad, etCubic, etQuart, etQuint, etSext, etSinus, etElastic, etBack,
 		etLowWave, etMiddleWave, etHighWave);
-	TEaseModifier = (emIn, emOut, emInOut, emInInverted, emOutInverted, emOutIn,
-		emInOutMirrored, emOutInMirrored, emInFlip, emOutFlip);
+	TEaseModifier = (
+		emIn, emInInverted, emInSnake,
+		emOut, emOutInverted, emOutSnake,
+		emInOut, emInOutMirrored, emInOutCombined,
+		emOutIn, emOutInMirrored, emOutInCombined);
 	TActorRole = (arTimer, arInterval, arDelay, arAnimation);
 
 	TObjectArray = array of TObject;
@@ -363,14 +366,29 @@ begin
 	Result:=Progress;
 end;
 
-function QuadraticEase(Progress:Real):Real;
+function QuadEase(Progress:Real):Real;
 begin
-	Result:=Sqr(Progress);
+	Result:=Progress * Progress;
 end;
 
-function MassiveQuadraticEase(Progress:Real):Real;
+function CubicEase(Progress:Real):Real;
 begin
-	Result:=Progress * Sqr(Progress);
+	Result:=Power(Progress, 3);
+end;
+
+function QuartEase(Progress:Real):Real;
+begin
+	Result:=Power(Progress, 4);
+end;
+
+function QuintEase(Progress:Real):Real;
+begin
+	Result:=Power(Progress, 5);
+end;
+
+function SextEase(Progress:Real):Real;
+begin
+	Result:=Power(Progress, 6);
 end;
 
 function SinusEase(Progress:Real):Real;
@@ -384,19 +402,24 @@ begin
 		Power(1 - Progress, 2.2) + Progress) * (1 + (1.2 * (1 - Progress)));
 end;
 
-function LowWave(Progress:Real):Real;
+function LowWaveEase(Progress:Real):Real;
 begin
 	Result:=Progress + (Sin(Progress * 3 * Pi) * 0.1);
 end;
 
-function MiddleWave(Progress:Real):Real;
+function MiddleWaveEase(Progress:Real):Real;
 begin
 	Result:=Progress + (Sin(Progress * 3 * Pi) * 0.2);
 end;
 
-function HighWave(Progress:Real):Real;
+function HighWaveEase(Progress:Real):Real;
 begin
 	Result:=Progress + (Sin(Progress * 3 * Pi) * 0.4);
+end;
+
+function BackEase(Progress:Real):Real;
+begin
+	Result:=Progress * Progress * ((2.70158 * Progress) - 1.70158);
 end;
 
 function Take(AObject:TObject):TAQ;
@@ -1120,20 +1143,28 @@ end;
 class function TAQ.Ease(EaseType:TEaseType; EaseModifier:TEaseModifier = emIn):TEaseFunction;
 begin
 	case EaseType of
-		etQuadratic:
-			Result:=QuadraticEase;
-		etMassiveQuadratic:
-			Result:=MassiveQuadraticEase;
+		etQuad:
+			Result:=QuadEase;
+		etCubic:
+			Result:=CubicEase;
+		etQuart:
+			Result:=QuartEase;
+		etQuint:
+			Result:=QuintEase;
+		etSext:
+			Result:=SextEase;
 		etSinus:
 			Result:=SinusEase;
 		etElastic:
 			Result:=ElasticEase;
 		etLowWave:
-			Result:=LowWave;
+			Result:=LowWaveEase;
 		etMiddleWave:
-			Result:=MiddleWave;
+			Result:=MiddleWaveEase;
 		etHighWave:
-			Result:=HighWave;
+			Result:=HighWaveEase;
+		etBack:
+			Result:=BackEase;
 	else
 		Result:=LinearEase;
 	end;
@@ -1198,6 +1229,40 @@ begin
 				else
 					Progress:=1 - ((Progress - 0.5) / 0.5);
 				Result:=1 - EaseFunction(Progress);
+			end;
+		emInOutCombined:
+			Result:=function(Progress:Real):Real
+			begin
+				if Progress <= 0.5 then
+					Result:=EaseFunction(Progress / 0.5)
+				else
+					Result:=1 - EaseFunction((Progress - 0.5) / 0.5);
+			end;
+		emOutInCombined:
+			Result:=function(Progress:Real):Real
+			begin
+				if Progress <= 0.5 then
+					Result:=EaseFunction(1 - (Progress / 0.5))
+				else
+					Result:=1 - EaseFunction(1 - ((Progress - 0.5) / 0.5));
+			end;
+		emInSnake:
+			Result:=function(Progress:Real):Real
+			begin
+				if Progress <= 0.5 then
+					Result:=EaseFunction(Progress / 0.5)
+				else
+					Result:=EaseFunction(1) + (1 - EaseFunction(1 - ((Progress - 0.5) / 0.5)));
+				Result:=Result / 2;
+			end;
+		emOutSnake:
+			Result:=function(Progress:Real):Real
+			begin
+				if Progress <= 0.5 then
+					Result:=EaseFunction(1) + (1 - EaseFunction(Progress / 0.5))
+				else
+					Result:=EaseFunction(1 - ((Progress - 0.5) / 0.5));
+				Result:=Result / 2;
 			end;
 	end;
 end;
