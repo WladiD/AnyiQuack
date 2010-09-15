@@ -87,7 +87,7 @@ type
 	private
 		class var
 		FGarbageCollector:TAQ;
-		FIntervalTimer:TTimer;
+		FTimerHandler:Cardinal;
 		FActiveIntervalAQs:TAQ;
 		FTick:Cardinal;
 		FComponentsNotifier:TComponentList;
@@ -104,14 +104,14 @@ type
 		class procedure Finalize;
 
 		class function GarbageCollector:TAQ;
-		class procedure GlobalIntervalTimerEvent(Sender:TObject);
+		class procedure GlobalIntervalTimerEvent;
 		class procedure ComponentsNotification(AComponent:TComponent; Operation:TOperation);
 
 		procedure Notify(Ptr:Pointer; Action:TListNotification); override;
 
 		function HasActors(ActorRole:TActorRole; ID:Integer = 0):Boolean;
 
-		procedure LocalIntervalTimerEvent(Sender:TObject);
+		procedure LocalIntervalTimerEvent;
 
 		function GetIntervals:TObjectList;
 		procedure ClearIntervals;
@@ -343,11 +343,14 @@ type
 
 implementation
 
+uses
+	MMSystem;
+
 const
 	MaxLifeTime = 10000;
 	IntervalResolution = 25;
 	GarbageCleanInterval = 5000;
-	GarbageCleanTime = 100;
+	GarbageCleanTime = IntervalResolution div 2;
 	SpareAQsCount = 1000;
 
 const
@@ -476,30 +479,6 @@ function GetBit(Container:Byte; BitMask:Byte):Boolean;
 begin
 	Result:=(Container and BitMask) <> 0;
 end;
-
-//var
-//	HighPerformanceCounterAvailable:Boolean;
-//	HighPerformanceStartCount:Int64;
-//	HighPerformanceCountPerSecond:Int64;
-//
-//{**
-// * Returns a smoother TickCount
-// *
-// * If the high perfomance counter not supported, it will use Windows.GetTickCount
-// *}
-//function GetTickCount:Cardinal;
-//var
-//	CurrentCount:Int64;
-//begin
-//	if HighPerformanceCounterAvailable then
-//	begin
-//		QueryPerformanceCounter(CurrentCount);
-//		Result:=
-//			Floor(((CurrentCount - HighPerformanceStartCount) / HighPerformanceCountPerSecond) * 1000);
-//	end
-//	else
-//		Result:=Windows.GetTickCount;
-//end;
 
 {** TAQBase **}
 
@@ -1417,7 +1396,8 @@ begin
 	 * Dieser Timer wird zusammen mit FGarbageCollector erstellt, muss auch dementsprechend zusammen
 	 * freigegeben werden.
 	 *}
-	FIntervalTimer.Free;
+	if (FTimerHandler > 0) and KillTimer(0, FTimerHandler) then
+		FTimerHandler:=0;
 	{**
 	 * Diese unverwaltete TAQ-Instanz wird ebenfalls mit dem FGarbageCollector erstellt und muss
 	 * hier manuell freigegeben werden.
@@ -1489,7 +1469,7 @@ begin
 				Exit;
 			end;
 
-			CleanEndTick:=GetTickCount + GarbageCleanTime;
+			CleanEndTick:=timeGetTime + GarbageCleanTime;
 
 			GCC.Each(
 				function(GCC:TAQ; O:TObject):Boolean
@@ -1508,10 +1488,10 @@ begin
 					 * Läuft, solange Anzahl abgelaufener Instanzen größer SpareAQsCount ist und
 					 * solange die verfügbare Bereingungsdauer nicht überschritten wird.
 					 *}
-					Result:=(AQsForDestroy > SpareAQsCount) or (CleanEndTick >= GetTickCount);
+					Result:=(AQsForDestroy > SpareAQsCount) or (CleanEndTick >= timeGetTime);
 				end);
 				{$IFDEF OutputDebugGCFree}
-				if CleanEndTick < GetTickCount then
+				if CleanEndTick < timeGetTime then
 					OutputDebugString('Bereinigungsvorgang vorzeitig abgebrochen, da das Zeitlimit überschritten wurde.');
 				{$ENDIF}
 		end);
@@ -1541,9 +1521,9 @@ begin
 	Result:=GetBit(FBools, RecurseBitMask);
 end;
 
-class procedure TAQ.GlobalIntervalTimerEvent(Sender:TObject);
+class procedure TAQ.GlobalIntervalTimerEvent;
 begin
-	FTick:=GetTickCount;
+	FTick:=timeGetTime;
 	FActiveIntervalAQs.Each(
 		{**
 		 * @param AQ Enthält FActiveIntervalAQs
@@ -1551,7 +1531,7 @@ begin
 		 *}
 		function(AQ:TAQ; O:TObject):Boolean
 		begin
-			TAQ(O).LocalIntervalTimerEvent(Sender);
+			TAQ(O).LocalIntervalTimerEvent;
 			Result:=TRUE; // Die Each soll komplett durchlaufen
 		end);
 end;
@@ -1778,15 +1758,9 @@ begin
 	 * Die Initialisierung der gesamten Klasse
 	 **********************************************************************************************}
 
-	FTick:=GetTickCount;
+	FTick:=timeGetTime;
 
-	FIntervalTimer:=TTimer.Create(nil);
-	with FIntervalTimer do
-	begin
-		Enabled:=TRUE;
-		Interval:=IntervalResolution;
-		OnTimer:=GlobalIntervalTimerEvent;
-	end;
+	FTimerHandler:=SetTimer(0, 0, IntervalResolution, @TAQ.GlobalIntervalTimerEvent);
 
 	FActiveIntervalAQs:=TAQ.Create;
 	FActiveIntervalAQs.Recurse:=FALSE;
@@ -1811,7 +1785,7 @@ begin
 	Result:=((FLifeTick + MaxLifeTime) >= TAQ.Tick) or Immortally;
 end;
 
-procedure TAQ.LocalIntervalTimerEvent(Sender:TObject);
+procedure TAQ.LocalIntervalTimerEvent;
 var
 	cc:Integer;
 begin
@@ -2181,9 +2155,6 @@ end;
 
 initialization
 
-//HighPerformanceCounterAvailable:=QueryPerformanceFrequency(HighPerformanceCountPerSecond);
-//if HighPerformanceCounterAvailable then
-//	QueryPerformanceCounter(HighPerformanceStartCount);
 
 finalization
 
