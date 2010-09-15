@@ -1,7 +1,7 @@
 object MainForm: TMainForm
   Left = 0
   Top = 0
-  Caption = 'Animated Align with TAQ (AccessQuery)'
+  Caption = 'Animated Align with AnyiQuack'
   ClientHeight = 337
   ClientWidth = 635
   Color = clAppWorkSpace

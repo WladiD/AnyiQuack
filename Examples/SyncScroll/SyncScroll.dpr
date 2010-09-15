@@ -3,7 +3,7 @@ program SyncScroll;
 uses
   Forms,
   Main in 'Main.pas' {Form1},
-  AccessQuery in '..\..\AccessQuery.pas';
+  AnyiQuack in '..\..\AnyiQuack.pas';
 
 {$R *.res}
 

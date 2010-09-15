@@ -25,7 +25,7 @@ unit AQPControlAnimations;
 interface
 
 uses
-	Controls, Windows, Math, Graphics, AccessQuery;
+	Controls, Windows, Math, Graphics, AnyiQuack;
 
 type
 	TAQPControlAnimations = class(TAQPlugin)

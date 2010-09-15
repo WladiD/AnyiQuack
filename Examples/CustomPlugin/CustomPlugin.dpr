@@ -4,7 +4,7 @@ uses
   Forms,
   Main in 'Main.pas' {Form1},
   AQPCustomPlugin in 'AQPCustomPlugin.pas',
-  AccessQuery in '..\..\AccessQuery.pas';
+  AnyiQuack in '..\..\AnyiQuack.pas';
 
 {$R *.res}
 

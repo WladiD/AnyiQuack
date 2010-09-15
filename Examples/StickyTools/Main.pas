@@ -4,7 +4,7 @@ interface
 
 uses
 	Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-	Dialogs, StdCtrls, AccessQuery, AQPControlAnimations, AQPMessages;
+	Dialogs, StdCtrls, AnyiQuack, AQPControlAnimations, AQPMessages;
 
 type
 	TMainForm = class(TForm)
@@ -126,7 +126,7 @@ begin
 
 		AQ
 			.Plugin<TAQPControlAnimations>
-			.FontColorAnimation(TargetColor, 500, 0, TAQ.Ease(etQuadratic),
+			.FontColorAnimation(TargetColor, 500, 0, TAQ.Ease(etQuint),
 			 procedure(Sender:TObject)
 			 begin
 				Take(Sender).EachDelay(200, BlinkEach);

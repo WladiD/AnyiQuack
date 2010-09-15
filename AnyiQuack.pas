@@ -9,7 +9,9 @@
  * License for the specific language governing rights and limitations
  * under the License.
  *
- * The Original Code is AccessQuery.pas.
+ * The Original Code is AnyiQuack.pas (Renamed at 2010-09-15 from
+ *                                     AccessQuery.pas by the
+ *                                     Initial Developer)
  *
  * The Initial Developer of the Original Code is Waldemar Derr.
  * Portions created by Waldemar Derr are Copyright (C) 2010 Waldemar Derr.
@@ -20,7 +22,7 @@
  * @version $Id$
  *}
 
-unit AccessQuery;
+unit AnyiQuack;
 
 interface
 
@@ -31,7 +33,7 @@ uses
 	{$INCLUDE Debug.inc}
 {$ENDIF}
 {**
- * Sicherstellen, dass die boolesche Kurzauswertung verwendet wird
+ * Ensure, that the fastest bool evaluation is used
  *}
 {$BOOLEVAL OFF}
 
@@ -729,7 +731,7 @@ begin
 		Exit(Actors);
 	Each(
 		{**
-		 * @param SAQ Synonym für SourceAccessQuery und ist Self von CustomActors
+		 * @param SAQ Synonym für SourceAQ und ist Self von CustomActors
 		 * @param SO Synonym für SourceObject und beinhaltet das Objekt für das die passenden
 		 *        TAQ-Instanzen gesucht werden
 		 *}

@@ -3,7 +3,7 @@ program EasingSuite;
 uses
   Forms,
   Main in 'Main.pas' {MainForm},
-  AccessQuery in '..\..\AccessQuery.pas';
+  AnyiQuack in '..\..\AnyiQuack.pas';
 
 {$R *.res}
 

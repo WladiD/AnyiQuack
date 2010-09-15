@@ -4,7 +4,7 @@ interface
 
 uses
 	Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-	Dialogs, StdCtrls, ExtCtrls, ComCtrls, Math, AccessQuery;
+	Dialogs, StdCtrls, ExtCtrls, ComCtrls, Math, AnyiQuack;
 
 type
 	TForm1 = class(TForm)
@@ -24,7 +24,6 @@ type
 		Panel3:TPanel;
 		Label4:TLabel;
 		AnimationDurationComboBox:TComboBox;
-		AnimationDirectionOutCheckBox:TCheckBox;
 		procedure ItemsCountTrackBarChange(Sender:TObject);
 		procedure FormCreate(Sender:TObject);
 		procedure SyncScrollBarChange(Sender:TObject);
@@ -108,8 +107,7 @@ begin
 		 *}
 		if Assigned(AQ.CurrentInterval) then
 			TListBox(O).TopIndex:=TAQ.EaseInteger(FirstItemIndex, ScrollItemIndex,
-				AQ.CurrentInterval.Progress, TEaseType(Ord(AnimationStyleComboBox.ItemIndex)),
-				TEaseDirection(Ord(AnimationDirectionOutCheckBox.Checked)))
+				AQ.CurrentInterval.Progress, TEaseType(Ord(AnimationStyleComboBox.ItemIndex)))
 		{**
 		 * Sofort
 		 *}

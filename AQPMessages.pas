@@ -25,7 +25,7 @@ unit AQPMessages;
 interface
 
 uses
-	Controls, Windows, Messages, Contnrs, AccessQuery;
+	Controls, Windows, Messages, Contnrs, AnyiQuack;
 
 type
 	TAQPMessages = class(TAQPlugin)

@@ -4,7 +4,7 @@ interface
 
 uses
 	Controls, Windows, Messages, Contnrs,
-	AccessQuery,
+	AnyiQuack,
 	{**
 	 * Verwendete Plugins
 	 *}
@@ -74,7 +74,7 @@ begin
 			.CancelAnimations
 			.Plugin<TAQPControlAnimations>
 			.BoundsAnimation(LocalTargetPos.X, LocalTargetPos.Y, -1, -1, 350, 0,
-				TAQ.Ease(etMassiveQuadratic, edOut))
+				TAQ.Ease(etQuint, emInInverted))
 		.Die;
 	end
 	else

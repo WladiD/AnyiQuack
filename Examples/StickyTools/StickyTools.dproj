@@ -44,10 +44,10 @@
 			<DCCReference Include="Tools.pas">
 				<Form>ToolsForm</Form>
 			</DCCReference>
-			<DCCReference Include="..\..\AccessQuery.pas"/>
 			<DCCReference Include="..\..\AQPControlAnimations.pas"/>
 			<DCCReference Include="..\..\AQPMessages.pas"/>
 			<DCCReference Include="AQPStickyTools.pas"/>
+			<DCCReference Include="..\..\AnyiQuack.pas"/>
 			<BuildConfiguration Include="Basis">
 				<Key>Base</Key>
 			</BuildConfiguration>

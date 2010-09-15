@@ -4,7 +4,7 @@ interface
 
 uses
 	Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-	Dialogs, StdCtrls, AccessQuery, AQPControlAnimations, AQPMessages;
+	Dialogs, StdCtrls, AnyiQuack, AQPControlAnimations, AQPMessages;
 
 type
 	TToolsForm = class(TForm)

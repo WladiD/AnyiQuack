@@ -5,8 +5,8 @@ interface
 uses
 	Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
 	Dialogs, StdCtrls, ExtCtrls, ComCtrls, Math,
-	AccessQuery,
-	AQPControlAnimations; // AccessQuery-Plugin
+	AnyiQuack,
+	AQPControlAnimations; // AnyiQuack-Plugin
 
 type
 	TMainForm = class(TForm)
@@ -106,7 +106,7 @@ begin
 					.CancelAnimations
 					.Plugin<TAQPControlAnimations>
 					.BoundsAnimation(TControl(O).Left, Height, -1, -1,
-						AnimationDurationTrackBar.Position, 0, TAQ.Ease(etQuadratic),
+						AnimationDurationTrackBar.Position, 0, TAQ.Ease(etQuad),
 						procedure(Sender:TObject)
 						begin
 							Sender.Free;
@@ -125,7 +125,7 @@ begin
 				.Plugin<TAQPControlAnimations> do
 			begin
 				FontColorAnimation(ColorToRGB(HoverColorBox.Selected) xor $FFFFFF, 600,
-					HoverAnimationID, TAQ.Ease(etMassiveQuadratic));
+					HoverAnimationID, TAQ.Ease(etCubic));
 				BackgroundColorAnimation(HoverColorBox.Selected, 300, HoverAnimationID,
 					TAQ.Ease(etSinus));
 			end;
@@ -136,7 +136,7 @@ begin
 				.Plugin<TAQPControlAnimations> do
 			begin
 				FontColorAnimation(clWindowText, 750, HoverAnimationID,
-					TAQ.Ease(etMassiveQuadratic));
+					TAQ.Ease(etCubic));
 				BackgroundColorAnimation(clBtnFace, 1500, HoverAnimationID, TAQ.Ease(etSinus));
 			end;
 		end;

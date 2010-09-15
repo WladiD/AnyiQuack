@@ -3,7 +3,7 @@ unit AQPCustomPlugin;
 interface
 
 uses
-	Controls, AccessQuery;
+	Controls, AnyiQuack;
 
 type
 	TAQPCustomPlugin = class(TAQPlugin)

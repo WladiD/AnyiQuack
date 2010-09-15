@@ -41,7 +41,7 @@
 			<DCCReference Include="Main.pas">
 				<Form>Form1</Form>
 			</DCCReference>
-			<DCCReference Include="..\..\AccessQuery.pas"/>
+			<DCCReference Include="..\..\AnyiQuack.pas"/>
 			<BuildConfiguration Include="Basis">
 				<Key>Base</Key>
 			</BuildConfiguration>

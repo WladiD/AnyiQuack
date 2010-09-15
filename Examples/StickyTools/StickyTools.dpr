@@ -4,10 +4,10 @@ uses
   Forms,
   Main in 'Main.pas' {MainForm},
   Tools in 'Tools.pas' {ToolsForm},
-  AccessQuery in '..\..\AccessQuery.pas',
   AQPControlAnimations in '..\..\AQPControlAnimations.pas',
   AQPMessages in '..\..\AQPMessages.pas',
-  AQPStickyTools in 'AQPStickyTools.pas';
+  AQPStickyTools in 'AQPStickyTools.pas',
+  AnyiQuack in '..\..\AnyiQuack.pas';
 
 {$R *.res}
 

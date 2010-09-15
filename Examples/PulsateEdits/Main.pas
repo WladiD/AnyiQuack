@@ -5,8 +5,8 @@ interface
 uses
 	Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
 	Dialogs, StdCtrls,
-	AccessQuery,
-	AQPControlAnimations; // AccessQuery-Plugin
+	AnyiQuack,
+	AQPControlAnimations; // AnyiQuack-Plugin
 
 type
 	TForm1 = class(TForm)

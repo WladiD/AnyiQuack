@@ -5,8 +5,8 @@ interface
 uses
 	Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
 	Dialogs, StdCtrls, ExtCtrls,
-	AccessQuery,
-	AQPControlAnimations; // AccessQuery-Plugin
+	AnyiQuack,
+	AQPControlAnimations; // AnyiQuack-Plugin
 
 type
 	TForm1 = class(TForm)
@@ -55,8 +55,8 @@ begin
 		.Plugin<TAQPControlAnimations> do
 	begin
 		BoundsAnimation(NewLeft, 0, NewWidth, Screen.WorkAreaHeight,
-			500, 0, TAQ.Ease(etMassiveQuadratic));
-		BackgroundColorAnimation(NewColor, 1000, 0, TAQ.Ease(etMassiveQuadratic),
+			500, 0, TAQ.Ease(etBack, emInSnake));
+		BackgroundColorAnimation(NewColor, 1000, 0, TAQ.Ease(etCubic),
 			procedure(Sender:TObject)
 			begin
 				ColorListBox1.Selected:=NewColor;

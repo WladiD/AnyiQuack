@@ -42,7 +42,7 @@
 				<Form>Form1</Form>
 			</DCCReference>
 			<DCCReference Include="AQPCustomPlugin.pas"/>
-			<DCCReference Include="..\..\AccessQuery.pas"/>
+			<DCCReference Include="..\..\AnyiQuack.pas"/>
 			<BuildConfiguration Include="Basis">
 				<Key>Base</Key>
 			</BuildConfiguration>
