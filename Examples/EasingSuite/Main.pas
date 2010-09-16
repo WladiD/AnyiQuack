@@ -5,8 +5,19 @@ interface
 uses
 	Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
 	Dialogs, ExtCtrls, StdCtrls, Math,
-	GR32, GR32_Image, GR32_Layers,
-	AnyiQuack, ComCtrls;
+	GR32, GR32_Image, GR32_Layers, ComCtrls,
+	SandBox,
+
+	AnyiQuack,
+	// ScriptEngine 2
+	uSE2Compiler, // für den Compiler
+	uSE2UnitCacheMngr, // für den Unit-Cache-Manager
+	uSE2Errors, // für TSE2ErrorType
+	uSE2Reader, // wird zum Lesen der Daten benutzt
+	uSE2PEData, // die ByteCode-Daten
+	uSE2RunTime, // für die RunTime
+	uSE2IncConsole,
+	uSE2OpCode;
 
 type
 	TTrackerLayer = class;
@@ -31,6 +42,10 @@ type
 		Panel3:TPanel;
 		XAxisCheckBox: TCheckBox;
 		YAxisCheckBox: TCheckBox;
+    IntegratedEaseFunctionsRadioButton: TRadioButton;
+    CustomEaseFunctionsRadioButton: TRadioButton;
+    CustomFunctionsComboBox: TComboBox;
+    OpenSandboxButton: TButton;
 		procedure FormCreate(Sender:TObject);
 		procedure UpdateTabSheet(Sender:TObject);
 		procedure AnimateButtonClick(Sender:TObject);
@@ -38,21 +53,35 @@ type
 			Layer:TCustomLayer);
 		procedure EaseRealImagePaintStage(Sender:TObject; Buffer:TBitmap32; StageNum:Cardinal);
 		procedure DurationTrackBarChange(Sender:TObject);
+		procedure FormDestroy(Sender:TObject);
+	procedure OpenSandboxButtonClick(Sender: TObject);
+    procedure CustomFunctionsComboBoxChange(Sender: TObject);
+    procedure EaseTypeListBoxClick(Sender: TObject);
+	procedure CustomEaseFunctionsRadioButtonClick(Sender: TObject);
 	private
 		FBackgroundLayer:TBitmapLayer;
 		FGraphLayer:TBitmapLayer;
 		FTrackerLayer:TTrackerLayer;
 		FEaseRealProgress:Real;
+		FUnitCache:TSE2UnitCacheMngr;
+		FRunTime:TSE2RunTime;
+		FSandBox:TSandboxForm;
 
 		function GetEaseFunction:TEaseFunction;
 
 		procedure BuildBackground;
 		procedure BuildGraph;
 		procedure UpdateCurrentTabSheet;
-
 		procedure SetEaseRealProgress(NewProgress:Real);
 
+		procedure RunTimeError(Sender:TObject; Exp:ExceptClass;
+			const Msg:string; CodePos:integer; const CallStack:string);
+
 		property EaseRealProgress:Real read FEaseRealProgress write SetEaseRealProgress;
+	public
+		procedure ApplyAppCode(AppCode:TSE2PE);
+
+		property UnitCache:TSE2UnitCacheMngr read FUnitCache;
 	end;
 
 	TTrackerLayer = class(TPositionedLayer)
@@ -83,6 +112,10 @@ const
 	VertGuideSpace = 17;
 	HorizGridOffset = 50;
 	VertGridOffset = 100;
+
+procedure ScriptConsoleWrite(const s: string);
+begin
+end;
 
 {** TMainForm **}
 
@@ -126,6 +159,53 @@ begin
 	if (Layer = FTrackerLayer) and AnimateButton.Enabled then
 		with FTrackerLayer do
 			Progress:=((X - HorizGridOffset) + 1) / (Location.Right - Location.Left);
+end;
+
+procedure TMainForm.ApplyAppCode(AppCode:TSE2PE);
+var
+	cc:Integer;
+	MethodName, UnitName:String;
+	MethodNameLength, UnitNameLength:Integer;
+	MethodPointer:Pointer;
+	PrevItemIndex:Integer;
+begin
+	if FRunTime.Initialized then
+		FRunTime.Finalize;
+	FRunTime.AppCode:=AppCode;
+	FRunTime.Initialize;
+
+	PrevItemIndex:=CustomFunctionsComboBox.ItemIndex;
+	CustomFunctionsComboBox.Items.Clear;
+
+	for cc:=0 to FRunTime.CodeAccess.Count - 1 do
+	begin
+		MethodName:=FRunTime.CodeAccess.MethodNames[cc];
+		UnitNameLength:=Pos('.', MethodName);
+		if UnitNameLength > 0 then
+		begin
+			UnitName:=Copy(MethodName, 1, UnitNameLength - 1);
+			MethodName:=Copy(MethodName, UnitNameLength + 1, 80);
+		end
+		else
+			UnitName:='';
+		MethodNameLength:=Length(MethodName);
+		if (MethodNameLength > 4) and
+			(LowerCase(Copy(MethodName, MethodNameLength - 3, 4)) = 'ease') and
+			FRunTime.CodeAccess.MethodMatches(cc, [pmIn, pmResult], [btDouble, btDouble]) then // Ease
+		begin
+			MethodPointer:=FRunTime.CodeAccess.FindMethod(MethodName, UnitName, [pmIn, pmResult], [btDouble, btDouble]);
+			if Assigned(MethodPointer) then
+				CustomFunctionsComboBox.Items.AddObject(MethodName, TObject(MethodPointer));
+		end;
+	end;
+	if CustomFunctionsComboBox.Items.Count > 0 then
+	begin
+		CustomFunctionsComboBox.ItemIndex:=Max(0, PrevItemIndex);
+		if CustomEaseFunctionsRadioButton.Checked then
+			UpdateCurrentTabSheet
+		else
+			CustomEaseFunctionsRadioButton.Checked:=TRUE;
+	end;
 end;
 
 procedure TMainForm.BuildBackground;
@@ -179,6 +259,20 @@ begin
 	end;
 end;
 
+procedure TMainForm.CustomEaseFunctionsRadioButtonClick(Sender: TObject);
+begin
+	if CustomFunctionsComboBox.Items.Count = 0 then
+		OpenSandboxButton.Click
+	else
+		UpdateCurrentTabSheet;
+end;
+
+procedure TMainForm.CustomFunctionsComboBoxChange(Sender: TObject);
+begin
+	if CustomEaseFunctionsRadioButton.Checked then
+		UpdateCurrentTabSheet;
+end;
+
 procedure TMainForm.DurationTrackBarChange(Sender: TObject);
 begin
 	DurationPanel.Caption:=Format('Animation duration (%d ms)', [DurationTrackBar.Position]);
@@ -187,6 +281,12 @@ end;
 
 procedure TMainForm.FormCreate(Sender:TObject);
 begin
+	TSE2Console.Write:=@ScriptConsoleWrite;
+	FUnitCache:=TSE2UnitCacheMngr.Create;
+
+	FRunTime:=TSE2RunTime.Create;
+	FRunTime.OnError:=RunTimeError;
+
 	VisPageControl.TabIndex:=0;
 
 	EaseTypeListBox.Selected[1]:=TRUE;
@@ -214,10 +314,53 @@ begin
 	UpdateCurrentTabSheet;
 end;
 
-function TMainForm.GetEaseFunction:TEaseFunction;
+procedure TMainForm.FormDestroy(Sender: TObject);
 begin
-	Result:=TAQ.Ease(TEaseType(Ord(EaseTypeListBox.ItemIndex)),
-		TEaseModifier(Ord(EaseModifierListBox.ItemIndex)))
+	if FRunTime.Initialized then
+		FRunTime.Finalize;
+	FRunTime.Free;
+	FUnitCache.Free;
+end;
+
+function TMainForm.GetEaseFunction:TEaseFunction;
+var
+	CurrentEaseModifier:TEaseModifier;
+begin
+	Result:=nil;
+	CurrentEaseModifier:=TEaseModifier(Ord(EaseModifierListBox.ItemIndex));
+
+	if CustomEaseFunctionsRadioButton.Checked and (CustomFunctionsComboBox.ItemIndex >= 0) then
+	begin
+		Result:=function(Progress:Real):Real
+		begin
+			Result:=Real(Double(FRunTime.Call(
+				Pointer(CustomFunctionsComboBox.Items.Objects[CustomFunctionsComboBox.ItemIndex]),
+				[Progress])));
+		end;
+		Result:=TAQ.Ease(Result, CurrentEaseModifier);
+	end;
+	if not Assigned(Result) then
+		Result:=TAQ.Ease(TEaseType(Ord(EaseTypeListBox.ItemIndex)), CurrentEaseModifier);
+end;
+
+procedure TMainForm.OpenSandboxButtonClick(Sender: TObject);
+begin
+	if not Assigned(FSandBox) then
+	begin
+		FSandBox:=TSandboxForm.Create(Self);
+//		FSandBox.PopupParent:=Self;
+	end;
+	if FSandBox.WindowState = wsMinimized then
+		FSandBox.WindowState:=wsNormal
+	else
+		FSandBox.Show;
+end;
+
+procedure TMainForm.RunTimeError(Sender: TObject; Exp: ExceptClass; const Msg: string;
+  CodePos: integer; const CallStack: string);
+begin
+	ShowMessage('RunTime error: ' + #13#10 + Exp.ClassName + ': ' + Msg + #13#10#13#10 +
+		CallStack);
 end;
 
 procedure TMainForm.UpdateTabSheet(Sender:TObject);
@@ -235,7 +378,7 @@ end;
 
 procedure TMainForm.EaseRealImagePaintStage(Sender:TObject; Buffer:TBitmap32; StageNum:Cardinal);
 const
-	TrackerQSize = 100;
+	TrackerQSize = 50;
 var
 	X, Y:Real;
 
@@ -297,6 +440,14 @@ begin
 			//DrawCircle(X, Y, TrackerQSize / 2);
 		end;
 	end;
+end;
+
+procedure TMainForm.EaseTypeListBoxClick(Sender: TObject);
+begin
+	if IntegratedEaseFunctionsRadioButton.Checked then
+		UpdateCurrentTabSheet
+	else
+		IntegratedEaseFunctionsRadioButton.Checked:=TRUE;
 end;
 
 procedure TMainForm.UpdateCurrentTabSheet;

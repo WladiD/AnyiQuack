@@ -14,6 +14,7 @@ object MainForm: TMainForm
   Font.Style = []
   OldCreateOrder = False
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   OnResize = UpdateTabSheet
   PixelsPerInch = 96
   TextHeight = 13
@@ -55,20 +56,22 @@ object MainForm: TMainForm
       Left = 0
       Top = 0
       Width = 148
-      Height = 183
+      Height = 200
       Align = alClient
-      Caption = 'EaseType:TEaseType'
       TabOrder = 2
+      DesignSize = (
+        148
+        200)
       object EaseTypeListBox: TListBox
-        Left = 2
-        Top = 15
+        Left = 3
+        Top = 24
         Width = 144
-        Height = 166
+        Height = 121
         Margins.Left = 0
         Margins.Top = 18
         Margins.Right = 0
         Margins.Bottom = 0
-        Align = alClient
+        Anchors = [akLeft, akTop, akBottom]
         ItemHeight = 13
         Items.Strings = (
           'etLinear'
@@ -82,16 +85,59 @@ object MainForm: TMainForm
           'etBack'
           'etLowWave'
           'etMiddleWave'
-          'etHighWave')
+          'etHighWave'
+          'etBounce'
+          'etCircle')
         TabOrder = 0
+        OnClick = EaseTypeListBoxClick
+      end
+      object IntegratedEaseFunctionsRadioButton: TRadioButton
+        Left = 3
+        Top = 3
+        Width = 113
+        Height = 17
+        Caption = 'EaseType:TEaseType'
+        Checked = True
+        TabOrder = 1
+        TabStop = True
         OnClick = UpdateTabSheet
+      end
+      object CustomEaseFunctionsRadioButton: TRadioButton
+        Left = 3
+        Top = 150
+        Width = 141
+        Height = 17
+        Anchors = [akLeft, akBottom]
+        Caption = 'Custom Ease-Function'
+        TabOrder = 2
+        OnClick = CustomEaseFunctionsRadioButtonClick
+      end
+      object CustomFunctionsComboBox: TComboBox
+        Left = 3
+        Top = 171
+        Width = 113
+        Height = 21
+        Style = csDropDownList
+        Anchors = [akLeft, akBottom]
+        TabOrder = 3
+        OnChange = CustomFunctionsComboBoxChange
+      end
+      object OpenSandboxButton: TButton
+        Left = 120
+        Top = 169
+        Width = 24
+        Height = 24
+        Anchors = [akLeft, akBottom]
+        Caption = '...'
+        TabOrder = 4
+        OnClick = OpenSandboxButtonClick
       end
     end
     object GroupBox2: TGroupBox
       Left = 0
-      Top = 183
+      Top = 200
       Width = 148
-      Height = 196
+      Height = 179
       Align = alBottom
       Caption = 'EaseModifier:TEaseModifier'
       TabOrder = 3
@@ -99,7 +145,7 @@ object MainForm: TMainForm
         Left = 2
         Top = 15
         Width = 144
-        Height = 179
+        Height = 162
         Align = alClient
         ItemHeight = 13
         Items.Strings = (
@@ -156,7 +202,7 @@ object MainForm: TMainForm
     Top = 0
     Width = 550
     Height = 474
-    ActivePage = EaseRealTabSheet
+    ActivePage = GraphTabSheet
     Align = alClient
     TabOrder = 1
     OnChange = UpdateTabSheet

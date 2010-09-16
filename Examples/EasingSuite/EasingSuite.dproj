@@ -42,6 +42,14 @@
 				<Form>MainForm</Form>
 			</DCCReference>
 			<DCCReference Include="..\..\AnyiQuack.pas"/>
+			<DCCReference Include="Sandbox.pas">
+				<Form>SandboxForm</Form>
+			</DCCReference>
+			<RcItem Include="Sandbox.script.pas">
+				<ContainerId>ResourceItem</ContainerId>
+				<ResourceType>RCData</ResourceType>
+				<ResourceId>Script</ResourceId>
+			</RcItem>
 			<BuildConfiguration Include="Basis">
 				<Key>Base</Key>
 			</BuildConfiguration>

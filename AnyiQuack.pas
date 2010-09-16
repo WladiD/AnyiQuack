@@ -45,7 +45,7 @@ type
 	TInterval = class;
 
 	TEaseType = (etLinear, etQuad, etCubic, etQuart, etQuint, etSext, etSinus, etElastic, etBack,
-		etLowWave, etMiddleWave, etHighWave);
+		etLowWave, etMiddleWave, etHighWave, etBounce, etCircle);
 	TEaseModifier = (
 		emIn, emInInverted, emInSnake,
 		emOut, emOutInverted, emOutSnake,
@@ -425,6 +425,34 @@ end;
 function BackEase(Progress:Real):Real;
 begin
 	Result:=Progress * Progress * ((2.70158 * Progress) - 1.70158);
+end;
+
+function BounceEase(Progress:Real):Real;
+const
+  Base:Real = 7.5625;
+begin
+	if Progress < (1 / 2.75) then
+		Result:=Base * Progress * Progress
+	else if Progress < (2 / 2.75) then
+	begin
+		Progress:=Progress - (1.5 / 2.75);
+		Result:=(Base * Progress) * Progress + 0.75;
+	end
+	else if Progress < (2.5 / 2.75) then
+	begin
+		Progress:=Progress - (2.25 / 2.75);
+		Result:=(Base * Progress) * Progress + 0.9375;
+	end
+	else
+	begin
+		Progress:=Progress - (2.625/2.75);
+		Result:=(7.5625 * Progress) * Progress + 0.984375;
+	end;
+end;
+
+function CircleEase(Progress:Real):Real;
+begin
+	Result:=1 - Sqrt(1 - Progress * Progress);
 end;
 
 function Take(AObject:TObject):TAQ;
@@ -1146,6 +1174,10 @@ begin
 			Result:=HighWaveEase;
 		etBack:
 			Result:=BackEase;
+		etBounce:
+			Result:=BounceEase;
+		etCircle:
+			Result:=CircleEase;
 	else
 		Result:=LinearEase;
 	end;
