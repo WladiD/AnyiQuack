@@ -5,6 +5,8 @@ interface
 uses
 	Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
 	Dialogs, StdCtrls, ExtCtrls,
+	// SynEdit
+	SynEditHighlighter, SynHighlighterPas, SynEdit,
 	// ScriptEngine 2
 	uSE2Compiler, // für den Compiler
 	uSE2UnitCacheMngr, // für den Unit-Cache-Manager
@@ -13,20 +15,20 @@ uses
 	uSE2PEData, // die ByteCode-Daten
 	uSE2RunTime, // für die RunTime
 	uSE2IncConsole,
-	uSE2OpCode, SynEditHighlighter, SynHighlighterPas, SynEdit;
+	uSE2OpCode;
 
 type
 	TSandboxForm = class(TForm)
-		ConsoleMemo: TMemo;
-		Splitter1: TSplitter;
-		Panel1: TPanel;
-		CompileButton: TButton;
-    CodeEdit: TSynEdit;
-    SynPasSyn1: TSynPasSyn;
-    procedure CompileButtonClick(Sender: TObject);
-    procedure FormCreate(Sender: TObject);
-    procedure FormDestroy(Sender: TObject);
-    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+		ConsoleMemo:TMemo;
+		Splitter1:TSplitter;
+		Panel1:TPanel;
+		CompileButton:TButton;
+		CodeEdit:TSynEdit;
+		SynPasSyn1:TSynPasSyn;
+		procedure CompileButtonClick(Sender:TObject);
+		procedure FormCreate(Sender:TObject);
+		procedure FormDestroy(Sender:TObject);
+		procedure FormClose(Sender:TObject; var Action:TCloseAction);
 	private
 		procedure CompilerError(Sender: TObject; ErrorType: TSE2ErrorType;
 			ErrorUnit, ErrorText: string; ErrorPos, ErrorLine: integer;
@@ -55,7 +57,7 @@ const
 
 { TSandboxForm }
 
-procedure TSandboxForm.CompileButtonClick(Sender: TObject);
+procedure TSandboxForm.CompileButtonClick(Sender:TObject);
 var
 	AppCode:TSE2PE;
 begin
@@ -64,8 +66,8 @@ begin
 		MainForm.ApplyAppCode(AppCode);
 end;
 
-procedure TSandboxForm.CompilerError(Sender: TObject; ErrorType: TSE2ErrorType; ErrorUnit,
-  ErrorText: string; ErrorPos, ErrorLine: integer; UserData: TObject);
+procedure TSandboxForm.CompilerError(Sender:TObject; ErrorType:TSE2ErrorType; ErrorUnit,
+	ErrorText:String; ErrorPos, ErrorLine:Integer; UserData:TObject);
 var
 	s:String;
 begin
@@ -78,7 +80,7 @@ begin
   ConsoleMemo.Lines.Add(s + Format(': [%s] [Line %d]: %s', [ErrorUnit, ErrorLine, ErrorText] ));
 end;
 
-procedure TSandboxForm.CompilerNeedUnit(Sender: TObject; const Name: string; const Readers: TList);
+procedure TSandboxForm.CompilerNeedUnit(Sender:TObject; const Name:string; const Readers:TList);
 begin
 //
 end;
@@ -98,12 +100,12 @@ begin
 	end;
 end;
 
-procedure TSandboxForm.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TSandboxForm.FormClose(Sender:TObject; var Action:TCloseAction);
 begin
 	Action:=caHide;
 end;
 
-procedure TSandboxForm.FormCreate(Sender: TObject);
+procedure TSandboxForm.FormCreate(Sender:TObject);
 var
 	ScriptStream:TResourceStream;
 begin
@@ -120,7 +122,7 @@ begin
 	end;
 end;
 
-procedure TSandboxForm.FormDestroy(Sender: TObject);
+procedure TSandboxForm.FormDestroy(Sender:TObject);
 begin
 	CodeEdit.Lines.SaveToFile(SandboxScriptFile);
 end;

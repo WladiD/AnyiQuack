@@ -40,12 +40,12 @@ type
 		DurationPanel:TPanel;
 		DurationTrackBar:TTrackBar;
 		Panel3:TPanel;
-		XAxisCheckBox: TCheckBox;
-		YAxisCheckBox: TCheckBox;
-    IntegratedEaseFunctionsRadioButton: TRadioButton;
-    CustomEaseFunctionsRadioButton: TRadioButton;
-    CustomFunctionsComboBox: TComboBox;
-    OpenSandboxButton: TButton;
+		XAxisCheckBox:TCheckBox;
+		YAxisCheckBox:TCheckBox;
+		IntegratedEaseFunctionsRadioButton:TRadioButton;
+		CustomEaseFunctionsRadioButton:TRadioButton;
+		CustomFunctionsComboBox:TComboBox;
+		OpenSandboxButton:TButton;
 		procedure FormCreate(Sender:TObject);
 		procedure UpdateTabSheet(Sender:TObject);
 		procedure AnimateButtonClick(Sender:TObject);
@@ -54,10 +54,10 @@ type
 		procedure EaseRealImagePaintStage(Sender:TObject; Buffer:TBitmap32; StageNum:Cardinal);
 		procedure DurationTrackBarChange(Sender:TObject);
 		procedure FormDestroy(Sender:TObject);
-	procedure OpenSandboxButtonClick(Sender: TObject);
-    procedure CustomFunctionsComboBoxChange(Sender: TObject);
-    procedure EaseTypeListBoxClick(Sender: TObject);
-	procedure CustomEaseFunctionsRadioButtonClick(Sender: TObject);
+		procedure OpenSandboxButtonClick(Sender:TObject);
+		procedure CustomFunctionsComboBoxChange(Sender:TObject);
+		procedure EaseTypeListBoxClick(Sender:TObject);
+		procedure CustomEaseFunctionsRadioButtonClick(Sender:TObject);
 	private
 		FBackgroundLayer:TBitmapLayer;
 		FGraphLayer:TBitmapLayer;
@@ -113,13 +113,13 @@ const
 	HorizGridOffset = 50;
 	VertGridOffset = 100;
 
-procedure ScriptConsoleWrite(const s: string);
+procedure ScriptConsoleWrite(const s:string);
 begin
 end;
 
 {** TMainForm **}
 
-procedure TMainForm.AnimateButtonClick(Sender: TObject);
+procedure TMainForm.AnimateButtonClick(Sender:TObject);
 var
 	Duration:Integer;
 begin
@@ -259,7 +259,7 @@ begin
 	end;
 end;
 
-procedure TMainForm.CustomEaseFunctionsRadioButtonClick(Sender: TObject);
+procedure TMainForm.CustomEaseFunctionsRadioButtonClick(Sender:TObject);
 begin
 	if CustomFunctionsComboBox.Items.Count = 0 then
 		OpenSandboxButton.Click
@@ -267,7 +267,7 @@ begin
 		UpdateCurrentTabSheet;
 end;
 
-procedure TMainForm.CustomFunctionsComboBoxChange(Sender: TObject);
+procedure TMainForm.CustomFunctionsComboBoxChange(Sender:TObject);
 begin
 	if CustomEaseFunctionsRadioButton.Checked then
 		UpdateCurrentTabSheet;
@@ -314,7 +314,7 @@ begin
 	UpdateCurrentTabSheet;
 end;
 
-procedure TMainForm.FormDestroy(Sender: TObject);
+procedure TMainForm.FormDestroy(Sender:TObject);
 begin
 	if FRunTime.Initialized then
 		FRunTime.Finalize;
@@ -343,7 +343,7 @@ begin
 		Result:=TAQ.Ease(TEaseType(Ord(EaseTypeListBox.ItemIndex)), CurrentEaseModifier);
 end;
 
-procedure TMainForm.OpenSandboxButtonClick(Sender: TObject);
+procedure TMainForm.OpenSandboxButtonClick(Sender:TObject);
 begin
 	if not Assigned(FSandBox) then
 	begin
@@ -356,8 +356,8 @@ begin
 		FSandBox.Show;
 end;
 
-procedure TMainForm.RunTimeError(Sender: TObject; Exp: ExceptClass; const Msg: string;
-  CodePos: integer; const CallStack: string);
+procedure TMainForm.RunTimeError(Sender:TObject; Exp:ExceptClass; const Msg:string;
+	CodePos:Integer; const CallStack:string);
 begin
 	ShowMessage('RunTime error: ' + #13#10 + Exp.ClassName + ': ' + Msg + #13#10#13#10 +
 		CallStack);
@@ -442,7 +442,7 @@ begin
 	end;
 end;
 
-procedure TMainForm.EaseTypeListBoxClick(Sender: TObject);
+procedure TMainForm.EaseTypeListBoxClick(Sender:TObject);
 begin
 	if IntegratedEaseFunctionsRadioButton.Checked then
 		UpdateCurrentTabSheet
@@ -485,7 +485,7 @@ end;
 
 {** TTrackerLayer **}
 
-constructor TTrackerLayer.Create(ALayerCollection: TLayerCollection);
+constructor TTrackerLayer.Create(ALayerCollection:TLayerCollection);
 begin
 	inherited Create(ALayerCollection);
 end;
