@@ -289,7 +289,7 @@ begin
 
 	VisPageControl.TabIndex:=0;
 
-	EaseTypeListBox.Selected[1]:=TRUE;
+	EaseTypeListBox.Selected[Ord(etElastic)]:=TRUE;
 	EaseModifierListBox.Selected[0]:=TRUE;
 
 	FBackgroundLayer:=TBitmapLayer.Create(EaseGraphImage.Layers);
@@ -542,9 +542,9 @@ begin
 	 *}
 	Buffer.LineFS(0, Y, DispWidth, Y, ValueColor);
 	Buffer.LineFS(X, 0, X, DispHeight, ValueColor);
-	Caption:=Format('%.4f', [Progress]);
+	Caption:=Format('%.5f', [Progress]);
 	Buffer.Textout(Trunc(X + 5), DispHeight - (Buffer.TextHeight(Caption) + 2), Caption);
-	Caption:=Format('%.4f', [EasedProgress]);
+	Caption:=Format('%.5f', [EasedProgress]);
 	Buffer.Textout(2, Trunc(Y + 5), Caption);
 	{**
 	 * Kreuz

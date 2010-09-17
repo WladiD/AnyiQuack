@@ -18,7 +18,7 @@ object SandboxForm: TSandboxForm
   TextHeight = 13
   object Splitter1: TSplitter
     Left = 0
-    Top = 229
+    Top = 268
     Width = 635
     Height = 3
     Cursor = crVSplit
@@ -28,12 +28,13 @@ object SandboxForm: TSandboxForm
   end
   object ConsoleMemo: TMemo
     Left = 0
-    Top = 232
+    Top = 271
     Width = 635
-    Height = 89
+    Height = 50
     Align = alBottom
     ScrollBars = ssVertical
     TabOrder = 0
+    ExplicitTop = 281
   end
   object Panel1: TPanel
     Left = 0
@@ -63,7 +64,7 @@ object SandboxForm: TSandboxForm
     Left = 0
     Top = 0
     Width = 635
-    Height = 229
+    Height = 268
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -82,10 +83,7 @@ object SandboxForm: TSandboxForm
     Highlighter = SynPasSyn1
     Options = [eoAutoIndent, eoDragDropEditing, eoEnhanceEndKey, eoGroupUndo, eoScrollPastEol, eoShowScrollHint, eoSmartTabDelete, eoSmartTabs, eoTabIndent, eoTabsToSpaces, eoTrimTrailingSpaces]
     WantTabs = True
-    ExplicitLeft = 112
-    ExplicitTop = 64
-    ExplicitWidth = 200
-    ExplicitHeight = 150
+    ExplicitHeight = 229
   end
   object SynPasSyn1: TSynPasSyn
     CommentAttri.Foreground = clGrayText

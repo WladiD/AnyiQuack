@@ -47,8 +47,8 @@ type
 	TEaseType = (etLinear, etQuad, etCubic, etQuart, etQuint, etSext, etSinus, etElastic, etBack,
 		etLowWave, etMiddleWave, etHighWave, etBounce, etCircle);
 	TEaseModifier = (
-		emIn, emInInverted, emInSnake,
-		emOut, emOutInverted, emOutSnake,
+		emIn, emInInverted, emInSnake, emInSnakeInverted,
+		emOut, emOutInverted, emOutSnake, emOutSnakeInverted,
 		emInOut, emInOutMirrored, emInOutCombined,
 		emOutIn, emOutInMirrored, emOutInCombined);
 	TActorRole = (arTimer, arInterval, arDelay, arAnimation);
@@ -1272,9 +1272,27 @@ begin
 			Result:=function(Progress:Real):Real
 			begin
 				if Progress <= 0.5 then
-					Result:=EaseFunction(1) + (1 - EaseFunction(Progress / 0.5))
+					Result:=1 + (1 - EaseFunction(Progress / 0.5))
 				else
 					Result:=EaseFunction(1 - ((Progress - 0.5) / 0.5));
+				Result:=Result / 2;
+			end;
+		emInSnakeInverted:
+			Result:=function(Progress:Real):Real
+			begin
+				if Progress <= 0.5 then
+					Result:=1 - EaseFunction(1 - (Progress / 0.5))
+				else
+					Result:=EaseFunction(1) + EaseFunction((Progress - 0.5) / 0.5);
+				Result:=Result / 2;
+			end;
+		emOutSnakeInverted:
+			Result:=function(Progress:Real):Real
+			begin
+				if Progress <= 0.5 then
+					Result:=1 + EaseFunction(1 - Progress / 0.5)
+				else
+					Result:=1 - EaseFunction((Progress - 0.5) / 0.5);
 				Result:=Result / 2;
 			end;
 	end;

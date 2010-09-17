@@ -56,17 +56,18 @@ object MainForm: TMainForm
       Left = 0
       Top = 0
       Width = 148
-      Height = 200
+      Height = 173
       Align = alClient
       TabOrder = 2
+      ExplicitHeight = 200
       DesignSize = (
         148
-        200)
+        173)
       object EaseTypeListBox: TListBox
         Left = 3
         Top = 24
         Width = 144
-        Height = 121
+        Height = 94
         Margins.Left = 0
         Margins.Top = 18
         Margins.Right = 0
@@ -90,6 +91,7 @@ object MainForm: TMainForm
           'etCircle')
         TabOrder = 0
         OnClick = EaseTypeListBoxClick
+        ExplicitHeight = 121
       end
       object IntegratedEaseFunctionsRadioButton: TRadioButton
         Left = 3
@@ -104,40 +106,43 @@ object MainForm: TMainForm
       end
       object CustomEaseFunctionsRadioButton: TRadioButton
         Left = 3
-        Top = 150
+        Top = 123
         Width = 141
         Height = 17
         Anchors = [akLeft, akBottom]
         Caption = 'Custom Ease-Function'
         TabOrder = 2
         OnClick = CustomEaseFunctionsRadioButtonClick
+        ExplicitTop = 150
       end
       object CustomFunctionsComboBox: TComboBox
         Left = 3
-        Top = 171
+        Top = 144
         Width = 113
         Height = 21
         Style = csDropDownList
         Anchors = [akLeft, akBottom]
         TabOrder = 3
         OnChange = CustomFunctionsComboBoxChange
+        ExplicitTop = 171
       end
       object OpenSandboxButton: TButton
         Left = 120
-        Top = 169
+        Top = 142
         Width = 24
         Height = 24
         Anchors = [akLeft, akBottom]
         Caption = '...'
         TabOrder = 4
         OnClick = OpenSandboxButtonClick
+        ExplicitTop = 169
       end
     end
     object GroupBox2: TGroupBox
       Left = 0
-      Top = 200
+      Top = 173
       Width = 148
-      Height = 179
+      Height = 206
       Align = alBottom
       Caption = 'EaseModifier:TEaseModifier'
       TabOrder = 3
@@ -145,16 +150,18 @@ object MainForm: TMainForm
         Left = 2
         Top = 15
         Width = 144
-        Height = 162
+        Height = 189
         Align = alClient
         ItemHeight = 13
         Items.Strings = (
           'emIn'
           'emInInverted'
           'emInSnake'
+          'emInSnakeInverted'
           'emOut'
           'emOutInverted'
           'emOutSnake'
+          'emOutSnakeInverted'
           'emInOut'
           'emInOutMirrored'
           'emInOutCombined'
@@ -163,6 +170,7 @@ object MainForm: TMainForm
           'emOutInCombined')
         TabOrder = 0
         OnClick = UpdateTabSheet
+        ExplicitHeight = 162
       end
     end
     object DurationPanel: TPanel
@@ -171,7 +179,7 @@ object MainForm: TMainForm
       Width = 148
       Height = 41
       Align = alBottom
-      Caption = 'Animation duration (1500 ms)'
+      Caption = 'Animation duration (2000 ms)'
       TabOrder = 4
       VerticalAlignment = taAlignTop
       object DurationTrackBar: TTrackBar
@@ -189,7 +197,7 @@ object MainForm: TMainForm
         Min = 100
         PageSize = 100
         Frequency = 1000
-        Position = 1500
+        Position = 2000
         PositionToolTip = ptBottom
         ShowSelRange = False
         TabOrder = 0
@@ -256,7 +264,7 @@ object MainForm: TMainForm
       end
     end
     object EaseRealTabSheet: TTabSheet
-      Caption = 'EaseReal-Visualizer'
+      Caption = 'Movement-Visualizer'
       ImageIndex = 1
       object EaseRealImage: TImage32
         Left = 0
@@ -285,8 +293,6 @@ object MainForm: TMainForm
           Width = 97
           Height = 17
           Caption = 'Animate X-Axis'
-          Checked = True
-          State = cbChecked
           TabOrder = 0
           OnClick = UpdateTabSheet
         end
