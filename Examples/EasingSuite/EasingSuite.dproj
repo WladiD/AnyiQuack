@@ -3,7 +3,7 @@
 			<ProjectGuid>{1F86A073-B563-48C5-834B-483E4772D426}</ProjectGuid>
 			<ProjectVersion>12.0</ProjectVersion>
 			<MainSource>EasingSuite.dpr</MainSource>
-			<Config Condition="'$(Config)'==''">Release</Config>
+			<Config Condition="'$(Config)'==''">Debug</Config>
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Basis' or '$(Base)'!=''">

@@ -5,10 +5,11 @@ interface
 uses
 	Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
 	Dialogs, ExtCtrls, StdCtrls, Math,
-	GR32, GR32_Image, GR32_Layers, ComCtrls,
 	SandBox,
-
 	AnyiQuack,
+	VirtualTrees,
+	// Graphics 32
+	GR32, GR32_Image, GR32_Layers, ComCtrls,
 	// ScriptEngine 2
 	uSE2Compiler, // für den Compiler
 	uSE2UnitCacheMngr, // für den Unit-Cache-Manager
@@ -17,7 +18,10 @@ uses
 	uSE2PEData, // die ByteCode-Daten
 	uSE2RunTime, // für die RunTime
 	uSE2IncConsole,
-	uSE2OpCode;
+	uSE2OpCode,
+	// JVCL
+	JvExControls, JvEditorCommon, JvEditor, JvHLEditor, Mask, JvExMask,
+	JvSpin, JvColorButton, JvColorBox;
 
 type
 	TTrackerLayer = class;
@@ -46,6 +50,27 @@ type
 		CustomEaseFunctionsRadioButton:TRadioButton;
 		CustomFunctionsComboBox:TComboBox;
 		OpenSandboxButton:TButton;
+		LookupTabSheet:TTabSheet;
+		Panel4:TPanel;
+		Panel5:TPanel;
+		LookupTypePageControl:TPageControl;
+		LookupIntegerTabSheet:TTabSheet;
+		LookupRealTabSheet:TTabSheet;
+		LookupColorTabSheet:TTabSheet;
+		StartIntegerEdit:TJvSpinEdit;
+		EndIntegerEdit:TJvSpinEdit;
+		Label1:TLabel;
+		Label3:TLabel;
+		Label4:TLabel;
+		Label5:TLabel;
+		EndRealEdit:TJvSpinEdit;
+		StartRealEdit:TJvSpinEdit;
+		Label8:TLabel;
+		Label9:TLabel;
+		LookupTree:TVirtualStringTree;
+		LookupStepsCountEdit:TJvSpinEdit;
+		StartColorButton:TJvColorButton;
+		EndColorButton:TJvColorButton;
 		procedure FormCreate(Sender:TObject);
 		procedure UpdateTabSheet(Sender:TObject);
 		procedure AnimateButtonClick(Sender:TObject);
@@ -58,6 +83,10 @@ type
 		procedure CustomFunctionsComboBoxChange(Sender:TObject);
 		procedure EaseTypeListBoxClick(Sender:TObject);
 		procedure CustomEaseFunctionsRadioButtonClick(Sender:TObject);
+		procedure LookupTreeGetText(Sender:TBaseVirtualTree; Node:PVirtualNode; Column:TColumnIndex;
+			TextType:TVSTTextType; var CellText:string);
+		procedure LookupTreeAfterCellPaint(Sender:TBaseVirtualTree; TargetCanvas:TCanvas;
+			Node:PVirtualNode; Column:TColumnIndex; CellRect:TRect);
 	private
 		FBackgroundLayer:TBitmapLayer;
 		FGraphLayer:TBitmapLayer;
@@ -72,6 +101,7 @@ type
 		procedure BuildBackground;
 		procedure BuildGraph;
 		procedure UpdateCurrentTabSheet;
+		procedure UpdateLookupTree;
 		procedure SetEaseRealProgress(NewProgress:Real);
 
 		procedure RunTimeError(Sender:TObject; Exp:ExceptClass;
@@ -124,7 +154,7 @@ var
 	Duration:Integer;
 begin
 	Duration:=Min(9999, DurationTrackBar.Position);
-	AnimateButton.Enabled:=FALSE;
+
 	if VisPageControl.ActivePage = GraphTabSheet then
 		Take(FTrackerLayer)
 			.CancelAnimations
@@ -150,7 +180,10 @@ begin
 							AnimateButton.Enabled:=TRUE;
 					end;
 					Result:=TRUE;
-				end);
+				end)
+	else
+		Exit;
+	AnimateButton.Enabled:=FALSE;
 end;
 
 procedure TMainForm.EaseGraphImageMouseMove(Sender:TObject; Shift:TShiftState; X, Y:Integer;
@@ -343,6 +376,53 @@ begin
 		Result:=TAQ.Ease(TEaseType(Ord(EaseTypeListBox.ItemIndex)), CurrentEaseModifier);
 end;
 
+procedure TMainForm.LookupTreeAfterCellPaint(Sender:TBaseVirtualTree; TargetCanvas:TCanvas;
+	Node:PVirtualNode; Column:TColumnIndex; CellRect:TRect);
+var
+	Progress:Real;
+	SquareHeight:Integer;
+	EasedColor:TColor;
+begin
+	if Column <> 4 then
+		Exit;
+
+	Progress:=(1 / (TVirtualStringTree(Sender).RootNodeCount - 1)) * Node.Index;
+	SquareHeight:=CellRect.Bottom - CellRect.Top;
+	EasedColor:=TAQ.EaseColor(
+		StartColorButton.Color, EndColorButton.Color, Progress, (GetEaseFunction));
+	TargetCanvas.Brush.Color:=EasedColor;
+	TargetCanvas.Brush.Style:=bsSolid;
+	TargetCanvas.Pen.Color:=EasedColor;
+	TargetCanvas.Rectangle(CellRect.Left + 1, CellRect.Top,
+		CellRect.Left + SquareHeight, CellRect.Top + SquareHeight);
+end;
+
+procedure TMainForm.LookupTreeGetText(Sender:TBaseVirtualTree; Node:PVirtualNode;
+	Column:TColumnIndex; TextType:TVSTTextType; var CellText:string);
+var
+	Progress:Real;
+begin
+	Progress:=(1 / (TVirtualStringTree(Sender).RootNodeCount - 1)) * Node.Index;
+
+	case Column of
+		0: // In
+			CellText:=Format('%.5f', [Progress]);
+		1: // Out
+			CellText:=Format('%.5f', [(GetEaseFunction)(Progress)]);
+		2: // Integer
+			CellText:=IntToStr(TAQ.EaseInteger(
+				Integer(Trunc(StartIntegerEdit.Value)), Integer(Trunc(EndIntegerEdit.Value)),
+				Progress, (GetEaseFunction)));
+		3: // Real
+			CellText:=Format('%.5f', [TAQ.EaseReal(
+				StartRealEdit.Value, EndRealEdit.Value, Progress,
+				(GetEaseFunction))]);
+		4: // TColor
+			CellText:=Format('$%.6x', [TAQ.EaseColor(
+				StartColorButton.Color, EndColorButton.Color, Progress, (GetEaseFunction))]);
+	end;
+end;
+
 procedure TMainForm.OpenSandboxButtonClick(Sender:TObject);
 begin
 	if not Assigned(FSandBox) then
@@ -414,9 +494,9 @@ begin
 		1: // Background
 		begin
 			Buffer.Clear(clGray32);
-			Buffer.FillRectTS(TrackerQSize, TrackerQSize,
+			Buffer.FillRectS(TrackerQSize, TrackerQSize,
 				EaseRealImage.Width - TrackerQSize, EaseRealImage.Height - TrackerQSize,
-				clTrWhite32);
+				$FFA7A7A7);
 		end;
 		2: // Animated Circle
 		begin
@@ -451,36 +531,51 @@ begin
 end;
 
 procedure TMainForm.UpdateCurrentTabSheet;
+
+	procedure UpdateGraph;
+	begin
+		EaseGraphImage.BeginUpdate;
+
+		with FBackgroundLayer do
+		begin
+			Bitmap.SetSize(EaseGraphImage.Width, EaseGraphImage.Height);
+			Location:=FloatRect(0, 0, Bitmap.Width, Bitmap.Height);
+		end;
+		BuildBackground;
+
+		with FGraphLayer do
+		begin
+			Location:=FloatRect(HorizGridOffset, VertGridOffset,
+				EaseGraphImage.Width - HorizGridOffset, EaseGraphImage.Height - VertGridOffset);
+			Bitmap.SetSize(Trunc(Location.Right - Location.Left), Trunc(Location.Bottom - Location.Top));
+		end;
+		BuildGraph;
+
+		with FTrackerLayer do
+		begin
+			FEaseFunction:=(GetEaseFunction);
+			Location:=FloatRect(HorizGridOffset, VertGridOffset,
+				EaseGraphImage.Width - HorizGridOffset, EaseGraphImage.Height - VertGridOffset);
+		end;
+
+		EaseGraphImage.EndUpdate;
+		EaseGraphImage.Changed;
+	end;
+
 begin
-	EaseGraphImage.BeginUpdate;
-
-	with FBackgroundLayer do
-	begin
-		Bitmap.SetSize(EaseGraphImage.Width, EaseGraphImage.Height);
-		Location:=FloatRect(0, 0, Bitmap.Width, Bitmap.Height);
-	end;
-	BuildBackground;
-
-	with FGraphLayer do
-	begin
-		Location:=FloatRect(HorizGridOffset, VertGridOffset,
-			EaseGraphImage.Width - HorizGridOffset, EaseGraphImage.Height - VertGridOffset);
-		Bitmap.SetSize(Trunc(Location.Right - Location.Left), Trunc(Location.Bottom - Location.Top));
-	end;
-	BuildGraph;
-
-	with FTrackerLayer do
-	begin
-		FEaseFunction:=(GetEaseFunction);
-		Location:=FloatRect(HorizGridOffset, VertGridOffset,
-			EaseGraphImage.Width - HorizGridOffset, EaseGraphImage.Height - VertGridOffset);
-	end;
-
-	EaseGraphImage.EndUpdate;
-	EaseGraphImage.Changed;
+	if VisPageControl.ActivePage = GraphTabSheet then
+		UpdateGraph
+	else if VisPageControl.ActivePage = LookupTabSheet then
+		UpdateLookupTree;
 
 	if AnimateOnChangeCheckBox.Checked then
 		AnimateButton.Click;
+end;
+
+procedure TMainForm.UpdateLookupTree;
+begin
+	LookupTree.RootNodeCount:=Cardinal(Trunc(LookupStepsCountEdit.Value));
+	LookupTree.Refresh;
 end;
 
 {** TTrackerLayer **}

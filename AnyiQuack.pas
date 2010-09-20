@@ -1341,9 +1341,9 @@ begin
 	Progress:=EaseFunction(Progress);
 
 	Result:=RGB(
-		EaseInteger(StartR, EndR, Progress, nil),
-		EaseInteger(StartG, EndG, Progress, nil),
-		EaseInteger(StartB, EndB, Progress, nil));
+		Min(255, Max(0, EaseInteger(StartR, EndR, Progress, nil))),
+		Min(255, Max(0, EaseInteger(StartG, EndG, Progress, nil))),
+		Min(255, Max(0, EaseInteger(StartB, EndB, Progress, nil))));
 end;
 
 class function TAQ.EaseInteger(StartValue, EndValue:Integer; Progress:Real;

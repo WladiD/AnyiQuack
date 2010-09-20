@@ -59,7 +59,6 @@ object MainForm: TMainForm
       Height = 173
       Align = alClient
       TabOrder = 2
-      ExplicitHeight = 200
       DesignSize = (
         148
         173)
@@ -91,7 +90,6 @@ object MainForm: TMainForm
           'etCircle')
         TabOrder = 0
         OnClick = EaseTypeListBoxClick
-        ExplicitHeight = 121
       end
       object IntegratedEaseFunctionsRadioButton: TRadioButton
         Left = 3
@@ -113,7 +111,6 @@ object MainForm: TMainForm
         Caption = 'Custom Ease-Function'
         TabOrder = 2
         OnClick = CustomEaseFunctionsRadioButtonClick
-        ExplicitTop = 150
       end
       object CustomFunctionsComboBox: TComboBox
         Left = 3
@@ -124,7 +121,6 @@ object MainForm: TMainForm
         Anchors = [akLeft, akBottom]
         TabOrder = 3
         OnChange = CustomFunctionsComboBoxChange
-        ExplicitTop = 171
       end
       object OpenSandboxButton: TButton
         Left = 120
@@ -135,7 +131,6 @@ object MainForm: TMainForm
         Caption = '...'
         TabOrder = 4
         OnClick = OpenSandboxButtonClick
-        ExplicitTop = 169
       end
     end
     object GroupBox2: TGroupBox
@@ -170,7 +165,6 @@ object MainForm: TMainForm
           'emOutInCombined')
         TabOrder = 0
         OnClick = UpdateTabSheet
-        ExplicitHeight = 162
       end
     end
     object DurationPanel: TPanel
@@ -210,7 +204,7 @@ object MainForm: TMainForm
     Top = 0
     Width = 550
     Height = 474
-    ActivePage = GraphTabSheet
+    ActivePage = LookupTabSheet
     Align = alClient
     TabOrder = 1
     OnChange = UpdateTabSheet
@@ -307,6 +301,223 @@ object MainForm: TMainForm
           TabOrder = 1
           OnClick = UpdateTabSheet
         end
+      end
+    end
+    object LookupTabSheet: TTabSheet
+      Caption = 'Lookup table'
+      ImageIndex = 2
+      object Panel4: TPanel
+        Left = 0
+        Top = 361
+        Width = 542
+        Height = 85
+        Align = alBottom
+        BevelOuter = bvNone
+        Caption = 'Panel4'
+        TabOrder = 1
+        object Panel5: TPanel
+          Left = 0
+          Top = 0
+          Width = 185
+          Height = 85
+          Align = alLeft
+          BevelOuter = bvNone
+          Caption = 'Steps'
+          TabOrder = 0
+          VerticalAlignment = taAlignTop
+          ExplicitLeft = 184
+          ExplicitTop = 32
+          ExplicitHeight = 41
+          object LookupStepsCountEdit: TJvSpinEdit
+            Left = 56
+            Top = 40
+            Width = 81
+            Height = 21
+            CheckMaxValue = False
+            ButtonKind = bkClassic
+            MinValue = 2.000000000000000000
+            Value = 17.000000000000000000
+            TabOrder = 0
+            OnChange = UpdateTabSheet
+          end
+        end
+        object LookupTypePageControl: TPageControl
+          Left = 185
+          Top = 0
+          Width = 357
+          Height = 85
+          ActivePage = LookupIntegerTabSheet
+          Align = alClient
+          TabOrder = 1
+          object LookupIntegerTabSheet: TTabSheet
+            Caption = 'Integer'
+            object Label1: TLabel
+              Left = 3
+              Top = 14
+              Width = 24
+              Height = 13
+              Caption = 'Start'
+            end
+            object Label3: TLabel
+              Left = 112
+              Top = 14
+              Width = 18
+              Height = 13
+              Caption = 'End'
+            end
+            object StartIntegerEdit: TJvSpinEdit
+              Left = 3
+              Top = 33
+              Width = 90
+              Height = 21
+              ButtonKind = bkClassic
+              Value = 500.000000000000000000
+              TabOrder = 0
+              OnChange = UpdateTabSheet
+            end
+            object EndIntegerEdit: TJvSpinEdit
+              Left = 112
+              Top = 33
+              Width = 90
+              Height = 21
+              ButtonKind = bkClassic
+              Value = 1000.000000000000000000
+              TabOrder = 1
+              OnChange = UpdateTabSheet
+            end
+          end
+          object LookupRealTabSheet: TTabSheet
+            Caption = 'Real'
+            ImageIndex = 1
+            object Label8: TLabel
+              Left = 3
+              Top = 14
+              Width = 24
+              Height = 13
+              Caption = 'Start'
+            end
+            object Label9: TLabel
+              Left = 112
+              Top = 14
+              Width = 18
+              Height = 13
+              Caption = 'End'
+            end
+            object EndRealEdit: TJvSpinEdit
+              Left = 112
+              Top = 33
+              Width = 90
+              Height = 21
+              ButtonKind = bkClassic
+              ValueType = vtFloat
+              Value = 1000.110000000000000000
+              TabOrder = 1
+              OnChange = UpdateTabSheet
+            end
+            object StartRealEdit: TJvSpinEdit
+              Left = 3
+              Top = 33
+              Width = 90
+              Height = 21
+              ButtonKind = bkClassic
+              ValueType = vtFloat
+              Value = 500.550000000000000000
+              TabOrder = 0
+              OnChange = UpdateTabSheet
+            end
+          end
+          object LookupColorTabSheet: TTabSheet
+            Caption = 'TColor'
+            ImageIndex = 2
+            object Label4: TLabel
+              Left = 3
+              Top = 14
+              Width = 24
+              Height = 13
+              Caption = 'Start'
+            end
+            object Label5: TLabel
+              Left = 80
+              Top = 14
+              Width = 18
+              Height = 13
+              Caption = 'End'
+            end
+            object StartColorButton: TJvColorButton
+              Left = 3
+              Top = 33
+              Width = 65
+              OtherCaption = '&Other...'
+              Options = [cdAnyColor]
+              Color = clWhite
+              OnChange = UpdateTabSheet
+              TabOrder = 0
+              TabStop = False
+            end
+            object EndColorButton: TJvColorButton
+              Left = 80
+              Top = 33
+              Width = 65
+              OtherCaption = '&Other...'
+              Options = []
+              OnChange = UpdateTabSheet
+              TabOrder = 1
+              TabStop = False
+            end
+          end
+        end
+      end
+      object LookupTree: TVirtualStringTree
+        Left = 0
+        Top = 0
+        Width = 542
+        Height = 361
+        Align = alClient
+        Header.AutoSizeIndex = 0
+        Header.DefaultHeight = 17
+        Header.Font.Charset = DEFAULT_CHARSET
+        Header.Font.Color = clWindowText
+        Header.Font.Height = -11
+        Header.Font.Name = 'Tahoma'
+        Header.Font.Style = []
+        Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+        TabOrder = 0
+        TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
+        TreeOptions.SelectionOptions = [toFullRowSelect]
+        OnAfterCellPaint = LookupTreeAfterCellPaint
+        OnGetText = LookupTreeGetText
+        Columns = <
+          item
+            Alignment = taRightJustify
+            Position = 0
+            Width = 80
+            WideText = 'In'
+          end
+          item
+            Alignment = taRightJustify
+            Position = 1
+            Width = 80
+            WideText = 'Out (eased)'
+          end
+          item
+            Alignment = taRightJustify
+            Position = 2
+            Width = 80
+            WideText = 'Integer'
+          end
+          item
+            Alignment = taRightJustify
+            Position = 3
+            Width = 80
+            WideText = 'Real'
+          end
+          item
+            Alignment = taRightJustify
+            Position = 4
+            Width = 80
+            WideText = 'TColor'
+          end>
+        WideDefaultText = ''
       end
     end
   end
