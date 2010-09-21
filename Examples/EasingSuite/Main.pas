@@ -71,6 +71,18 @@ type
 		LookupStepsCountEdit:TJvSpinEdit;
 		StartColorButton:TJvColorButton;
 		EndColorButton:TJvColorButton;
+		LookupStringTabSheet:TTabSheet;
+		StartStringEdit:TEdit;
+		EndStringEdit:TEdit;
+		Label6:TLabel;
+		Label7:TLabel;
+		EaseStringTabSheet:TTabSheet;
+		Label10:TLabel;
+		StartStringEdit2:TEdit;
+		Label11:TLabel;
+		EndStringEdit2:TEdit;
+		EaseStringOutputLabel:TLabel;
+		Label12:TLabel;
 		procedure FormCreate(Sender:TObject);
 		procedure UpdateTabSheet(Sender:TObject);
 		procedure AnimateButtonClick(Sender:TObject);
@@ -87,11 +99,14 @@ type
 			TextType:TVSTTextType; var CellText:string);
 		procedure LookupTreeAfterCellPaint(Sender:TBaseVirtualTree; TargetCanvas:TCanvas;
 			Node:PVirtualNode; Column:TColumnIndex; CellRect:TRect);
+		procedure StartStringEdit2Change(Sender:TObject);
+		procedure EndStringEdit2Change(Sender:TObject);
 	private
 		FBackgroundLayer:TBitmapLayer;
 		FGraphLayer:TBitmapLayer;
 		FTrackerLayer:TTrackerLayer;
 		FEaseRealProgress:Real;
+		FEaseStringProgress:Real;
 		FUnitCache:TSE2UnitCacheMngr;
 		FRunTime:TSE2RunTime;
 		FSandBox:TSandboxForm;
@@ -103,11 +118,13 @@ type
 		procedure UpdateCurrentTabSheet;
 		procedure UpdateLookupTree;
 		procedure SetEaseRealProgress(NewProgress:Real);
+		procedure SetEaseStringProgress(NewProgress:Real);
 
 		procedure RunTimeError(Sender:TObject; Exp:ExceptClass;
 			const Msg:string; CodePos:integer; const CallStack:string);
 
 		property EaseRealProgress:Real read FEaseRealProgress write SetEaseRealProgress;
+		property EaseStringProgress:Real read FEaseStringProgress write SetEaseStringProgress;
 	public
 		procedure ApplyAppCode(AppCode:TSE2PE);
 
@@ -180,6 +197,19 @@ begin
 							AnimateButton.Enabled:=TRUE;
 					end;
 					Result:=TRUE;
+				end)
+	else if VisPageControl.ActivePage = EaseStringTabSheet then
+		Take(Self)
+			.CancelAnimations
+			.EachAnimation(Duration,
+				function(AQ:TAQ; O:TObject):Boolean
+				begin
+					with TMainForm(O) do
+					begin
+						EaseStringProgress:=AQ.CurrentInterval.Progress;
+						if AQ.CurrentInterval.Progress = 1 then
+							AnimateButton.Enabled:=TRUE;
+					end;
 				end)
 	else
 		Exit;
@@ -420,6 +450,9 @@ begin
 		4: // TColor
 			CellText:=Format('$%.6x', [TAQ.EaseColor(
 				StartColorButton.Color, EndColorButton.Color, Progress, (GetEaseFunction))]);
+		5: // String
+			CellText:=TAQ.EaseString(StartStringEdit.Text, EndStringEdit.Text, Progress,
+				(GetEaseFunction));
 	end;
 end;
 
@@ -454,6 +487,21 @@ begin
 		Exit;
 	FEaseRealProgress:=NewProgress;
 	EaseRealImage.Changed;
+end;
+
+procedure TMainForm.SetEaseStringProgress(NewProgress:Real);
+begin
+	if NewProgress = FEaseStringProgress then
+		Exit;
+	EaseStringOutputLabel.Caption:=TAQ.EaseString(
+		StartStringEdit2.Text,
+		EndStringEdit2.Text, NewProgress, (GetEaseFunction));
+	FEaseStringProgress:=NewProgress;
+end;
+
+procedure TMainForm.StartStringEdit2Change(Sender: TObject);
+begin
+	StartStringEdit.Text:=StartStringEdit2.Text;
 end;
 
 procedure TMainForm.EaseRealImagePaintStage(Sender:TObject; Buffer:TBitmap32; StageNum:Cardinal);
@@ -528,6 +576,11 @@ begin
 		UpdateCurrentTabSheet
 	else
 		IntegratedEaseFunctionsRadioButton.Checked:=TRUE;
+end;
+
+procedure TMainForm.EndStringEdit2Change(Sender: TObject);
+begin
+	EndStringEdit.Text:=EndStringEdit2.Text;
 end;
 
 procedure TMainForm.UpdateCurrentTabSheet;

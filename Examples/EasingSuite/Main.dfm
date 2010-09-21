@@ -204,7 +204,7 @@ object MainForm: TMainForm
     Top = 0
     Width = 550
     Height = 474
-    ActivePage = LookupTabSheet
+    ActivePage = GraphTabSheet
     Align = alClient
     TabOrder = 1
     OnChange = UpdateTabSheet
@@ -258,7 +258,7 @@ object MainForm: TMainForm
       end
     end
     object EaseRealTabSheet: TTabSheet
-      Caption = 'Movement-Visualizer'
+      Caption = 'EaseReal'
       ImageIndex = 1
       object EaseRealImage: TImage32
         Left = 0
@@ -303,6 +303,83 @@ object MainForm: TMainForm
         end
       end
     end
+    object EaseStringTabSheet: TTabSheet
+      Caption = 'EaseString'
+      ImageIndex = 3
+      DesignSize = (
+        542
+        446)
+      object Label10: TLabel
+        Left = 16
+        Top = 16
+        Width = 24
+        Height = 13
+        Caption = 'Start'
+      end
+      object Label11: TLabel
+        Left = 16
+        Top = 72
+        Width = 18
+        Height = 13
+        Caption = 'End'
+      end
+      object EaseStringOutputLabel: TLabel
+        Left = 16
+        Top = 149
+        Width = 513
+        Height = 284
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        AutoSize = False
+        Caption = '...'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -19
+        Font.Name = 'Courier New'
+        Font.Style = []
+        ParentFont = False
+        ShowAccelChar = False
+        WordWrap = True
+      end
+      object Label12: TLabel
+        Left = 16
+        Top = 130
+        Width = 34
+        Height = 13
+        Caption = 'Output'
+      end
+      object StartStringEdit2: TEdit
+        Left = 16
+        Top = 35
+        Width = 273
+        Height = 24
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -13
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 0
+        Text = 'any strings can be eased too'
+        OnChange = StartStringEdit2Change
+      end
+      object EndStringEdit2: TEdit
+        Left = 16
+        Top = 91
+        Width = 273
+        Height = 24
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -13
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 1
+        Text = 
+          'any strings ... what is very unusual ... can be animated, in tha' +
+          't case every char is simply turn in round ... try emIn and emOut'
+        OnChange = EndStringEdit2Change
+      end
+    end
     object LookupTabSheet: TTabSheet
       Caption = 'Lookup table'
       ImageIndex = 2
@@ -325,9 +402,6 @@ object MainForm: TMainForm
           Caption = 'Steps'
           TabOrder = 0
           VerticalAlignment = taAlignTop
-          ExplicitLeft = 184
-          ExplicitTop = 32
-          ExplicitHeight = 41
           object LookupStepsCountEdit: TJvSpinEdit
             Left = 56
             Top = 40
@@ -465,6 +539,42 @@ object MainForm: TMainForm
               TabStop = False
             end
           end
+          object LookupStringTabSheet: TTabSheet
+            Caption = 'String'
+            ImageIndex = 3
+            object Label6: TLabel
+              Left = 3
+              Top = 14
+              Width = 24
+              Height = 13
+              Caption = 'Start'
+            end
+            object Label7: TLabel
+              Left = 144
+              Top = 14
+              Width = 18
+              Height = 13
+              Caption = 'End'
+            end
+            object StartStringEdit: TEdit
+              Left = 3
+              Top = 33
+              Width = 121
+              Height = 21
+              TabOrder = 0
+              Text = 'abcd'
+              OnChange = UpdateTabSheet
+            end
+            object EndStringEdit: TEdit
+              Left = 144
+              Top = 33
+              Width = 121
+              Height = 21
+              TabOrder = 1
+              Text = 'wxyz'
+              OnChange = UpdateTabSheet
+            end
+          end
         end
       end
       object LookupTree: TVirtualStringTree
@@ -516,6 +626,11 @@ object MainForm: TMainForm
             Position = 4
             Width = 80
             WideText = 'TColor'
+          end
+          item
+            Position = 5
+            Width = 120
+            WideText = 'String'
           end>
         WideDefaultText = ''
       end

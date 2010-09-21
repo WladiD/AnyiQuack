@@ -27,7 +27,7 @@ unit AnyiQuack;
 interface
 
 uses
-	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Math, Graphics;
+	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Math, Graphics, Character;
 
 {$IFDEF DEBUG}
 	{$INCLUDE Debug.inc}
@@ -189,6 +189,11 @@ type
 			EaseModifier:TEaseModifier = emIn):TRect; overload;
 		class function EaseRect(StartRect, EndRect:TRect; Progress:Real;
 			EaseFunction:TEaseFunction):TRect; overload;
+
+		class function EaseString(StartString, EndString:String; Progress:Real; EaseType:TEaseType;
+			EaseModifier:TEaseModifier = emIn):String; overload;
+		class function EaseString(StartString, EndString:String; Progress:Real;
+			EaseFunction:TEaseFunction):String; overload;
 
 		function Each(EachFunction:TEachFunction):TAQ; override;
 		function EachInterval(Interval:Integer; Each:TEachFunction; ID:Integer = 0):TAQ;
@@ -429,7 +434,7 @@ end;
 
 function BounceEase(Progress:Real):Real;
 const
-  Base:Real = 7.5625;
+	Base:Real = 7.5625;
 begin
 	if Progress < (1 / 2.75) then
 		Result:=Base * Progress * Progress
@@ -446,7 +451,7 @@ begin
 	else
 	begin
 		Progress:=Progress - (2.625/2.75);
-		Result:=(7.5625 * Progress) * Progress + 0.984375;
+		Result:=(Base * Progress) * Progress + 0.984375;
 	end;
 end;
 
@@ -1391,6 +1396,48 @@ begin
 	Result:=Rect(
 		EasePoint(StartRect.TopLeft, EndRect.TopLeft, Progress, nil),
 		EasePoint(StartRect.BottomRight, EndRect.BottomRight, Progress, nil));
+end;
+
+class function TAQ.EaseString(StartString, EndString:String; Progress:Real; EaseType:TEaseType;
+	EaseModifier:TEaseModifier):String;
+begin
+	Result:=EaseString(StartString, EndString, Progress, Ease(EaseType, EaseModifier));
+end;
+
+class function TAQ.EaseString(StartString, EndString:String; Progress:Real;
+	EaseFunction:TEaseFunction):String;
+var
+	EaseString:String;
+	StartStringLength, EndStringLength, EasedStringLength:Integer;
+	StartChar, EndChar, EasedChar:Char;
+	cc:Integer;
+begin
+	if Assigned(EaseFunction) then
+		Progress:=EaseFunction(Progress);
+	StartStringLength:=Length(StartString);
+	EndStringLength:=Length(EndString);
+	EasedStringLength:=EaseInteger(StartStringLength, EndStringLength, Progress, nil);
+	Result:='';
+	for cc:=1 to EasedStringLength do
+	begin
+		if cc <= StartStringLength then
+			StartChar:=Copy(StartString, cc, 1)[1]
+		else
+			StartChar:=' ';
+		if cc <= EndStringLength then
+			EndChar:=Copy(EndString, cc, 1)[1]
+		else
+			EndChar:=' ';
+		if StartChar <> EndChar then
+		begin
+			EasedChar:=WideChar(EaseInteger(Integer(StartChar), Integer(EndChar), Progress, nil));
+			if IsControl(EasedChar) then
+				EasedChar:='-';
+			Result:=Result + EasedChar;
+		end
+		else
+			Result:=Result + StartChar;
+	end;
 end;
 
 class function TAQ.EaseRect(StartRect, EndRect:TRect; Progress:Real; EaseType:TEaseType;
