@@ -87,7 +87,12 @@ object MainForm: TMainForm
           'etMiddleWave'
           'etHighWave'
           'etBounce'
-          'etCircle')
+          'etCircle'
+          'etSwing10'
+          'etSwing50'
+          'etSwing100'
+          'etSwing200')
+        MultiSelect = True
         TabOrder = 0
         OnClick = EaseTypeListBoxClick
       end

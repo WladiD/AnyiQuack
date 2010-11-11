@@ -210,6 +210,7 @@ begin
 						if AQ.CurrentInterval.Progress = 1 then
 							AnimateButton.Enabled:=TRUE;
 					end;
+					Result:=TRUE;
 				end)
 	else
 		Exit;
@@ -352,7 +353,9 @@ begin
 
 	VisPageControl.TabIndex:=0;
 
-	EaseTypeListBox.Selected[Ord(etElastic)]:=TRUE;
+	EaseTypeListBox.Selected[Integer(etSext)]:=TRUE;
+	EaseTypeListBox.Selected[Integer(etCircle)]:=TRUE;
+	EaseTypeListBox.Selected[Integer(etSwing10)]:=TRUE;
 	EaseModifierListBox.Selected[0]:=TRUE;
 
 	FBackgroundLayer:=TBitmapLayer.Create(EaseGraphImage.Layers);
@@ -388,6 +391,21 @@ end;
 function TMainForm.GetEaseFunction:TEaseFunction;
 var
 	CurrentEaseModifier:TEaseModifier;
+	EaseCombo:TEaseArray;
+
+	function GetIntegratedSelectedEaseTypes:TEaseArray;
+	var
+		cc, ccc:Integer;
+	begin
+		SetLength(Result, EaseTypeListBox.SelCount);
+		ccc:=0;
+		for cc:=0 to EaseTypeListBox.Count - 1 do
+			if EaseTypeListBox.Selected[cc] then
+			begin
+				Result[ccc]:=TEaseType(cc);
+				Inc(ccc);
+			end;
+	end;
 begin
 	Result:=nil;
 	CurrentEaseModifier:=TEaseModifier(Ord(EaseModifierListBox.ItemIndex));
@@ -403,7 +421,17 @@ begin
 		Result:=TAQ.Ease(Result, CurrentEaseModifier);
 	end;
 	if not Assigned(Result) then
-		Result:=TAQ.Ease(TEaseType(Ord(EaseTypeListBox.ItemIndex)), CurrentEaseModifier);
+	begin
+		EaseCombo:=GetIntegratedSelectedEaseTypes;
+		case Length(EaseCombo) of
+			0:
+				Result:=TAQ.Ease(etLinear, CurrentEaseModifier);
+			1:
+				Result:=TAQ.Ease(EaseCombo[0], CurrentEaseModifier)
+			else
+				Result:=TAQ.Ease(EaseCombo, CurrentEaseModifier)
+		end;
+	end;
 end;
 
 procedure TMainForm.LookupTreeAfterCellPaint(Sender:TBaseVirtualTree; TargetCanvas:TCanvas;

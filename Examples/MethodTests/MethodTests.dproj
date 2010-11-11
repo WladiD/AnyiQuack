@@ -3,7 +3,7 @@
 			<ProjectGuid>{90334759-5D7D-4227-89A7-3D506A42C2A6}</ProjectGuid>
 			<ProjectVersion>12.0</ProjectVersion>
 			<MainSource>MethodTests.dpr</MainSource>
-			<Config Condition="'$(Config)'==''">Debug</Config>
+			<Config Condition="'$(Config)'==''">Release</Config>
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Basis' or '$(Base)'!=''">

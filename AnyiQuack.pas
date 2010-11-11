@@ -45,7 +45,8 @@ type
 	TInterval = class;
 
 	TEaseType = (etLinear, etQuad, etCubic, etQuart, etQuint, etSext, etSinus, etElastic, etBack,
-		etLowWave, etMiddleWave, etHighWave, etBounce, etCircle);
+		etLowWave, etMiddleWave, etHighWave, etBounce, etCircle, etSwing10, etSwing50, etSwing100,
+		etSwing200);
 	TEaseModifier = (
 		emIn, emInInverted, emInSnake, emInSnakeInverted,
 		emOut, emOutInverted, emOutSnake, emOutSnakeInverted,
@@ -54,6 +55,7 @@ type
 	TActorRole = (arTimer, arInterval, arDelay, arAnimation);
 
 	TObjectArray = array of TObject;
+	TEaseArray = array of TEaseType;
 
 	TEachFunction = reference to function(AQ:TAQ; O:TObject):Boolean;
 	TEachMiscFunction<T> = reference to function(AQ:TAQ; O:TObject; Misc:T):Boolean;
@@ -108,6 +110,7 @@ type
 		class function GarbageCollector:TAQ;
 		class procedure GlobalIntervalTimerEvent;
 		class procedure ComponentsNotification(AComponent:TComponent; Operation:TOperation);
+		class function EaseIntegrated(EaseType:TEaseType):TEaseFunction;
 
 		procedure Notify(Ptr:Pointer; Action:TListNotification); override;
 
@@ -161,6 +164,8 @@ type
 		class function Take(Objects:TObjectList):TAQ; overload;
 
 		class function Ease(EaseType:TEaseType;
+			EaseModifier:TEaseModifier = emIn):TEaseFunction; overload;
+		class function Ease(const EaseTypes:array of TEaseType;
 			EaseModifier:TEaseModifier = emIn):TEaseFunction; overload;
 		class function Ease(EaseFunction:TEaseFunction = nil;
 			EaseModifier:TEaseModifier = emIn):TEaseFunction; overload;
@@ -458,6 +463,31 @@ end;
 function CircleEase(Progress:Real):Real;
 begin
 	Result:=1 - Sqrt(1 - Progress * Progress);
+end;
+
+function SwingCustom(Progress, Swings:Real):Real;
+begin
+	Result:=Progress + (Sin(Progress * Swings * Pi) * (1 / Swings));
+end;
+
+function Swing10Ease(Progress:Real):Real;
+begin
+	Result:=SwingCustom(Progress, 10);
+end;
+
+function Swing50Ease(Progress:Real):Real;
+begin
+	Result:=SwingCustom(Progress, 50);
+end;
+
+function Swing100Ease(Progress:Real):Real;
+begin
+	Result:=SwingCustom(Progress, 100);
+end;
+
+function Swing200Ease(Progress:Real):Real;
+begin
+	Result:=SwingCustom(Progress, 200);
 end;
 
 function Take(AObject:TObject):TAQ;
@@ -1154,7 +1184,7 @@ begin
 		end);
 end;
 
-class function TAQ.Ease(EaseType:TEaseType; EaseModifier:TEaseModifier = emIn):TEaseFunction;
+class function TAQ.EaseIntegrated(EaseType:TEaseType):TEaseFunction;
 begin
 	case EaseType of
 		etQuad:
@@ -1183,10 +1213,49 @@ begin
 			Result:=BounceEase;
 		etCircle:
 			Result:=CircleEase;
+		etSwing10:
+			Result:=Swing10Ease;
+		etSwing50:
+			Result:=Swing50Ease;
+		etSwing100:
+			Result:=Swing100Ease;
+		etSwing200:
+			Result:=Swing200Ease;
 	else
 		Result:=LinearEase;
 	end;
-	Result:=Ease(Result, EaseModifier);
+end;
+
+class function TAQ.Ease(EaseType:TEaseType; EaseModifier:TEaseModifier = emIn):TEaseFunction;
+begin
+	Result:=Ease(EaseIntegrated(EaseType), EaseModifier);
+end;
+
+class function TAQ.Ease(const EaseTypes:array of TEaseType; EaseModifier:TEaseModifier):TEaseFunction;
+var
+	LocalEaseTypes:TEaseArray;
+	cc:Integer;
+begin
+	if Length(EaseTypes) = 1 then
+		Result:=Ease(EaseIntegrated(EaseTypes[0]), EaseModifier)
+	else
+	begin
+		SetLength(LocalEaseTypes, Length(EaseTypes));
+		for cc:=0 to Length(EaseTypes) - 1 do
+			LocalEaseTypes[cc]:=EaseTypes[cc];
+
+		Result:=Ease(
+			function(Progress:Real):Real
+			var
+				cc:Integer;
+				Scale:Real;
+			begin
+				Result:=0;
+				Scale:=1 / Length(LocalEaseTypes);
+				for cc:=0 to Length(LocalEaseTypes) - 1 do
+					Result:=Result + (Scale * EaseIntegrated(LocalEaseTypes[cc])(Progress));
+			end, EaseModifier);
+	end;
 end;
 
 class function TAQ.Ease(EaseFunction:TEaseFunction; EaseModifier:TEaseModifier):TEaseFunction;
@@ -1407,7 +1476,6 @@ end;
 class function TAQ.EaseString(StartString, EndString:String; Progress:Real;
 	EaseFunction:TEaseFunction):String;
 var
-	EaseString:String;
 	StartStringLength, EndStringLength, EasedStringLength:Integer;
 	StartChar, EndChar, EasedChar:Char;
 	cc:Integer;
