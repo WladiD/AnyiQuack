@@ -214,7 +214,7 @@ end;
 procedure TAQPMessages.HookWindowProc(var Message:TMessage);
 var
 	MessageForward:TMessage;
-	cc:Integer;
+	cc, EvaluateToIndex:Integer;
 	MsgPlugin:TAQPMessages;
 begin
 	MessageForward:=Message;
@@ -223,6 +223,11 @@ begin
 	 * Methoden gegriffen werden können.
 	 *}
 	cc:=0;
+
+	// If any new listeners are added inside, so they shouldn't be executed instantly, but on
+	// the next call.
+	EvaluateToIndex:=FListeners.Count - 1;
+
 	while cc < FListeners.Count do
 	begin
 		MsgPlugin:=TAQPMessages(FListeners[cc]);
@@ -232,7 +237,7 @@ begin
 			if Assigned(MsgPlugin.FOriginalWindowProc) then
 				MsgPlugin.FOriginalWindowProc(Message);
 
-			if MsgPlugin.FListenForMsg = Message.Msg then
+			if (cc <= EvaluateToIndex) and (MsgPlugin.FListenForMsg = Message.Msg) then
 				MsgPlugin.Each(
 					function(AQ:TAQ; O:TObject):Boolean
 					begin
