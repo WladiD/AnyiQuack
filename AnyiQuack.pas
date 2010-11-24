@@ -96,6 +96,85 @@ type
 		FTick:Cardinal;
 		FComponentsNotifier:TComponentList;
 	protected
+		type
+		/// <summary>
+		/// Enumeration for all public TAQ methods, which returns a TAQ instance
+		/// </summary>
+		TAQMethod = (
+			// Each related
+			aqmEach,
+			aqmEachAnimation,
+			aqmEachDelay,
+			aqmEachInterval,
+			aqmEachRepeat,
+			aqmEachTimer,
+
+			// Append realted
+			aqmAppend,
+			aqmAppendAQ,
+			aqmChildrenAppend,
+			aqmParentsAppend,
+
+			// Finish related
+			aqmFinishAnimations,
+			aqmFinishTimers,
+
+			// Cancel related
+			aqmCancelAnimations,
+			aqmCancelDelays,
+			aqmCancelIntervals,
+			aqmCancelTimers,
+
+			// Chain related
+			aqmNewChain,
+			aqmExcludeChain,
+			aqmFilterChain,
+			aqmChildrenChain,
+			aqmIntervalActorsChain,
+			aqmAnimationActorsChain,
+			aqmDelayActorsChain,
+			aqmDemultiplexChain,
+			aqmTimerActorsChain,
+			aqmMultiplexChain,
+			aqmParentsChain,
+			aqmSliceChain,
+			aqmEndChain,
+
+			// Conditional chain related
+			aqmIfThen,
+			aqmIfAll,
+			aqmIfAny,
+			aqmIfContainsAll,
+			aqmIfContainsAny,
+			aqmIfContains,
+			aqmIfElse,
+			aqmIfEnd,
+
+			// Misc
+			aqmDebugMessage,
+			aqmDie);
+
+		TAQMethods = set of TAQMethod;
+
+		const
+		AQEachMethods:TAQMethods = [aqmEach, aqmEachAnimation, aqmEachDelay, aqmEachInterval,
+			aqmEachRepeat, aqmEachTimer];
+
+		AQAppendMethods:TAQMethods = [aqmAppend, aqmAppendAQ, aqmChildrenAppend, aqmParentsAppend];
+
+		AQFinishMethods:TAQMethods = [aqmFinishAnimations, aqmFinishTimers];
+
+		AQCancelMethods:TAQMethods = [aqmCancelAnimations, aqmCancelDelays, aqmCancelIntervals,
+			aqmCancelTimers];
+
+		AQChainMethods:TAQMethods = [aqmNewChain, aqmExcludeChain, aqmFilterChain, aqmChildrenChain,
+			aqmIntervalActorsChain, aqmAnimationActorsChain, aqmDelayActorsChain,
+			aqmDemultiplexChain, aqmTimerActorsChain, aqmMultiplexChain, aqmParentsChain,
+			aqmSliceChain, aqmEndChain];
+
+		AQConditionMethods:TAQMethods = [aqmIfThen, aqmIfAll, aqmIfAny, aqmIfContainsAll,
+			aqmIfContainsAny, aqmIfContains, aqmIfElse, aqmIfEnd];
+
 		var
 		FLifeTick:Cardinal;
 		FIntervals:TObjectList;
@@ -139,7 +218,7 @@ type
 		function IsAlive:Boolean;
 		procedure HeartBeat;
 
-		function SupervisorLock(out AQ:TAQ; MethodName:String):Boolean;
+		function SupervisorLock(out AQ:TAQ; Method:TAQMethod):Boolean;
 
 		procedure SetRecurse(Value:Boolean);
 		function GetRecurse:Boolean;
@@ -558,7 +637,7 @@ function TAQ.Append(Objects:TObjectArray):TAQ;
 var
 	cc:Integer;
 begin
-	if SupervisorLock(Result, 'Append') then
+	if SupervisorLock(Result, aqmAppend) then
 		Exit;
 	for cc:=0 to Length(Objects) - 1 do
 		Add(Objects[cc]);
@@ -568,7 +647,7 @@ function TAQ.Append(Objects:TObjectList):TAQ;
 var
 	cc:Integer;
 begin
-	if SupervisorLock(Result, 'Append') then
+	if SupervisorLock(Result, aqmAppend) then
 		Exit;
 	{**
 	 * Overflows vermeiden
@@ -581,14 +660,14 @@ end;
 
 function TAQ.Append(AObject:TObject):TAQ;
 begin
-	if SupervisorLock(Result, 'Append') then
+	if SupervisorLock(Result, aqmAppend) then
 		Exit;
 	Add(AObject);
 end;
 
 function TAQ.AppendAQ(AQ:TAQ):TAQ;
 begin
-	if SupervisorLock(Result, 'AppendAQ') then
+	if SupervisorLock(Result, aqmAppendAQ) then
 		Exit;
 	Add(AQ);
 end;
@@ -617,42 +696,42 @@ end;
 
 function TAQ.AnimationActorsChain(ID:Integer; IncludeOrphans:Boolean):TAQ;
 begin
-	if SupervisorLock(Result, 'AnimationActorsChain') then
+	if SupervisorLock(Result, aqmAnimationActorsChain) then
 		Exit;
 	Result:=CustomActors(arAnimation, ID, IncludeOrphans);
 end;
 
 function TAQ.CancelAnimations(ID:Integer):TAQ;
 begin
-	if SupervisorLock(Result, 'CancelAnimations') then
+	if SupervisorLock(Result, aqmCancelAnimations) then
 		Exit;
 	CustomCancel(arAnimation, ID, FALSE);
 end;
 
 function TAQ.CancelDelays(ID:Integer):TAQ;
 begin
-	if SupervisorLock(Result, 'CancelDelays') then
+	if SupervisorLock(Result, aqmCancelDelays) then
 		Exit;
 	CustomCancel(arDelay, ID, FALSE);
 end;
 
 function TAQ.CancelIntervals(ID:Integer):TAQ;
 begin
-	if SupervisorLock(Result, 'CancelIntervals') then
+	if SupervisorLock(Result, aqmCancelIntervals) then
 		Exit;
 	CustomCancel(arInterval, ID, FALSE);
 end;
 
 function TAQ.CancelTimers(ID:Integer):TAQ;
 begin
-	if SupervisorLock(Result, 'CancelTimers') then
+	if SupervisorLock(Result, aqmCancelTimers) then
 		Exit;
 	CustomCancel(arTimer, ID, FALSE);
 end;
 
 function TAQ.NewChain:TAQ;
 begin
-	if SupervisorLock(Result, 'NewChain') then
+	if SupervisorLock(Result, aqmNewChain) then
 		Exit;
 	Result:=Managed;
 	Result.FChainedTo:=Self;
@@ -675,7 +754,7 @@ end;
 
 function TAQ.ChildrenAppend(Recurse:Boolean; ChildrenFiller:TEachFunction):TAQ;
 begin
-	if SupervisorLock(Result, 'ChildrenAppend') then
+	if SupervisorLock(Result, aqmChildrenAppend) then
 		Exit;
 	if not Assigned(ChildrenFiller) then
 		ChildrenFiller:=Self.ChildrenFiller;
@@ -684,7 +763,7 @@ end;
 
 function TAQ.ChildrenChain(Recurse:Boolean; ChildrenFiller:TEachFunction):TAQ;
 begin
-	if SupervisorLock(Result, 'ChildrenChain') then
+	if SupervisorLock(Result, aqmChildrenChain) then
 		Exit;
 	if not Assigned(ChildrenFiller) then
 		ChildrenFiller:=Self.ChildrenFiller;
@@ -949,7 +1028,7 @@ begin
 	{$IFNDEF DEBUG}
 	Exit(Self);
 	{$ELSE}
-	if SupervisorLock(Result, 'DebugMessage') then
+	if SupervisorLock(Result, aqmDebugMessage) then
 		Exit;
 	ChainPath:=TStringList.Create;
 	repeat
@@ -981,7 +1060,7 @@ end;
 
 function TAQ.DelayActorsChain(ID:Integer; IncludeOrphans:Boolean):TAQ;
 begin
-	if SupervisorLock(Result, 'DelayActorsChain') then
+	if SupervisorLock(Result, aqmDelayActorsChain) then
 		Exit;
 	Result:=CustomActors(arDelay, ID, IncludeOrphans);
 end;
@@ -990,7 +1069,7 @@ function TAQ.DemultiplexChain:TAQ;
 var
 	SimpleAQ:TAQ;
 begin
-	if SupervisorLock(Result, 'DemultiplexChain') then
+	if SupervisorLock(Result, aqmDemultiplexChain) then
 		Exit;
 	SimpleAQ:=NewChain;
 	Result:=SimpleAQ;
@@ -1012,7 +1091,7 @@ end;
 
 function TAQ.Die:TAQ;
 begin
-	if SupervisorLock(Result, 'Die') then
+	if SupervisorLock(Result, aqmDie) then
 		Exit;
 	if Assigned(FIntervals) and (FIntervals.Count > 0) then
 		Exit;
@@ -1025,7 +1104,7 @@ var
 	O:TObject;
 	LocalRecurse:Boolean;
 begin
-	if SupervisorLock(Result, 'Each') then
+	if SupervisorLock(Result, aqmEach) then
 		Exit;
 	cc:=Count;
 	LocalRecurse:=Recurse;
@@ -1047,7 +1126,7 @@ begin
 	if Duration >= MaxLifeTime then
 		raise EAQ.CreateFmt('Dauer der Animation (%d) muss kleiner als MaxLifeTime (%d) sein.',
 			[Duration, MaxLifeTime])
-	else if SupervisorLock(Result, 'EachAnimation') then
+	else if SupervisorLock(Result, aqmEachAnimation) then
 		Exit;
 	AddInterval(TInterval.Finite(Duration, Each, LastEach, arAnimation, ID));
 end;
@@ -1057,7 +1136,7 @@ begin
 	if Delay >= MaxLifeTime then
 		raise EAQ.CreateFmt('Delay (%d) muss kleiner als MaxLifeTime (%d) sein.',
 			[Delay, MaxLifeTime])
-	else if SupervisorLock(Result, 'EachDelay') then
+	else if SupervisorLock(Result, aqmEachDelay) then
 		 Exit;
 	AddInterval(TInterval.Finite(Delay, nil, Each, arDelay, ID));
 end;
@@ -1067,7 +1146,7 @@ begin
 	if Interval >= MaxLifeTime then
 		raise EAQ.CreateFmt('Interval (%d) muss kleiner als MaxLifeTime (%d) sein.',
 			[Interval, MaxLifeTime])
-	else if SupervisorLock(Result, 'EachInterval') then
+	else if SupervisorLock(Result, aqmEachInterval) then
 		Exit;
 	AddInterval(TInterval.Infinite(Interval, Each, arInterval, ID));
 end;
@@ -1076,7 +1155,7 @@ function TAQ.EachRepeat(Times:Integer; EachFunction:TEachFunction):TAQ;
 var
 	cc:Integer;
 begin
-	if SupervisorLock(Result, 'EachRepeat') then
+	if SupervisorLock(Result, aqmEachRepeat) then
 		Exit;
 	for cc:=1 to Times do
 		Each(EachFunction);
@@ -1087,16 +1166,14 @@ begin
 	if Duration >= MaxLifeTime then
 		raise EAQ.CreateFmt('Dauer des Timers (%d) muss kleiner als MaxLifeTime (%d) sein.',
 			[Duration, MaxLifeTime])
-	else if SupervisorLock(Result, 'EachTimer') then
+	else if SupervisorLock(Result, aqmEachTimer) then
 		Exit;
 	AddInterval(TInterval.Finite(Duration, Each, LastEach, arTimer, ID));
 end;
 
-
-
 function TAQ.IfEnd:TAQ;
 begin
-	if SupervisorLock(Result, 'IfEnd') then
+	if SupervisorLock(Result, aqmIfEnd) then
 		Exit;
 	if FConditionCount > 0 then
 		Dec(FConditionCount);
@@ -1109,7 +1186,7 @@ end;
 
 function TAQ.ExcludeChain(Objects:TObjectArray):TAQ;
 begin
-	if SupervisorLock(Result, 'ExcludeChain') then
+	if SupervisorLock(Result, aqmExcludeChain) then
 		Exit;
 	Result:=ExcludeChain(
 		function(AQ:TAQ; O:TObject):Boolean
@@ -1125,7 +1202,7 @@ end;
 
 function TAQ.ExcludeChain(AObject:TObject):TAQ;
 begin
-	if SupervisorLock(Result, 'ExcludeChain') then
+	if SupervisorLock(Result, aqmExcludeChain) then
 		Exit;
 	Result:=ExcludeChain(
 		function(AQ:TAQ; O:TObject):Boolean
@@ -1136,7 +1213,7 @@ end;
 
 function TAQ.ExcludeChain(ByClass:TClass):TAQ;
 begin
-	if SupervisorLock(Result, 'ExcludeChain') then
+	if SupervisorLock(Result, aqmExcludeChain) then
 		Exit;
 	Result:=ExcludeChain(
 		function(AQ:TAQ; O:TObject):Boolean
@@ -1149,7 +1226,7 @@ function TAQ.ExcludeChain(ExcludeEach:TEachFunction):TAQ;
 var
 	NewAQ:TAQ;
 begin
-	if SupervisorLock(Result, 'ExcludeChain') then
+	if SupervisorLock(Result, aqmExcludeChain) then
 		Exit;
 	NewAQ:=NewChain;
 	Each(
@@ -1164,7 +1241,7 @@ end;
 
 function TAQ.ExcludeChain(AQ:TAQ):TAQ;
 begin
-	if SupervisorLock(Result, 'ExcludeChain') then
+	if SupervisorLock(Result, aqmExcludeChain) then
 		Exit;
 	Result:=ExcludeChain(
 		function(OAQ:TAQ; O:TObject):Boolean
@@ -1175,7 +1252,7 @@ end;
 
 function TAQ.ExcludeChain(Objects:TObjectList):TAQ;
 begin
-	if SupervisorLock(Result, 'ExcludeChain') then
+	if SupervisorLock(Result, aqmExcludeChain) then
 		Exit;
 	Result:=ExcludeChain(
 		function(AQ:TAQ; O:TObject):Boolean
@@ -1522,7 +1599,7 @@ end;
 
 function TAQ.FilterChain(ByClass:TClass):TAQ;
 begin
-	if SupervisorLock(Result, 'FilterChain') then
+	if SupervisorLock(Result, aqmFilterChain) then
 		Exit;
 	Result:=FilterChain(
 		function(AQ:TAQ; O:TObject):Boolean
@@ -1535,7 +1612,7 @@ function TAQ.FilterChain(FilterEach:TEachFunction):TAQ;
 var
 	NewAQ:TAQ;
 begin
-	if SupervisorLock(Result, 'FilterChain') then
+	if SupervisorLock(Result, aqmFilterChain) then
 		Exit;
 	NewAQ:=NewChain;
 	Each(
@@ -1578,14 +1655,14 @@ end;
 
 function TAQ.FinishAnimations(ID:Integer):TAQ;
 begin
-	if SupervisorLock(Result, 'FinishAnimations') then
+	if SupervisorLock(Result, aqmFinishAnimations) then
 		Exit;
 	CustomCancel(arAnimation, ID, TRUE);
 end;
 
 function TAQ.FinishTimers(ID:Integer):TAQ;
 begin
-	if SupervisorLock(Result, 'FinishTimers') then
+	if SupervisorLock(Result, aqmFinishTimers) then
 		Exit;
 	CustomCancel(arTimer, ID, TRUE);
 end;
@@ -1756,7 +1833,7 @@ function TAQ.IfAll(EachFunction:TEachFunction):TAQ;
 var
 	Condition:Boolean;
 begin
-	if SupervisorLock(Result, 'IfAll') then
+	if SupervisorLock(Result, aqmIfAll) then
 		Exit;
 	Condition:=Count > 0;
 	Each(
@@ -1772,7 +1849,7 @@ function TAQ.IfAny(EachFunction:TEachFunction):TAQ;
 var
 	Condition:Boolean;
 begin
-	if SupervisorLock(Result, 'IfAny') then
+	if SupervisorLock(Result, aqmIfAny) then
 		Exit;
 	Condition:=FALSE;
 	Each(
@@ -1786,63 +1863,63 @@ end;
 
 function TAQ.IfContainsAll(Objects:TObjectList):TAQ;
 begin
-	if SupervisorLock(Result, 'IfContainsAll') then
+	if SupervisorLock(Result, aqmIfContainsAll) then
 		Exit;
 	Result:=IfAll(IfContainsEach(Objects));
 end;
 
 function TAQ.IfContainsAll(AQ:TAQ):TAQ;
 begin
-	if SupervisorLock(Result, 'IfContainsAll') then
+	if SupervisorLock(Result, aqmIfContainsAll) then
 		Exit;
 	Result:=IfAll(IfContainsEach(AQ));
 end;
 
 function TAQ.IfContainsAll(Objects:TObjectArray):TAQ;
 begin
-	if SupervisorLock(Result, 'IfContainsAll') then
+	if SupervisorLock(Result, aqmIfContainsAll) then
 		Exit;
 	Result:=IfAll(IfContainsEach(Objects));
 end;
 
 function TAQ.IfContainsAll(ByClass:TClass):TAQ;
 begin
-	if SupervisorLock(Result, 'IfContainsAll') then
+	if SupervisorLock(Result, aqmIfContainsAll) then
 		Exit;
 	Result:=IfAll(IfContainsEach(ByClass));
 end;
 
 function TAQ.IfContainsAny(Objects:TObjectList):TAQ;
 begin
-	if SupervisorLock(Result, 'IfContainsAny') then
+	if SupervisorLock(Result, aqmIfContainsAny) then
 		Exit;
 	Result:=IfAny(IfContainsEach(Objects));
 end;
 
 function TAQ.IfContainsAny(AQ:TAQ):TAQ;
 begin
-	if SupervisorLock(Result, 'IfContainsAny') then
+	if SupervisorLock(Result, aqmIfContainsAny) then
 		Exit;
 	Result:=IfAny(IfContainsEach(AQ));
 end;
 
 function TAQ.IfContainsAny(Objects:TObjectArray):TAQ;
 begin
-	if SupervisorLock(Result, 'IfContainsAny') then
+	if SupervisorLock(Result, aqmIfContainsAny) then
 		Exit;
 	Result:=IfAny(IfContainsEach(Objects));
 end;
 
 function TAQ.IfContainsAny(ByClass:TClass):TAQ;
 begin
-	if SupervisorLock(Result, 'IfContainsAny') then
+	if SupervisorLock(Result, aqmIfContainsAny) then
 		Exit;
 	Result:=IfAny(IfContainsEach(ByClass));
 end;
 
 function TAQ.IfContains(AObject:TObject):TAQ;
 begin
-	if SupervisorLock(Result, 'IfContains') then
+	if SupervisorLock(Result, aqmIfContains) then
 		Exit;
 	Result:=IfThen(Contains(AObject));
 end;
@@ -1880,7 +1957,7 @@ function TAQ.IfElse:TAQ;
 var
 	PrevChain:TAQ;
 begin
-	if SupervisorLock(Result, 'IfElse') then
+	if SupervisorLock(Result, aqmIfElse) then
 		Exit;
 	if FConditionCount <= 1 then
 	begin
@@ -1899,7 +1976,7 @@ end;
 
 function TAQ.IfThen(Condition:Boolean):TAQ;
 begin
-	if SupervisorLock(Result, 'IfThen') then
+	if SupervisorLock(Result, aqmIfThen) then
 		Exit;
 
 	if not ConditionLock then
@@ -1942,7 +2019,7 @@ end;
 
 function TAQ.IntervalActorsChain(ID:Integer; IncludeOrphans:Boolean):TAQ;
 begin
-	if SupervisorLock(Result, 'IntervalActorsChain') then
+	if SupervisorLock(Result, aqmIntervalActorsChain) then
 		Exit;
 	Result:=CustomActors(arInterval, ID, IncludeOrphans);
 end;
@@ -2012,7 +2089,7 @@ function TAQ.MultiplexChain:TAQ;
 var
 	MultiAQ:TAQ;
 begin
-	if SupervisorLock(Result, 'MultiplexChain') then
+	if SupervisorLock(Result, aqmMultiplexChain) then
 		Exit;
 	MultiAQ:=NewChain;
 	Result:=MultiAQ;
@@ -2028,7 +2105,7 @@ end;
 
 function TAQ.ParentsAppend(Recurse:Boolean; ParentsFiller:TEachFunction):TAQ;
 begin
-	if SupervisorLock(Result, 'ParentsAppend') then
+	if SupervisorLock(Result, aqmParentsAppend) then
 		Exit;
 	if not Assigned(ParentsFiller) then
 		ParentsFiller:=Self.ParentsFiller;
@@ -2037,7 +2114,7 @@ end;
 
 function TAQ.ParentsChain(Recurse:Boolean; ParentsFiller:TEachFunction):TAQ;
 begin
-	if SupervisorLock(Result, 'ParentsChain') then
+	if SupervisorLock(Result, aqmParentsChain) then
 		Exit;
 	if not Assigned(ParentsFiller) then
 		ParentsFiller:=Self.ParentsFiller;
@@ -2062,7 +2139,7 @@ end;
 
 function TAQ.EndChain:TAQ;
 begin
-	if SupervisorLock(Result, 'EndChain') then
+	if SupervisorLock(Result, aqmEndChain) then
 		Exit;
 	if Assigned(FChainedTo) and GarbageCollector.Contains(FChainedTo) then
 		Exit(FChainedTo);
@@ -2120,7 +2197,7 @@ function TAQ.SliceChain(StartIndex, Count:Integer):TAQ;
 var
 	EndIndex, TotalCount, cc:Integer;
 begin
-	if SupervisorLock(Result, 'SliceChain') then
+	if SupervisorLock(Result, aqmSliceChain) then
 		Exit;
 	Result:=NewChain;
 	TotalCount:=Self.Count;
@@ -2140,7 +2217,7 @@ begin
 		Result.Add(Items[cc]);
 end;
 
-function TAQ.SupervisorLock(out AQ:TAQ; MethodName:String):Boolean;
+function TAQ.SupervisorLock(out AQ:TAQ; Method:TAQMethod):Boolean;
 var
 	RelatedMethod:Boolean;
 begin
@@ -2148,7 +2225,7 @@ begin
 	AQ:=Self;
 	if ConditionLock then
 	begin
-		RelatedMethod:=Copy(MethodName, 1, 2) = 'If';
+		RelatedMethod:=Method in AQConditionMethods;  // Check, whether it's a condition related method
 		Result:=(FConditionCount > 0) and not RelatedMethod;
 	end;
 end;
@@ -2165,7 +2242,7 @@ end;
 
 function TAQ.TimerActorsChain(ID:Integer; IncludeOrphans:Boolean):TAQ;
 begin
-	if SupervisorLock(Result, 'TimerActorsChain') then
+	if SupervisorLock(Result, aqmTimerActorsChain) then
 		Exit;
 	Result:=CustomActors(arTimer, ID, IncludeOrphans);
 end;
