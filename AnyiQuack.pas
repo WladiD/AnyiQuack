@@ -74,7 +74,7 @@ type
 	protected
 		FWorkAQ:TAQ;
 
-		function GarbageCollector:TAQ;
+		function GCC:TAQ;
 		function Each(EachFunction:TEachFunction):TAQ; override;
 
 		procedure Autorun; virtual;
@@ -88,44 +88,46 @@ type
 	end;
 
 	TAQ = class sealed (TAQBase)
+	{**
+	 * This private section is introduced for local types and constants
+	 *}
 	private
-		class var
-		FGarbageCollector:TAQ;
-		FTimerHandler:Cardinal;
-		FActiveIntervalAQs:TAQ;
-		FTick:Cardinal;
-		FComponentsNotifier:TComponentList;
-	protected
 		type
-		/// <summary>
-		/// Enumeration for all public TAQ methods, which returns a TAQ instance
-		/// </summary>
+		{**
+		 * Enumeration for all public TAQ methods, which returns a TAQ instance
+		 *}
 		TAQMethod = (
-			// Each related
+			{**
+			 * Each related
+			 *}
 			aqmEach,
 			aqmEachAnimation,
 			aqmEachDelay,
 			aqmEachInterval,
 			aqmEachRepeat,
 			aqmEachTimer,
-
-			// Append realted
+			{**
+			 * Append related
+			 *}
 			aqmAppend,
 			aqmAppendAQ,
 			aqmChildrenAppend,
 			aqmParentsAppend,
-
-			// Finish related
+			{**
+			 * Finish related
+			 *}
 			aqmFinishAnimations,
 			aqmFinishTimers,
-
-			// Cancel related
+			{**
+			 * Cancel related
+			 *}
 			aqmCancelAnimations,
 			aqmCancelDelays,
 			aqmCancelIntervals,
 			aqmCancelTimers,
-
-			// Chain related
+			{**
+			 * Chain related
+			 *}
 			aqmNewChain,
 			aqmExcludeChain,
 			aqmFilterChain,
@@ -139,8 +141,9 @@ type
 			aqmParentsChain,
 			aqmSliceChain,
 			aqmEndChain,
-
-			// Conditional chain related
+			{**
+			 * Conditional chain related
+			 *}
 			aqmIfThen,
 			aqmIfAll,
 			aqmIfAny,
@@ -149,8 +152,9 @@ type
 			aqmIfContains,
 			aqmIfElse,
 			aqmIfEnd,
-
-			// Misc
+			{**
+			 * Misc
+			 *}
 			aqmDebugMessage,
 			aqmDie);
 
@@ -174,24 +178,36 @@ type
 
 		AQConditionMethods:TAQMethods = [aqmIfThen, aqmIfAll, aqmIfAny, aqmIfContainsAll,
 			aqmIfContainsAny, aqmIfContains, aqmIfElse, aqmIfEnd];
+	{**
+	 * Private class related stuff
+	 *}
+	private
+		class var
+		FGCC:TAQ;
+		FTimerHandler:Cardinal;
+		FActiveIntervalAQs:TAQ;
+		FTick:Cardinal;
+		FComponentsNotifier:TComponentList;
 
-		var
+		class procedure Initialize;
+		class procedure Finalize;
+
+		class function GCC:TAQ;
+		class procedure GlobalIntervalTimerEvent;
+		class procedure ComponentsNotification(AComponent:TComponent; Operation:TOperation);
+		class function EaseIntegrated(EaseType:TEaseType):TEaseFunction;
+
+		class property Tick:Cardinal read FTick;
+	{**
+	 * Private object related stuff
+	 *}
+	private
 		FLifeTick:Cardinal;
 		FIntervals:TObjectList;
 		FCurrentInterval:TInterval;
 		FChainedTo:TAQ;
 		FConditionCount:Byte;
 		FBools:Byte;
-
-		class procedure Initialize;
-		class procedure Finalize;
-
-		class function GarbageCollector:TAQ;
-		class procedure GlobalIntervalTimerEvent;
-		class procedure ComponentsNotification(AComponent:TComponent; Operation:TOperation);
-		class function EaseIntegrated(EaseType:TEaseType):TEaseFunction;
-
-		procedure Notify(Ptr:Pointer; Action:TListNotification); override;
 
 		function HasActors(ActorRole:TActorRole; ID:Integer = 0):Boolean;
 
@@ -227,10 +243,17 @@ type
 		procedure SetImmortally(Value:Boolean);
 		function GetImmortally:Boolean;
 
-		class property Tick:Cardinal read FTick;
 		property Recurse:Boolean read GetRecurse write SetRecurse;
 		property ConditionLock:Boolean read GetConditionLock write SetConditionLock;
 		property Immortally:Boolean read GetImmortally write SetImmortally;
+	{**
+	 * Because TAQ is sealed, no new methods are introduced as protected, but some must be overriden
+	 *}
+	protected
+		procedure Notify(Ptr:Pointer; Action:TListNotification); override;
+	{**
+	 * Public class related stuff
+	 *}
 	public
 		constructor Create; override;
 		destructor Destroy; override;
@@ -278,7 +301,10 @@ type
 			EaseModifier:TEaseModifier = emIn):String; overload;
 		class function EaseString(StartString, EndString:String; Progress:Real;
 			EaseFunction:TEaseFunction):String; overload;
-
+	{**
+	 * Public object related stuff
+	 *}
+	public
 		function Each(EachFunction:TEachFunction):TAQ; override;
 		function EachInterval(Interval:Integer; Each:TEachFunction; ID:Integer = 0):TAQ;
 		function EachTimer(Duration:Integer; Each:TEachFunction; LastEach:TEachFunction = nil;
@@ -679,7 +705,7 @@ begin
 	 *
 	 * Eine Ausnahme besteht für den Garbage-Collector
 	 *}
-	if (Count = 0) and (Self <> GarbageCollector) then
+	if (Count = 0) and (Self <> FGCC) then
 	begin
 		Interval.Free;
 		Exit;
@@ -787,7 +813,7 @@ begin
 	{**
 	 * Globale Auswirkungen
 	 *}
-	GarbageCollector.Each(
+	GCC.Each(
 		function(GCC:TAQ; O:TObject):Boolean
 		begin
 			{**
@@ -832,7 +858,7 @@ begin
 		{**
 		 * Die Verbindung zu einer Komponente in allen lebenden TAQ-Instanzen aufheben
 		 *}
-		GarbageCollector.Each(
+		GCC.Each(
 			function(GCC:TAQ; O:TObject):Boolean
 			begin
 				if TAQ(O).IsAlive then
@@ -897,7 +923,7 @@ begin
 					{**
 					 * Der Garbage-Collector darf hier nicht berücksichtigt werden
 					 *}
-					if O = FGarbageCollector then
+					if O = FGCC then
 						Exit;
 					TargetAQ:=TAQ(O);
 					if TargetAQ.HasActors(ActorRole, ID) and TargetAQ.Contains(SO) then
@@ -956,7 +982,7 @@ begin
 				TargetAQ:TAQ;
 			begin
 				Result:=TRUE; // Each soll komplett durchlaufen
-				if Target = FGarbageCollector then
+				if Target = FGCC then
 					Exit;
 				TargetAQ:=TAQ(Target);
 				Each(
@@ -1627,7 +1653,7 @@ end;
 
 class procedure TAQ.Finalize;
 begin
-	if not Assigned(FGarbageCollector) then
+	if not Assigned(FGCC) then
 		Exit;
 	{**
 	 * Freigabe von allem, was in der Klassenmethode TAQ.Initialize instanziert wurde
@@ -1635,7 +1661,7 @@ begin
 	{**
 	 * Alle offenen TAQ-Instanzen freigeben
 	 *}
-	FGarbageCollector.Free;
+	FreeAndNil(FGCC);
 	{**
 	 * Dieser Timer wird zusammen mit FGarbageCollector erstellt, muss auch dementsprechend zusammen
 	 * freigegeben werden.
@@ -1667,14 +1693,14 @@ begin
 	CustomCancel(arTimer, ID, TRUE);
 end;
 
-class function TAQ.GarbageCollector:TAQ;
+class function TAQ.GCC:TAQ;
 begin
-	if Assigned(FGarbageCollector) then
-		Exit(FGarbageCollector);
+	if Assigned(FGCC) then
+		Exit(FGCC);
 
 	Initialize;
 
-	FGarbageCollector.EachInterval(GarbageCleanInterval,
+	FGCC.EachInterval(GarbageCleanInterval,
 		{**
 		 * In GarbageCollector befindet sich der FGarbageCollector selbst und
 		 * in O eine TAQ-Instanz die auf ihre Lebenszeichen untersucht werden muss.
@@ -1740,7 +1766,7 @@ begin
 				{$ENDIF}
 		end);
 
-	Result:=FGarbageCollector;
+	Result:=FGCC;
 end;
 
 function TAQ.GetConditionLock:Boolean;
@@ -1995,7 +2021,7 @@ begin
 	{**
 	 * Der Garbage-Collector fungiert auch als Singleton-Sperre
 	 *}
-	if Assigned(FGarbageCollector) then
+	if Assigned(FGCC) then
 		Exit;
 
 	{**
@@ -2009,9 +2035,9 @@ begin
 	FActiveIntervalAQs:=TAQ.Create;
 	FActiveIntervalAQs.Recurse:=FALSE;
 
-	FGarbageCollector:=TAQ.Create;
-	FGarbageCollector.OwnsObjects:=TRUE;
-	FGarbageCollector.Recurse:=FALSE;
+	FGCC:=TAQ.Create;
+	FGCC.OwnsObjects:=TRUE;
+	FGCC.Recurse:=FALSE;
 
 	FComponentsNotifier:=TComponentsNotifier.Create;
 	FComponentsNotifier.OwnsObjects:=FALSE;
@@ -2051,7 +2077,7 @@ begin
 	{**
 	 * Im GarbageCollector nach einer abgelaufenen Instanz suchen
 	 *}
-	GarbageCollector.Each(
+	GCC.Each(
 		function(AQ:TAQ; O:TObject):Boolean
 		begin
 			if (O is TAQ) and not TAQ(O).IsAlive then
@@ -2078,7 +2104,7 @@ begin
 	{**
 	 * Das ist das ganze Geheimnis des TAQ-Objekt-Managing ;)
 	 *}
-	GarbageCollector.Add(Result);
+	GCC.Add(Result);
 	{$IFDEF OutputDebugGCCreate}
 	OutputDebugString(PWideChar(Format('Neuer TAQ %p am Index #%d.',
 		[@Result, GarbageCollector.IndexOf(Result)])));
@@ -2133,7 +2159,7 @@ function TAQ.Plugin<T>:T;
 begin
 	Result:=T.Create;
 	TAQPlugin(Result).FWorkAQ:=Self;
-	GarbageCollector.Add(Result);
+	GCC.Add(Result);
 	TAQPlugin(Result).Autorun;
 end;
 
@@ -2141,7 +2167,7 @@ function TAQ.EndChain:TAQ;
 begin
 	if SupervisorLock(Result, aqmEndChain) then
 		Exit;
-	if Assigned(FChainedTo) and GarbageCollector.Contains(FChainedTo) then
+	if Assigned(FChainedTo) and GCC.Contains(FChainedTo) then
 		Exit(FChainedTo);
 	Result:=Managed;
 end;
@@ -2269,9 +2295,9 @@ begin
 	Result:=WorkAQ.Each(EachFunction);
 end;
 
-function TAQPlugin.GarbageCollector:TAQ;
+function TAQPlugin.GCC:TAQ;
 begin
-	Result:=TAQ.GarbageCollector;
+	Result:=TAQ.GCC;
 end;
 
 function TAQPlugin.GetImmortally:Boolean;

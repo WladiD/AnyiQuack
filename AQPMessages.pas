@@ -25,13 +25,14 @@ unit AQPMessages;
 interface
 
 uses
-	Controls, Windows, Messages, Contnrs, AnyiQuack;
+	SysUtils, Controls, Windows, Messages, Contnrs, AnyiQuack;
 
 type
 	TAQPMessages = class(TAQPlugin)
 	protected
 		class var
 		FListeners:TAQ;
+
 		var
 		FOriginalWindowProc:TWndMethod;
 		FListenForMsg:Cardinal;
@@ -71,7 +72,14 @@ destructor TAQPMessages.Destroy;
 var
 	NextListener:TAQPMessages;
 begin
+	if not Assigned(FListeners) then
+	begin
+		inherited;
+		Exit;
+	end;
+
 	FListenForMsg:=0;
+
 	FListeners.Remove(Self);
 
 	if WorkAQ.Count = 1 then
@@ -107,7 +115,7 @@ end;
 
 class destructor TAQPMessages.Destroy;
 begin
-	FListeners.Free;
+	FreeAndNil(FListeners);
 end;
 
 function TAQPMessages.CancelMessages(Msg:Cardinal; ListenID:Integer):TAQ;
@@ -128,7 +136,7 @@ begin
 					 * Hierdurch stirbt die verbundene TAQ-Instanz, da keine Ticks gemacht wurden
 					 *}
 					CheckMsgPlugin.Immortally:=FALSE;
-					GarbageCollector.Remove(CheckMsgPlugin);
+					GCC.Remove(CheckMsgPlugin);
 				end;
 				Result:=TRUE;
 			end);
@@ -217,16 +225,24 @@ var
 	cc, EvaluateToIndex:Integer;
 	MsgPlugin:TAQPMessages;
 begin
+	{**
+	 * Important check, because this WindowProc method can be called when this unit is already
+	 * finalized and FListeners is released (sometimes occurs on application termination).
+	 *}
+	if not Assigned(FListeners) then
+		Exit;
+	{**
+	 * Local representaion of Message, because var parameters can't be catched by the following
+	 * closure.
+	 *}
 	MessageForward:=Message;
 	{**
-	 * In diesem Fall musste doch eine Schleife her, da var-Parameter (Message) nicht in anonymen
-	 * Methoden gegriffen werden können.
+	 * If any new listeners are added inside, so they shouldn't be executed instantly, but on the
+	 * next call.
 	 *}
-	cc:=0;
-
-	// If any new listeners are added inside, so they shouldn't be executed instantly, but on
-	// the next call.
 	EvaluateToIndex:=FListeners.Count - 1;
+
+	cc:=0;
 
 	while cc < FListeners.Count do
 	begin
