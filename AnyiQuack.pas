@@ -255,9 +255,6 @@ type
 	 * Public class related stuff
 	 *}
 	public
-		constructor Create; override;
-		destructor Destroy; override;
-
 		class function Managed:TAQ;
 		class function Unmanaged:TAQ;
 
@@ -305,6 +302,9 @@ type
 	 * Public object related stuff
 	 *}
 	public
+		constructor Create; override;
+		destructor Destroy; override;
+
 		function Each(EachFunction:TEachFunction):TAQ; override;
 		function EachInterval(Interval:Integer; Each:TEachFunction; ID:Integer = 0):TAQ;
 		function EachTimer(Duration:Integer; Each:TEachFunction; LastEach:TEachFunction = nil;
