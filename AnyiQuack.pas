@@ -1003,6 +1003,11 @@ begin
 						end;
 					end);
 			end);
+	{**
+	 * Very important reset, because this closure is used nested in previous
+	 * FActiveIntervalAQs.Each call and otherwise it's not released -> produces memory leaks.
+	 *}
+	Perform:=nil;
 end;
 
 function TAQ.CustomFiller(Filler:TEachFunction; Append, Recurse:Boolean):TAQ;
