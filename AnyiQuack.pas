@@ -436,6 +436,7 @@ type
 			ID:Integer);
 		constructor Finite(Duration:Integer; Each, LastEach:TEachFunction; ActorRole:TActorRole;
 			ID:Integer);
+		destructor Destroy; override;
 
 		function Each:TEachFunction;
 		function IsCanceled:Boolean;
@@ -2317,52 +2318,6 @@ end;
 
 {** TInterval **}
 
-procedure TInterval.Cancel;
-begin
-	FInterval:=0;
-end;
-
-function TInterval.Each:TEachFunction;
-begin
-	Result:=nil;
-	if IsCanceled then
-		Exit;
-	{**
-	 * Unendlicher Interval
-	 *}
-	if (FLastTick = 0) and (TAQ.Tick >= FNextTick) then
-	begin
-		Result:=FNextEach;
-		UpdateNextTick;
-	end
-	{**
-	 * Endlicher Interval
-	 *}
-	else if (FLastTick > 0) then
-	begin
-		if TAQ.Tick >= FLastTick then
-		begin
-			if Assigned(FLastEach) then
-				Result:=FLastEach
-			else
-				Result:=FNextEach;
-			FLastEach:=nil;
-			FNextEach:=nil;
-		end
-		else if TAQ.Tick >= FNextTick then
-		begin
-			Result:=FNextEach;
-			UpdateNextTick;
-		end;
-	end;
-end;
-
-procedure TInterval.Finish;
-begin
-	if IsFinite and not IsFinished then
-		FLastTick:=TAQ.Tick;
-end;
-
 constructor TInterval.Finite(Duration:Integer; Each, LastEach:TEachFunction; ActorRole:TActorRole;
 	ID:Integer);
 begin
@@ -2389,6 +2344,59 @@ begin
 	FInterval:=Max(IntervalResolution, Interval);
 	FLastTick:=0;
 	UpdateNextTick;
+end;
+
+destructor TInterval.Destroy;
+begin
+	FNextEach:=nil;
+	FLastEach:=nil;
+	inherited;
+end;
+
+procedure TInterval.Cancel;
+begin
+	FInterval:=0;
+end;
+
+function TInterval.Each:TEachFunction;
+begin
+	Result:=nil;
+	if IsCanceled then
+		Exit;
+	{**
+	 * Infinite interval
+	 *}
+	if (FLastTick = 0) and (TAQ.Tick >= FNextTick) then
+	begin
+		Result:=FNextEach;
+		UpdateNextTick;
+	end
+	{**
+	 * Finite interval
+	 *}
+	else if (FLastTick > 0) then
+	begin
+		if TAQ.Tick >= FLastTick then
+		begin
+			if Assigned(FLastEach) then
+				Result:=FLastEach
+			else
+				Result:=FNextEach;
+			FLastEach:=nil;
+			FNextEach:=nil;
+		end
+		else if TAQ.Tick >= FNextTick then
+		begin
+			Result:=FNextEach;
+			UpdateNextTick;
+		end;
+	end;
+end;
+
+procedure TInterval.Finish;
+begin
+	if IsFinite and not IsFinished then
+		FLastTick:=TAQ.Tick;
 end;
 
 function TInterval.IsCanceled:Boolean;
