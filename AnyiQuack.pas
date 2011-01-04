@@ -1678,11 +1678,11 @@ begin
 	 * Diese unverwaltete TAQ-Instanz wird ebenfalls mit dem FGarbageCollector erstellt und muss
 	 * hier manuell freigegeben werden.
 	 *}
-	FActiveIntervalAQs.Free;
+	FreeAndNil(FActiveIntervalAQs);
 	{**
 	 * Komponentenhelfer freigeben
 	 *}
-	FComponentsNotifier.Free;
+	FreeAndNil(FComponentsNotifier);
 end;
 
 function TAQ.FinishAnimations(ID:Integer):TAQ;
