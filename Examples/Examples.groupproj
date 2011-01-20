@@ -27,6 +27,9 @@
 			<Projects Include="EasingSuite\EasingSuite.dproj">
 				<Dependencies/>
 			</Projects>
+			<Projects Include="NotificationWindows\NotificationExample.dproj">
+				<Dependencies/>
+			</Projects>
 		</ItemGroup>
 		<ProjectExtensions>
 			<Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -39,82 +42,91 @@
 			<MSBuild Projects="PulsateEdits\PulsateEdits.dproj"/>
 		</Target>
 		<Target Name="PulsateEdits:Clean">
-			<MSBuild Targets="Clean" Projects="PulsateEdits\PulsateEdits.dproj"/>
+			<MSBuild Projects="PulsateEdits\PulsateEdits.dproj" Targets="Clean"/>
 		</Target>
 		<Target Name="PulsateEdits:Make">
-			<MSBuild Targets="Make" Projects="PulsateEdits\PulsateEdits.dproj"/>
+			<MSBuild Projects="PulsateEdits\PulsateEdits.dproj" Targets="Make"/>
 		</Target>
 		<Target Name="SyncScroll">
 			<MSBuild Projects="SyncScroll\SyncScroll.dproj"/>
 		</Target>
 		<Target Name="SyncScroll:Clean">
-			<MSBuild Targets="Clean" Projects="SyncScroll\SyncScroll.dproj"/>
+			<MSBuild Projects="SyncScroll\SyncScroll.dproj" Targets="Clean"/>
 		</Target>
 		<Target Name="SyncScroll:Make">
-			<MSBuild Targets="Make" Projects="SyncScroll\SyncScroll.dproj"/>
+			<MSBuild Projects="SyncScroll\SyncScroll.dproj" Targets="Make"/>
 		</Target>
 		<Target Name="AnimatedAlign">
 			<MSBuild Projects="AnimatedAlign\AnimatedAlign.dproj"/>
 		</Target>
 		<Target Name="AnimatedAlign:Clean">
-			<MSBuild Targets="Clean" Projects="AnimatedAlign\AnimatedAlign.dproj"/>
+			<MSBuild Projects="AnimatedAlign\AnimatedAlign.dproj" Targets="Clean"/>
 		</Target>
 		<Target Name="AnimatedAlign:Make">
-			<MSBuild Targets="Make" Projects="AnimatedAlign\AnimatedAlign.dproj"/>
+			<MSBuild Projects="AnimatedAlign\AnimatedAlign.dproj" Targets="Make"/>
 		</Target>
 		<Target Name="SlidingForm">
 			<MSBuild Projects="SlidingForm\SlidingForm.dproj"/>
 		</Target>
 		<Target Name="SlidingForm:Clean">
-			<MSBuild Targets="Clean" Projects="SlidingForm\SlidingForm.dproj"/>
+			<MSBuild Projects="SlidingForm\SlidingForm.dproj" Targets="Clean"/>
 		</Target>
 		<Target Name="SlidingForm:Make">
-			<MSBuild Targets="Make" Projects="SlidingForm\SlidingForm.dproj"/>
+			<MSBuild Projects="SlidingForm\SlidingForm.dproj" Targets="Make"/>
 		</Target>
 		<Target Name="MethodTests">
 			<MSBuild Projects="MethodTests\MethodTests.dproj"/>
 		</Target>
 		<Target Name="MethodTests:Clean">
-			<MSBuild Targets="Clean" Projects="MethodTests\MethodTests.dproj"/>
+			<MSBuild Projects="MethodTests\MethodTests.dproj" Targets="Clean"/>
 		</Target>
 		<Target Name="MethodTests:Make">
-			<MSBuild Targets="Make" Projects="MethodTests\MethodTests.dproj"/>
+			<MSBuild Projects="MethodTests\MethodTests.dproj" Targets="Make"/>
 		</Target>
 		<Target Name="CustomPlugin">
 			<MSBuild Projects="CustomPlugin\CustomPlugin.dproj"/>
 		</Target>
 		<Target Name="CustomPlugin:Clean">
-			<MSBuild Targets="Clean" Projects="CustomPlugin\CustomPlugin.dproj"/>
+			<MSBuild Projects="CustomPlugin\CustomPlugin.dproj" Targets="Clean"/>
 		</Target>
 		<Target Name="CustomPlugin:Make">
-			<MSBuild Targets="Make" Projects="CustomPlugin\CustomPlugin.dproj"/>
+			<MSBuild Projects="CustomPlugin\CustomPlugin.dproj" Targets="Make"/>
 		</Target>
 		<Target Name="StickyTools">
 			<MSBuild Projects="StickyTools\StickyTools.dproj"/>
 		</Target>
 		<Target Name="StickyTools:Clean">
-			<MSBuild Targets="Clean" Projects="StickyTools\StickyTools.dproj"/>
+			<MSBuild Projects="StickyTools\StickyTools.dproj" Targets="Clean"/>
 		</Target>
 		<Target Name="StickyTools:Make">
-			<MSBuild Targets="Make" Projects="StickyTools\StickyTools.dproj"/>
+			<MSBuild Projects="StickyTools\StickyTools.dproj" Targets="Make"/>
 		</Target>
 		<Target Name="EasingSuite">
 			<MSBuild Projects="EasingSuite\EasingSuite.dproj"/>
 		</Target>
 		<Target Name="EasingSuite:Clean">
-			<MSBuild Targets="Clean" Projects="EasingSuite\EasingSuite.dproj"/>
+			<MSBuild Projects="EasingSuite\EasingSuite.dproj" Targets="Clean"/>
 		</Target>
 		<Target Name="EasingSuite:Make">
-			<MSBuild Targets="Make" Projects="EasingSuite\EasingSuite.dproj"/>
+			<MSBuild Projects="EasingSuite\EasingSuite.dproj" Targets="Make"/>
+		</Target>
+		<Target Name="NotificationExample">
+			<MSBuild Projects="NotificationWindows\NotificationExample.dproj"/>
+		</Target>
+		<Target Name="NotificationExample:Clean">
+			<MSBuild Projects="NotificationWindows\NotificationExample.dproj" Targets="Clean"/>
+		</Target>
+		<Target Name="NotificationExample:Make">
+			<MSBuild Projects="NotificationWindows\NotificationExample.dproj" Targets="Make"/>
 		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign;SlidingForm;MethodTests;CustomPlugin;StickyTools;EasingSuite"/>
+			<CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign;SlidingForm;MethodTests;CustomPlugin;StickyTools;EasingSuite;NotificationExample"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean;CustomPlugin:Clean;StickyTools:Clean;EasingSuite:Clean"/>
+			<CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean;CustomPlugin:Clean;StickyTools:Clean;EasingSuite:Clean;NotificationExample:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make;CustomPlugin:Make;StickyTools:Make;EasingSuite:Make"/>
+			<CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make;CustomPlugin:Make;StickyTools:Make;EasingSuite:Make;NotificationExample:Make"/>
 		</Target>
-		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
 	</Project>
