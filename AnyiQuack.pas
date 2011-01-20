@@ -37,6 +37,9 @@ uses
  *}
 {$BOOLEVAL OFF}
 
+const
+	Version = '1.0.0';
+
 type
 	EAQ = class(Exception);
 	TAQBase = class;

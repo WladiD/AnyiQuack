@@ -7,5 +7,6 @@ SET Pack="C:\Program Files (x86)\WinRAR\winrar.exe" U -afzip -ep -m5 AnyiQuack.E
 %Pack% SlidingForm\SlidingForm.exe
 %Pack% StickyTools\StickyTools.exe
 %Pack% SyncScroll\SyncScroll.exe
+%Pack% NotificationWindows\NotificationExample.exe
 
 popd
