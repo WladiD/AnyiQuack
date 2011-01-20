@@ -25,15 +25,18 @@ unit AQPControlAnimations;
 interface
 
 uses
-	Controls, Windows, Math, Graphics, AnyiQuack;
+	Windows, Controls, Forms, Math, Graphics, AnyiQuack;
 
 type
 	TAQPControlAnimations = class(TAQPlugin)
 	protected
+		function Swing(Times, Diff:Integer; Progress:Real):Integer;
 		procedure CustomColorAnimation(FromColor, ToColor:TColor; Duration:Integer; ID:Integer;
 			ColorAssignFunction:TEachMiscFunction<TColor>; EaseFunction:TEaseFunction = nil;
 			OnComplete:TAnonymNotifyEvent = nil);
 	public
+		function AlphaBlendAnimation(ToAlphaBlendValue:Byte; Duration:Integer; ID:Integer = 0;
+			EaseFunction:TEaseFunction = nil; OnComplete:TAnonymNotifyEvent = nil):TAQ;
 		function BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Duration:Integer;
 			ID:Integer = 0; EaseFunction:TEaseFunction = nil;
 			OnComplete:TAnonymNotifyEvent = nil):TAQ;
@@ -59,7 +62,57 @@ type
 		property FontColor:TColor read GetFontColor write SetFontColor;
 	end;
 
+	TFormRobin = class helper for TCustomForm
+	protected
+		function GetAlphaBlendActivated:Boolean;
+		function GetAlphaBlendValue:Byte;
+		procedure SetAlphaBlendValue(NewAlphaBlendValue:Byte);
+	public
+		property AlphaBlendActivated:Boolean read GetAlphaBlendActivated;
+		property AlphaBlendValue:Byte read GetAlphaBlendValue write SetAlphaBlendValue;
+	end;
+
+
 {** TAQPControlAnimations **}
+
+{**
+ * Animates the AlphaBlendValue on all contained TCustomForm descendants
+ *
+ * TCustomForm.AlphaBlend must be set to TRUE previously.
+ *}
+function TAQPControlAnimations.AlphaBlendAnimation(ToAlphaBlendValue:Byte; Duration, ID:Integer;
+  EaseFunction:TEaseFunction; OnComplete:TAnonymNotifyEvent):TAQ;
+begin
+	Result:=Each(
+		function(AQ:TAQ; O:TObject):Boolean
+		var
+			StartAlphaBlendValue:Byte;
+		begin
+			Result:=TRUE;
+
+			if not (
+				(O is TCustomForm) and
+				TCustomForm(O).AlphaBlendActivated and
+				(TCustomForm(O).AlphaBlendValue <> ToAlphaBlendValue)) then
+				Exit;
+
+			StartAlphaBlendValue:=TCustomForm(O).AlphaBlendValue;
+
+			Take(O)
+				.EachAnimation(Duration,
+					function(AQ:TAQ; O:TObject):Boolean
+					begin
+						TCustomForm(O).AlphaBlendValue:=Byte(TAQ.EaseInteger(
+							StartAlphaBlendValue, ToAlphaBlendValue, AQ.CurrentInterval.Progress,
+							EaseFunction));
+
+						if Assigned(OnComplete) and (AQ.CurrentInterval.Progress = 1) then
+							OnComplete(O);
+
+						Result:=TRUE;
+					end);
+		end);
+end;
 
 function TAQPControlAnimations.BackgroundColorAnimation(ToColor:TColor; Duration, ID:Integer;
 	EaseFunction:TEaseFunction; OnComplete:TAnonymNotifyEvent):TAQ;
@@ -210,10 +263,7 @@ begin
 			Progress:Real;
 			AniLeft, AniTop:Integer;
 
-			function Swing(Times, Diff:Integer; Progress:Real):Integer;
-			begin
-				Result:=Ceil(Diff * Sin(Progress * Times * Pi * 2));
-			end;
+
 		begin
 			Result:=TRUE;
 			Progress:=AQ.CurrentInterval.Progress;
@@ -249,6 +299,11 @@ begin
 	Result:=Each(WholeEach);
 end;
 
+function TAQPControlAnimations.Swing(Times, Diff:Integer; Progress:Real):Integer;
+begin
+	Result:=Ceil(Diff * Sin(Progress * Times * Pi * 2));
+end;
+
 {** TControlRobin **}
 
 function TControlRobin.GetBackgroundColor:TColor;
@@ -269,6 +324,23 @@ end;
 procedure TControlRobin.SetFontColor(NewColor:TColor);
 begin
 	Font.Color:=NewColor;
+end;
+
+{** TFormRobin **}
+
+function TFormRobin.GetAlphaBlendActivated:Boolean;
+begin
+	Result:=AlphaBlend;
+end;
+
+function TFormRobin.GetAlphaBlendValue:Byte;
+begin
+	Result:=inherited AlphaBlendValue;
+end;
+
+procedure TFormRobin.SetAlphaBlendValue(NewAlphaBlendValue:Byte);
+begin
+	inherited AlphaBlendValue:=NewAlphaBlendValue;
 end;
 
 end.
