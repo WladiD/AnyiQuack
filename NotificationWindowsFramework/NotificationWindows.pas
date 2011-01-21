@@ -13,12 +13,32 @@ type
 		procedure FormClose(Sender:TObject; var Action:TCloseAction);
     	procedure FormKeyUp(Sender:TObject; var Key:Word; Shift:TShiftState);
 	private
+		const
+		CloseDelayID = 779;
+
+		var
+		FCloseTimeout:Integer;
 		FStack:TNotificationStack;
 		FClosed:Boolean;
+
+		procedure UpdateCloseTimeout;
+
+		procedure SetCloseTimeout(CloseTimeout:Integer);
+	protected
+		function AutoClosePossible:Boolean; virtual;
 	public
 		procedure Close; reintroduce;
 
 		property Stack:TNotificationStack read FStack;
+		{**
+		 * Auto close feature
+		 *
+		 * Assign a value > 0 to enable the feature or 0 to disable it.
+		 * The timeout is in milliseconds. The notification window is getting closed
+		 * automatically, after the defined timeout is expired and until the method
+		 * AutoClosePossible returns TRUE.
+		 *}
+		property CloseTimeout:Integer read FCloseTimeout write SetCloseTimeout;
 	end;
 
 	TNotificationStack = class
@@ -64,6 +84,11 @@ implementation
 
 {** TNotificationWindow **}
 
+function TNotificationWindow.AutoClosePossible:Boolean;
+begin
+	Result:=(Screen.ActiveForm <> Self) and not PtInRect(BoundsRect, Mouse.CursorPos);
+end;
+
 procedure TNotificationWindow.Close;
 begin
 	FClosed:=TRUE;
@@ -80,6 +105,46 @@ procedure TNotificationWindow.FormKeyUp(Sender:TObject; var Key:Word; Shift:TShi
 begin
 	if Key = VK_ESCAPE then
 		Close;
+end;
+
+procedure TNotificationWindow.SetCloseTimeout(CloseTimeout: Integer);
+begin
+	if CloseTimeout = FCloseTimeout then
+		Exit;
+	FCloseTimeout:=CloseTimeout;
+	UpdateCloseTimeout;
+end;
+
+procedure TNotificationWindow.UpdateCloseTimeout;
+begin
+	Take(Self)
+		.CancelDelays(CloseDelayID)
+		.IfThen(CloseTimeout > 0)
+			{**
+			 * Wait "long", if the auto close feature is possible
+			 *}
+			.IfThen(AutoClosePossible)
+				.EachDelay(CloseTimeout,
+					function(AQ:TAQ; O:TObject):Boolean
+					begin
+						if AutoClosePossible then
+							Close
+						else
+							UpdateCloseTimeout;
+						Result:=TRUE;
+					end, CloseDelayID)
+			{**
+			 * Wait "short" (polling), if the auto close feature isn't possible
+			 *}
+			.IfElse
+				.EachDelay(100,
+					function(AQ:TAQ; O:TObject):Boolean
+					begin
+						UpdateCloseTimeout;
+						Result:=TRUE;
+					end)
+			.IfEnd
+		.IfEnd;
 end;
 
 {** TNotificationStack **}
