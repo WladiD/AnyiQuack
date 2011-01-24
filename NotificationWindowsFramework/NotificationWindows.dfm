@@ -18,7 +18,7 @@ object NotificationWindow: TNotificationWindow
   KeyPreview = True
   OldCreateOrder = False
   OnClose = FormClose
-  OnKeyUp = FormKeyUp
+  OnKeyDown = FormKeyDown
   PixelsPerInch = 96
   TextHeight = 13
 end

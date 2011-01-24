@@ -11,7 +11,7 @@ type
 
 	TNotificationWindow = class(TForm)
 		procedure FormClose(Sender:TObject; var Action:TCloseAction);
-    	procedure FormKeyUp(Sender:TObject; var Key:Word; Shift:TShiftState);
+		procedure FormKeyDown(Sender:TObject; var Key:Word; Shift:TShiftState);
 	private
 		const
 		CloseDelayID = 779;
@@ -101,7 +101,7 @@ begin
 	Close;
 end;
 
-procedure TNotificationWindow.FormKeyUp(Sender:TObject; var Key:Word; Shift:TShiftState);
+procedure TNotificationWindow.FormKeyDown(Sender:TObject; var Key:Word; Shift:TShiftState);
 begin
 	if Key = VK_ESCAPE then
 		Close;
