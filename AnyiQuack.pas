@@ -36,9 +36,14 @@ uses
  * Ensure, that the fastest bool evaluation is used
  *}
 {$BOOLEVAL OFF}
+{**
+ * If you want to have smoother animations, you should use this threaded timer approach.
+ * Otherwise the windows standard timer is used, which is not so accurate.
+ *}
+{$DEFINE UseThreadTimer}
 
 const
-	Version = '1.0.0';
+	Version = '1.0.1';
 
 type
 	EAQ = class(Exception);
@@ -187,7 +192,11 @@ type
 	private
 		class var
 		FGCC:TAQ;
+{$IFDEF UseThreadTimer}
+		FTimerThread:TThread;
+{$ELSE}
 		FTimerHandler:Cardinal;
+{$ENDIF}
 		FActiveIntervalAQs:TAQ;
 		FTick:Cardinal;
 		FComponentsNotifier:TComponentList;
@@ -465,11 +474,11 @@ type
 implementation
 
 uses
-	MMSystem;
+	MMSystem, SyncObjs;
 
 const
 	MaxLifeTime = 10000;
-	IntervalResolution = 25;
+	IntervalResolution = 20;
 	GarbageCleanInterval = 5000;
 	GarbageCleanTime = IntervalResolution div 2;
 	SpareAQsCount = 1000;
@@ -483,6 +492,17 @@ type
 	TComponentsNotifier = class(TComponentList)
 	protected
 		procedure Notify(Ptr:Pointer; Action:TListNotification); override;
+	end;
+
+	TTimerThread = class(TThread)
+	private
+		FTimerEvent:TEvent;
+		FInterval:Integer;
+		FTimerProc:TThreadProcedure;
+	protected
+		procedure Execute; override;
+	public
+		constructor Create(Interval:Integer; TimerProc:TThreadProcedure);
 	end;
 
 function LinearEase(Progress:Real):Real;
@@ -1675,8 +1695,13 @@ begin
 	 * Dieser Timer wird zusammen mit FGarbageCollector erstellt, muss auch dementsprechend zusammen
 	 * freigegeben werden.
 	 *}
+{$IFDEF UseThreadTimer}
+	if Assigned(FTimerThread) then
+		FTimerThread.Terminate;
+{$ELSE}
 	if (FTimerHandler > 0) and KillTimer(0, FTimerHandler) then
 		FTimerHandler:=0;
+{$ENDIF}
 	{**
 	 * Diese unverwaltete TAQ-Instanz wird ebenfalls mit dem FGarbageCollector erstellt und muss
 	 * hier manuell freigegeben werden.
@@ -2038,8 +2063,13 @@ begin
 	 **********************************************************************************************}
 
 	FTick:=timeGetTime;
-
-	FTimerHandler:=SetTimer(0, 0, IntervalResolution, @TAQ.GlobalIntervalTimerEvent);
+{$IFDEF UseThreadTimer}
+	if not Assigned(FTimerThread) then
+		FTimerThread:=TTimerThread.Create(IntervalResolution, TAQ.GlobalIntervalTimerEvent);
+{$ELSE}
+	if FTimerThread = 0 then
+		FTimerHandler:=SetTimer(0, 0, IntervalResolution, @TAQ.GlobalIntervalTimerEvent);
+{$ENDIF}
 
 	FActiveIntervalAQs:=TAQ.Create;
 	FActiveIntervalAQs.Recurse:=FALSE;
@@ -2437,6 +2467,36 @@ begin
 	if Action = lnExtracted then
 		TAQ.ComponentsNotification(TComponent(Ptr), opRemove);
 	inherited Notify(Ptr, Action);
+end;
+
+{** TTimerThread **}
+
+constructor TTimerThread.Create(Interval:Integer; TimerProc:TThreadProcedure);
+begin
+	FInterval:=Interval;
+	FTimerProc:=TimerProc;
+	inherited Create(FALSE);
+end;
+
+procedure TTimerThread.Execute;
+var
+	TimerID:Cardinal;
+begin
+	FTimerEvent:=TEvent.Create(nil, TRUE, FALSE, '');
+	TimerID:=timeSetEvent(FInterval, 0, TFNTimeCallBack(FTimerEvent.Handle), 0, TIME_PERIODIC or TIME_CALLBACK_EVENT_SET);
+	try
+		while not Terminated do
+		begin
+			if FTimerEvent.WaitFor(100) = wrSignaled then
+			begin
+				Synchronize(FTimerProc);
+				FTimerEvent.ResetEvent;
+			end;
+		end;
+	finally
+		timeKillEvent(TimerID);
+		FTimerEvent.Free;
+	end;
 end;
 
 initialization

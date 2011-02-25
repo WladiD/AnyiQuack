@@ -4,7 +4,7 @@
 			<MainSource>NotificationExample.dpr</MainSource>
 			<ProjectVersion>12.3</ProjectVersion>
 			<Basis>True</Basis>
-			<Config Condition="'$(Config)'==''">Debug</Config>
+			<Config Condition="'$(Config)'==''">Release</Config>
 			<Platform>Win32</Platform>
 			<AppType>Application</AppType>
 			<FrameworkType>VCL</FrameworkType>
