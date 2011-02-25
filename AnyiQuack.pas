@@ -478,7 +478,13 @@ uses
 
 const
 	MaxLifeTime = 10000;
+{$IFDEF UseThreadTimer}
+	TimerResolution = 5;
+	IntervalResolution = 15;
+{$ELSE}
+	TimerResolution = 20;
 	IntervalResolution = 20;
+{$ENDIF}
 	GarbageCleanInterval = 5000;
 	GarbageCleanTime = IntervalResolution div 2;
 	SpareAQsCount = 1000;
@@ -2065,10 +2071,10 @@ begin
 	FTick:=timeGetTime;
 {$IFDEF UseThreadTimer}
 	if not Assigned(FTimerThread) then
-		FTimerThread:=TTimerThread.Create(IntervalResolution, TAQ.GlobalIntervalTimerEvent);
+		FTimerThread:=TTimerThread.Create(TimerResolution, TAQ.GlobalIntervalTimerEvent);
 {$ELSE}
-	if FTimerThread = 0 then
-		FTimerHandler:=SetTimer(0, 0, IntervalResolution, @TAQ.GlobalIntervalTimerEvent);
+	if FTimerHandler = 0 then
+		FTimerHandler:=SetTimer(0, 0, TimerResolution, @TAQ.GlobalIntervalTimerEvent);
 {$ENDIF}
 
 	FActiveIntervalAQs:=TAQ.Create;

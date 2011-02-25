@@ -74,7 +74,7 @@ begin
 			.CancelAnimations
 			.Plugin<TAQPControlAnimations>
 			.BoundsAnimation(LocalTargetPos.X, LocalTargetPos.Y, -1, -1, 350, 0,
-				TAQ.Ease(etQuint, emInInverted))
+				TAQ.Ease(etSinus, emInSnakeInverted))
 		.Die;
 	end
 	else
