@@ -2412,7 +2412,7 @@ begin
 		Result:=Managed.Append(AObject);
 {$ELSE}
 begin
-	Result:=Managed.Append(Objects);
+	Result:=Managed.Append(AObject);
 {$ENDIF}
 end;
 
