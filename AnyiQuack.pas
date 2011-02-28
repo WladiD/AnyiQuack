@@ -27,7 +27,8 @@ unit AnyiQuack;
 interface
 
 uses
-	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Math, Graphics, Character, SyncObjs;
+	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Math, Graphics, Character, SyncObjs,
+	Diagnostics;
 
 {$IFDEF DEBUG}
 	{$INCLUDE Debug.inc}
@@ -52,7 +53,7 @@ uses
 {$DEFINE RetakeFromGCC}
 
 const
-	Version = '1.0.1';
+	Version = '1.0.2';
 
 type
 	EAQ = class(Exception);
@@ -207,7 +208,8 @@ type
 		FTimerHandler:Cardinal;
 {$ENDIF}
 		FActiveIntervalAQs:TAQ;
-		FTick:Cardinal;
+		FStopWatch:TStopWatch;
+		FTick:Int64;
 		FComponentsNotifier:TComponentList;
 
 		class procedure Initialize;
@@ -218,12 +220,12 @@ type
 		class procedure ComponentsNotification(AComponent:TComponent; Operation:TOperation);
 		class function EaseIntegrated(EaseType:TEaseType):TEaseFunction;
 
-		class property Tick:Cardinal read FTick;
+		class property Tick:Int64 read FTick;
 	{**
 	 * Private object related stuff
 	 *}
 	private
-		FLifeTick:Cardinal;
+		FLifeTick:Int64;
 		FIntervals:TObjectList;
 		FCurrentInterval:TInterval;
 		FChainedTo:TAQ;
@@ -444,7 +446,7 @@ type
 	private
 		FFirstTick,
 		FNextTick,
-		FLastTick:Cardinal;
+		FLastTick:Int64;
 		FInterval:Integer;
 		FNextEach,
 		FLastEach:TEachFunction;
@@ -508,9 +510,6 @@ type
 
 implementation
 
-uses
-	MMSystem;
-
 const
 	MaxLifeTime = 10000;
 {$IFDEF UseThreadTimer}
@@ -535,6 +534,18 @@ type
 	protected
 		procedure Notify(Ptr:Pointer; Action:TListNotification); override;
 	end;
+
+{$IF RTLVersion < 22}
+	{**
+	 * Cheap implementation of TSpinWait shipped since Delphi XE
+	 *
+	 * Just only to be backward compatible with Delphi 2010.
+	 *}
+	TSpinWait = record
+	public
+		class function SpinUntil(const ACondition:TFunc<Boolean>; Timeout:LongWord):Boolean; static;
+	end;
+{$IFEND}
 
 function LinearEase(Progress:Real):Real;
 begin
@@ -1971,7 +1982,9 @@ begin
 	 * Die Initialisierung der gesamten Klasse
 	 **********************************************************************************************}
 
-	FTick:=timeGetTime;
+	FStopWatch:=TStopwatch.StartNew;
+
+	FTick:=FStopWatch.ElapsedMilliseconds;
 {$IFDEF UseThreadTimer}
 	FTimerThread:=TTimerThread.Create(IntervalResolution, TAQ.GlobalIntervalTimerEvent);
 	FTimerThread.Enable;
@@ -2037,7 +2050,7 @@ begin
 		 *}
 		function(GCC:TAQ; O:TObject):Boolean
 		var
-			CleanEndTick:Cardinal;
+			CleanEndTick:Int64;
 			AQsForDestroy:Integer;
 		begin
 			{**
@@ -2069,7 +2082,7 @@ begin
 				Exit;
 			end;
 
-			CleanEndTick:=timeGetTime + GarbageCleanTime;
+			CleanEndTick:=FStopWatch.ElapsedMilliseconds + GarbageCleanTime;
 
 			GCC.Each(
 				function(GCC:TAQ; O:TObject):Boolean
@@ -2088,7 +2101,8 @@ begin
 					 * Läuft, solange Anzahl abgelaufener Instanzen größer SpareAQsCount ist und
 					 * solange die verfügbare Bereingungsdauer nicht überschritten wird.
 					 *}
-					Result:=(AQsForDestroy > SpareAQsCount) or (CleanEndTick >= timeGetTime);
+					Result:=(AQsForDestroy > SpareAQsCount) or
+						(CleanEndTick >= FStopWatch.ElapsedMilliseconds);
 				end);
 				{$IFDEF OutputDebugGCFree}
 				if CleanEndTick < timeGetTime then
@@ -2103,7 +2117,7 @@ class procedure TAQ.GlobalIntervalTimerEvent;
 begin
 	if Finalized then
 		Exit;
-	FTick:=timeGetTime;
+	FTick:=FStopWatch.ElapsedMilliseconds;
 	FActiveIntervalAQs.Each(
 		{**
 		 * @param AQ Enthält FActiveIntervalAQs
@@ -2604,6 +2618,24 @@ begin
 	inherited Notify(Ptr, Action);
 end;
 
+{** TSpinWait **}
+
+{$IF RTLVersion < 22}
+class function TSpinWait.SpinUntil(const ACondition:TFunc<Boolean>; Timeout:LongWord):Boolean;
+var
+	Timer:TStopwatch;
+begin
+	Timer:=TStopwatch.StartNew;
+	while not ACondition() do
+	begin
+		if (Timeout = 0) or ((Timeout <> INFINITE) and (Timeout <= Timer.ElapsedMilliseconds)) then
+			Exit(False);
+		Sleep(1);
+	end;
+	Result:=True;
+end;
+{$IFEND}
+
 {** TTimerThread **}
 
 constructor TTimerThread.Create(Interval:Integer; TimerProc:TThreadProcedure);
@@ -2650,7 +2682,11 @@ procedure TTimerThread.SetInterval(NewInterval:Integer);
 begin
 	if (NewInterval = Interval) or (NewInterval <= 0) then
 		Exit;
+{$IF RTLVersion < 22}
+	InterlockedExchange(FInterval, NewInterval);
+{$ELSE}
 	TInterlocked.Exchange(FInterval, NewInterval);
+{$IFEND}
 	FMainSignal.SetEvent;
 end;
 
