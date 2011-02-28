@@ -27,7 +27,7 @@ unit AnyiQuack;
 interface
 
 uses
-	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Math, Graphics, Character;
+	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Math, Graphics, Character, SyncObjs;
 
 {$IFDEF DEBUG}
 	{$INCLUDE Debug.inc}
@@ -41,6 +41,15 @@ uses
  * Otherwise the windows standard timer is used, which is not so accurate.
  *}
 {$DEFINE UseThreadTimer}
+{**
+ * In most cases it is better/faster to scan for a matching TAQ instance in the garbage collector,
+ * than to create a new instance.
+ *
+ * Implemented in TAQ.Take method.
+ *
+ * @see TAQ.Take
+ *}
+{$DEFINE RetakeFromGCC}
 
 const
 	Version = '1.0.1';
@@ -51,6 +60,7 @@ type
 	TAQ = class;
 	TAQPlugin = class;
 	TInterval = class;
+	TTimerThread = class;
 
 	TEaseType = (etLinear, etQuad, etCubic, etQuart, etQuint, etSext, etSinus, etElastic, etBack,
 		etLowWave, etMiddleWave, etHighWave, etBounce, etCircle, etSwing10, etSwing50, etSwing100,
@@ -69,7 +79,6 @@ type
 	TEachMiscFunction<T> = reference to function(AQ:TAQ; O:TObject; Misc:T):Boolean;
 	TAnonymNotifyEvent = reference to procedure(Sender:TObject);
 	TEaseFunction = reference to function(Progress:Real):Real;
-
 
 	TAQBase = class(TObjectList)
 	protected
@@ -193,7 +202,7 @@ type
 		class var
 		FGCC:TAQ;
 {$IFDEF UseThreadTimer}
-		FTimerThread:TThread;
+		FTimerThread:TTimerThread;
 {$ELSE}
 		FTimerHandler:Cardinal;
 {$ENDIF}
@@ -463,6 +472,32 @@ type
 		property ID:Integer read FID;
 	end;
 
+	TTimerThread = class(TThread)
+	private
+		FInterval:Integer;
+		FTimerProc:TThreadProcedure;
+		FMainSignal:TEvent;
+		FEnabled:Boolean;
+
+		procedure SetInterval(NewInterval:Integer);
+	protected
+		procedure Execute; override;
+	public
+		constructor Create(Interval:Integer; TimerProc:TThreadProcedure);
+		destructor Destroy; override;
+
+		procedure Enable;
+		procedure Disable;
+
+		{**
+		 * DON'T USE TERMINATE FOR THIS THREAD: USE DESTRUCTOR!
+		 *}
+		//procedure Terminate;
+
+		property Enabled:Boolean read FEnabled;
+		property Interval:Integer read FInterval write SetInterval;
+	end;
+
 	function Take(AObject:TObject):TAQ; overload;
 	function Take(Objects:TObjectArray):TAQ; overload;
 	function Take(Objects:TObjectList):TAQ; overload;
@@ -474,15 +509,13 @@ type
 implementation
 
 uses
-	MMSystem, SyncObjs;
+	MMSystem;
 
 const
 	MaxLifeTime = 10000;
 {$IFDEF UseThreadTimer}
-	TimerResolution = 5;
 	IntervalResolution = 15;
 {$ELSE}
-	TimerResolution = 20;
 	IntervalResolution = 20;
 {$ENDIF}
 	GarbageCleanInterval = 5000;
@@ -494,21 +527,13 @@ const
 	ConditionLockBitMask = $02;
 	ImmortallyBitMask    = $04;
 
+var
+	Initialized, Finalized:Boolean;
+
 type
 	TComponentsNotifier = class(TComponentList)
 	protected
 		procedure Notify(Ptr:Pointer; Action:TListNotification); override;
-	end;
-
-	TTimerThread = class(TThread)
-	private
-		FTimerEvent:TEvent;
-		FInterval:Integer;
-		FTimerProc:TThreadProcedure;
-	protected
-		procedure Execute; override;
-	public
-		constructor Create(Interval:Integer; TimerProc:TThreadProcedure);
 	end;
 
 function LinearEase(Progress:Real):Real;
@@ -840,6 +865,8 @@ end;
 
 procedure TAQ.Clean;
 begin
+	if Finalized then
+		Exit;
 	{**
 	 * Globale Auswirkungen
 	 *}
@@ -1686,39 +1713,6 @@ begin
 	Result:=NewAQ;
 end;
 
-class procedure TAQ.Finalize;
-begin
-	if not Assigned(FGCC) then
-		Exit;
-	{**
-	 * Freigabe von allem, was in der Klassenmethode TAQ.Initialize instanziert wurde
-	 *}
-	{**
-	 * Alle offenen TAQ-Instanzen freigeben
-	 *}
-	FreeAndNil(FGCC);
-	{**
-	 * Dieser Timer wird zusammen mit FGarbageCollector erstellt, muss auch dementsprechend zusammen
-	 * freigegeben werden.
-	 *}
-{$IFDEF UseThreadTimer}
-	if Assigned(FTimerThread) then
-		FTimerThread.Terminate;
-{$ELSE}
-	if (FTimerHandler > 0) and KillTimer(0, FTimerHandler) then
-		FTimerHandler:=0;
-{$ENDIF}
-	{**
-	 * Diese unverwaltete TAQ-Instanz wird ebenfalls mit dem FGarbageCollector erstellt und muss
-	 * hier manuell freigegeben werden.
-	 *}
-	FreeAndNil(FActiveIntervalAQs);
-	{**
-	 * Komponentenhelfer freigeben
-	 *}
-	FreeAndNil(FComponentsNotifier);
-end;
-
 function TAQ.FinishAnimations(ID:Integer):TAQ;
 begin
 	if SupervisorLock(Result, aqmFinishAnimations) then
@@ -1731,82 +1725,6 @@ begin
 	if SupervisorLock(Result, aqmFinishTimers) then
 		Exit;
 	CustomCancel(arTimer, ID, TRUE);
-end;
-
-class function TAQ.GCC:TAQ;
-begin
-	if Assigned(FGCC) then
-		Exit(FGCC);
-
-	Initialize;
-
-	FGCC.EachInterval(GarbageCleanInterval,
-		{**
-		 * In GarbageCollector befindet sich der FGarbageCollector selbst und
-		 * in O eine TAQ-Instanz die auf ihre Lebenszeichen untersucht werden muss.
-		 *}
-		function(GCC:TAQ; O:TObject):Boolean
-		var
-			CleanEndTick:Cardinal;
-			AQsForDestroy:Integer;
-		begin
-			{**
-			 * Soll nur einmal ausgeführt werden, da die eigentliche Bereinigung in den
-			 * untergeordeneten Eachs abläuft
-			 *}
-			Result:=FALSE;
-
-			AQsForDestroy:=0;
-			{**
-			 * Vorbereitungen für die Bereinigung
-			 *}
-			GCC.Each(
-				function(AQ:TAQ; O:TObject):Boolean
-				begin
-					if (O is TAQ) and not TAQ(O).IsAlive then
-						Inc(AQsForDestroy);
-					Result:=TRUE;
-				end);
-			{**
-			 * Bedingter Start für die Bereinigung
-			 *}
-			if AQsForDestroy < SpareAQsCount then
-			begin
-				{$IFDEF OutputDebugGCFree}
-				OutputDebugString(PWideChar(Format('Bereinigungsvorgang findet nicht statt, da das Sparlimit (%d) nicht erreicht wurde (%d).',
-					[SpareAQsCount, AQsForDestroy])));
-				{$ENDIF}
-				Exit;
-			end;
-
-			CleanEndTick:=timeGetTime + GarbageCleanTime;
-
-			GCC.Each(
-				function(GCC:TAQ; O:TObject):Boolean
-				begin
-					if (O is TAQ) and not TAQ(O).IsAlive then
-					begin
-						GCC.Remove(O);
-						Dec(AQsForDestroy);
-						{$IFDEF OutputDebugGCFree}
-						OutputDebugString(PWideChar(Format('TAQ freigegeben. Verbleibend im GarbageCollector: %d.',
-							[GarbageCollector.Count])));
-						{$ENDIF}
-					end;
-					{**
-					 * Bedingte Laufzeit der Bereinigung
-					 * Läuft, solange Anzahl abgelaufener Instanzen größer SpareAQsCount ist und
-					 * solange die verfügbare Bereingungsdauer nicht überschritten wird.
-					 *}
-					Result:=(AQsForDestroy > SpareAQsCount) or (CleanEndTick >= timeGetTime);
-				end);
-				{$IFDEF OutputDebugGCFree}
-				if CleanEndTick < timeGetTime then
-					OutputDebugString('Bereinigungsvorgang vorzeitig abgebrochen, da das Zeitlimit überschritten wurde.');
-				{$ENDIF}
-		end);
-
-	Result:=FGCC;
 end;
 
 function TAQ.GetConditionLock:Boolean;
@@ -1829,21 +1747,6 @@ end;
 function TAQ.GetRecurse:Boolean;
 begin
 	Result:=GetBit(FBools, RecurseBitMask);
-end;
-
-class procedure TAQ.GlobalIntervalTimerEvent;
-begin
-	FTick:=timeGetTime;
-	FActiveIntervalAQs.Each(
-		{**
-		 * @param AQ Enthält FActiveIntervalAQs
-		 * @param O Enthält ein TAQ-Objekt, welches mind. ein Interval besitzt
-		 *}
-		function(AQ:TAQ; O:TObject):Boolean
-		begin
-			TAQ(O).LocalIntervalTimerEvent;
-			Result:=TRUE; // Die Each soll komplett durchlaufen
-		end);
 end;
 
 function TAQ.HasActors(ActorRole:TActorRole; ID:Integer):Boolean;
@@ -2061,20 +1964,19 @@ begin
 	{**
 	 * Der Garbage-Collector fungiert auch als Singleton-Sperre
 	 *}
-	if Assigned(FGCC) then
+	if Initialized then
 		Exit;
-
+	Initialized:=TRUE;
 	{**
 	 * Die Initialisierung der gesamten Klasse
 	 **********************************************************************************************}
 
 	FTick:=timeGetTime;
 {$IFDEF UseThreadTimer}
-	if not Assigned(FTimerThread) then
-		FTimerThread:=TTimerThread.Create(TimerResolution, TAQ.GlobalIntervalTimerEvent);
+	FTimerThread:=TTimerThread.Create(IntervalResolution, TAQ.GlobalIntervalTimerEvent);
+	FTimerThread.Enable;
 {$ELSE}
-	if FTimerHandler = 0 then
-		FTimerHandler:=SetTimer(0, 0, TimerResolution, @TAQ.GlobalIntervalTimerEvent);
+	FTimerHandler:=SetTimer(0, 0, IntervalResolution, @TAQ.GlobalIntervalTimerEvent);
 {$ENDIF}
 
 	FActiveIntervalAQs:=TAQ.Create;
@@ -2086,6 +1988,132 @@ begin
 
 	FComponentsNotifier:=TComponentsNotifier.Create;
 	FComponentsNotifier.OwnsObjects:=FALSE;
+end;
+
+class procedure TAQ.Finalize;
+begin
+	if Finalized or not Initialized then
+		Exit;
+	{**
+	 * Freigabe von allem, was in der Klassenmethode TAQ.Initialize instanziert wurde
+	 *}
+	Finalized:=TRUE;
+	{**
+	 * Dieser Timer wird zusammen mit FGarbageCollector erstellt, muss auch dementsprechend zusammen
+	 * freigegeben werden.
+	 *}
+{$IFDEF UseThreadTimer}
+	FreeAndNil(FTimerThread);
+{$ELSE}
+	if (FTimerHandler > 0) and KillTimer(0, FTimerHandler) then
+		FTimerHandler:=0;
+{$ENDIF}
+	{**
+	 * Diese unverwaltete TAQ-Instanz wird ebenfalls mit dem FGarbageCollector erstellt und muss
+	 * hier manuell freigegeben werden.
+	 *}
+	FreeAndNil(FActiveIntervalAQs);
+	{**
+	 * Komponentenhelfer freigeben
+	 *}
+	FreeAndNil(FComponentsNotifier);
+	{**
+	 * Alle offenen TAQ-Instanzen freigeben
+	 *}
+	FreeAndNil(FGCC);
+end;
+
+class function TAQ.GCC:TAQ;
+begin
+	if Initialized then
+		Exit(FGCC);
+
+	Initialize;
+
+	FGCC.EachInterval(GarbageCleanInterval,
+		{**
+		 * In GarbageCollector befindet sich der FGarbageCollector selbst und
+		 * in O eine TAQ-Instanz die auf ihre Lebenszeichen untersucht werden muss.
+		 *}
+		function(GCC:TAQ; O:TObject):Boolean
+		var
+			CleanEndTick:Cardinal;
+			AQsForDestroy:Integer;
+		begin
+			{**
+			 * Soll nur einmal ausgeführt werden, da die eigentliche Bereinigung in den
+			 * untergeordeneten Eachs abläuft
+			 *}
+			Result:=FALSE;
+
+			AQsForDestroy:=0;
+			{**
+			 * Vorbereitungen für die Bereinigung
+			 *}
+			GCC.Each(
+				function(AQ:TAQ; O:TObject):Boolean
+				begin
+					if (O is TAQ) and not TAQ(O).IsAlive then
+						Inc(AQsForDestroy);
+					Result:=TRUE;
+				end);
+			{**
+			 * Bedingter Start für die Bereinigung
+			 *}
+			if AQsForDestroy < SpareAQsCount then
+			begin
+				{$IFDEF OutputDebugGCFree}
+				OutputDebugString(PWideChar(Format('Bereinigungsvorgang findet nicht statt, da das Sparlimit (%d) nicht erreicht wurde (%d).',
+					[SpareAQsCount, AQsForDestroy])));
+				{$ENDIF}
+				Exit;
+			end;
+
+			CleanEndTick:=timeGetTime + GarbageCleanTime;
+
+			GCC.Each(
+				function(GCC:TAQ; O:TObject):Boolean
+				begin
+					if (O is TAQ) and not TAQ(O).IsAlive then
+					begin
+						GCC.Remove(O);
+						Dec(AQsForDestroy);
+						{$IFDEF OutputDebugGCFree}
+						OutputDebugString(PWideChar(Format('TAQ freigegeben. Verbleibend im GarbageCollector: %d.',
+							[GarbageCollector.Count])));
+						{$ENDIF}
+					end;
+					{**
+					 * Bedingte Laufzeit der Bereinigung
+					 * Läuft, solange Anzahl abgelaufener Instanzen größer SpareAQsCount ist und
+					 * solange die verfügbare Bereingungsdauer nicht überschritten wird.
+					 *}
+					Result:=(AQsForDestroy > SpareAQsCount) or (CleanEndTick >= timeGetTime);
+				end);
+				{$IFDEF OutputDebugGCFree}
+				if CleanEndTick < timeGetTime then
+					OutputDebugString('Bereinigungsvorgang vorzeitig abgebrochen, da das Zeitlimit überschritten wurde.');
+				{$ENDIF}
+		end);
+
+	Result:=FGCC;
+end;
+
+class procedure TAQ.GlobalIntervalTimerEvent;
+begin
+	if Finalized then
+		Exit;
+	FTick:=timeGetTime;
+	FActiveIntervalAQs.Each(
+		{**
+		 * @param AQ Enthält FActiveIntervalAQs
+		 * @param O Enthält ein TAQ-Objekt, welches mind. ein Interval besitzt
+		 *}
+		function(AQ:TAQ; O:TObject):Boolean
+		begin
+			TAQ(O).LocalIntervalTimerEvent;
+			Result:=TRUE; // Die Each soll komplett durchlaufen
+		end);
 end;
 
 function TAQ.IntervalActorsChain(ID:Integer; IncludeOrphans:Boolean):TAQ;
@@ -2302,13 +2330,119 @@ begin
 end;
 
 class function TAQ.Take(Objects:TObjectArray):TAQ;
+{$IFDEF RetakeFromGCC}
+var
+	ObjectsCount:Integer;
+	AQMatch:TAQ;
+begin
+	ObjectsCount:=Length(Objects);
+	AQMatch:=nil;
+	GCC.Each(
+		function(GCC:TAQ; O:TObject):Boolean
+		var
+			cc:Integer;
+			Match:Boolean;
+			AQ:TAQ;
+		begin
+			AQ:=TAQ(O);
+			Match:=AQ.Count = ObjectsCount;
+
+			if Match then
+			begin
+				for cc:=0 to AQ.Count - 1 do
+					if AQ[cc] <> Objects[cc] then
+					begin
+						Match:=FALSE;
+						Break;
+					end;
+				if Match then
+					AQMatch:=AQ;
+			end;
+
+			Result:=not Match;
+		end);
+
+	if Assigned(AQMatch) then
+		Result:=AQMatch
+	else
+		Result:=Managed.Append(Objects);
+{$ELSE}
 begin
 	Result:=Managed.Append(Objects);
+{$ENDIF}
 end;
 
 class function TAQ.Take(AObject:TObject):TAQ;
+{$IFDEF RetakeFromGCC}
+var
+	AQMatch:TAQ;
 begin
-	Result:=Managed.Append(AObject);
+	AQMatch:=nil;
+	GCC.Each(
+		function(GCC:TAQ; O:TObject):Boolean
+		var
+			Match:Boolean;
+			AQ:TAQ;
+		begin
+			AQ:=TAQ(O);
+			Match:=(AQ.Count = 1) and (AQ[0] = AObject);
+			if Match then
+				AQMatch:=AQ;
+
+			Result:=not Match;
+		end);
+
+	if Assigned(AQMatch) then
+		Result:=AQMatch
+	else
+		Result:=Managed.Append(AObject);
+{$ELSE}
+begin
+	Result:=Managed.Append(Objects);
+{$ENDIF}
+end;
+
+class function TAQ.Take(Objects:TObjectList):TAQ;
+{$IFDEF RetakeFromGCC}
+var
+	ObjectsCount:Integer;
+	AQMatch:TAQ;
+begin
+	ObjectsCount:=Objects.Count;
+	AQMatch:=nil;
+	GCC.Each(
+		function(GCC:TAQ; O:TObject):Boolean
+		var
+			cc:Integer;
+			Match:Boolean;
+			AQ:TAQ;
+		begin
+			AQ:=TAQ(O);
+			Match:=AQ.Count = ObjectsCount;
+
+			if Match then
+			begin
+				for cc:=0 to AQ.Count - 1 do
+					if AQ[cc] <> Objects[cc] then
+					begin
+						Match:=FALSE;
+						Break;
+					end;
+				if Match then
+					AQMatch:=AQ;
+			end;
+
+			Result:=not Match;
+		end);
+
+	if Assigned(AQMatch) then
+		Result:=AQMatch
+	else
+		Result:=Managed.Append(Objects);
+{$ELSE}
+begin
+	Result:=Managed.Append(Objects);
+{$ENDIF}
 end;
 
 function TAQ.TimerActorsChain(ID:Integer; IncludeOrphans:Boolean):TAQ;
@@ -2321,11 +2455,6 @@ end;
 class function TAQ.Unmanaged:TAQ;
 begin
 	Result:=TAQ.Create;
-end;
-
-class function TAQ.Take(Objects:TObjectList):TAQ;
-begin
-	Result:=Managed.Append(Objects);
 end;
 
 {** TAQPlugin **}
@@ -2481,32 +2610,77 @@ constructor TTimerThread.Create(Interval:Integer; TimerProc:TThreadProcedure);
 begin
 	FInterval:=Interval;
 	FTimerProc:=TimerProc;
+	FMainSignal:=TEvent.Create(nil, FALSE, FALSE, '');
 	inherited Create(FALSE);
+end;
+
+destructor TTimerThread.Destroy;
+begin
+	Terminate;
+	FMainSignal.SetEvent;
+	while not TSpinWait.SpinUntil(
+		function:Boolean
+		begin
+			Result:=Finished;
+		end, 20) do
+		CheckSynchronize;
+	FMainSignal.Free;
+	inherited Destroy;
+end;
+
+procedure TTimerThread.Disable;
+begin
+	if Enabled then
+	begin
+		FEnabled:=FALSE;
+		FMainSignal.SetEvent;
+	end;
+end;
+
+procedure TTimerThread.Enable;
+begin
+	if not Enabled then
+	begin
+		FEnabled:=TRUE;
+		FMainSignal.SetEvent;
+	end;
+end;
+
+procedure TTimerThread.SetInterval(NewInterval:Integer);
+begin
+	if (NewInterval = Interval) or (NewInterval <= 0) then
+		Exit;
+	TInterlocked.Exchange(FInterval, NewInterval);
+	FMainSignal.SetEvent;
 end;
 
 procedure TTimerThread.Execute;
 var
-	TimerID:Cardinal;
+	LocalInterval:Integer;
 begin
-	FTimerEvent:=TEvent.Create(nil, TRUE, FALSE, '');
-	TimerID:=timeSetEvent(FInterval, 0, TFNTimeCallBack(FTimerEvent.Handle), 0, TIME_PERIODIC or TIME_CALLBACK_EVENT_SET);
-	try
-		while not Terminated do
+	while not Terminated do
+	begin
+		FMainSignal.WaitFor(INFINITE);
+		{**
+		 * This is the whole timer
+		 *}
+		if Enabled then
 		begin
-			if FTimerEvent.WaitFor(100) = wrSignaled then
-			begin
+			LocalInterval:=Interval;
+			while not TSpinWait.SpinUntil(
+				function:Boolean
+				begin
+					Result:=Terminated or not Enabled or (LocalInterval <> Interval);
+				end, LocalInterval) do
 				Synchronize(FTimerProc);
-				FTimerEvent.ResetEvent;
-			end;
 		end;
-	finally
-		timeKillEvent(TimerID);
-		FTimerEvent.Free;
 	end;
 end;
 
-initialization
 
+initialization
+Initialized:=FALSE;
+Finalized:=FALSE;
 
 finalization
 
