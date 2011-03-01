@@ -136,7 +136,7 @@ begin
 					 * Hierdurch stirbt die verbundene TAQ-Instanz, da keine Ticks gemacht wurden
 					 *}
 					CheckMsgPlugin.Immortally:=FALSE;
-					GCC.Remove(CheckMsgPlugin);
+					GarbageCollector.Remove(CheckMsgPlugin);
 				end;
 				Result:=TRUE;
 			end);

@@ -80,8 +80,7 @@ begin
 				.WorkAQ
 			.EndChain
 			.Die
-		.EndChain
-	.Die;
+		.EndChain;
 
 	ExitSizeMoveCount:=0;
 	WindowPosChangedCount:=0;
@@ -127,10 +126,10 @@ begin
 		AQ
 			.Plugin<TAQPControlAnimations>
 			.FontColorAnimation(TargetColor, 500, 0, TAQ.Ease(etQuint),
-			 procedure(Sender:TObject)
-			 begin
-				Take(Sender).EachDelay(200, BlinkEach);
-			 end);
+				 procedure(Sender:TObject)
+				 begin
+					Take(Sender).EachDelay(200, BlinkEach);
+				 end);
 		Result:=FALSE;
 	end;
 	Take(Label1).Each(BlinkEach);
