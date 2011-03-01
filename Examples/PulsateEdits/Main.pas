@@ -10,25 +10,23 @@ uses
 
 type
 	TForm1 = class(TForm)
-		Edit1: TEdit;
-		Edit2: TEdit;
-		Edit3: TEdit;
-		Edit4: TEdit;
-		Edit5: TEdit;
-		Edit6: TEdit;
-		Edit7: TEdit;
-		CheckButton: TButton;
-		Label1: TLabel;
-		Label2: TLabel;
-		procedure FormCreate(Sender: TObject);
-		procedure CheckButtonClick(Sender: TObject);
+		Edit1:TEdit;
+		Edit2:TEdit;
+		Edit3:TEdit;
+		Edit4:TEdit;
+		Edit5:TEdit;
+		Edit6:TEdit;
+		Edit7:TEdit;
+		CheckButton:TButton;
+		Label1:TLabel;
+		Label2:TLabel;
+		procedure FormCreate(Sender:TObject);
+		procedure CheckButtonClick(Sender:TObject);
 	private
 		{Private-Deklarationen}
 	public
 		{Public-Deklarationen}
 	end;
-
-
 
 var
 	Form1:TForm1;
@@ -37,7 +35,7 @@ implementation
 
 {$R *.dfm}
 
-procedure TForm1.CheckButtonClick(Sender: TObject);
+procedure TForm1.CheckButtonClick(Sender:TObject);
 var
 	Incorrect:TAQ;
 begin
@@ -72,7 +70,7 @@ begin
 			end);
 end;
 
-procedure TForm1.FormCreate(Sender: TObject);
+procedure TForm1.FormCreate(Sender:TObject);
 var
 	Pulsate:TAnonymNotifyEvent;
 begin

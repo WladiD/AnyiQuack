@@ -50,8 +50,7 @@ begin
 								.ChildrenChain
 									.Each(StickyEach)
 									.Die
-								.EndChain
-							.Die;
+								.EndChain;
 							Result:=FALSE;
 						end);
 		end);

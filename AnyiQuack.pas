@@ -14,7 +14,7 @@
  *                                     Initial Developer)
  *
  * The Initial Developer of the Original Code is Waldemar Derr.
- * Portions created by Waldemar Derr are Copyright (C) 2010 Waldemar Derr.
+ * Portions created by Waldemar Derr are Copyright (C) Waldemar Derr.
  * All Rights Reserved.
  *
  * @author Waldemar Derr <mail@wladid.de>
@@ -30,30 +30,10 @@ uses
 	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Math, Graphics, Character, SyncObjs,
 	Diagnostics;
 
-{$IFDEF DEBUG}
-	{$INCLUDE Debug.inc}
-{$ENDIF}
-{**
- * Ensure, that the fastest bool evaluation is used
- *}
-{$BOOLEVAL OFF}
-{**
- * If you want to have smoother animations, you should use this threaded timer approach.
- * Otherwise the windows standard timer is used, which is not so accurate.
- *}
-{$DEFINE UseThreadTimer}
-{**
- * In most cases it is better/faster to scan for a matching TAQ instance in the garbage collector,
- * than to create a new instance.
- *
- * Implemented in TAQ.Take method.
- *
- * @see TAQ.Take
- *}
-{$DEFINE RetakeFromGCC}
+{$INCLUDE Compile.inc}
 
 const
-	Version = '1.0.2';
+	Version = '1.0.3';
 
 type
 	EAQ = class(Exception);
@@ -92,7 +72,7 @@ type
 	protected
 		FWorkAQ:TAQ;
 
-		function GCC:TAQ;
+		function GarbageCollector:TAQ;
 		function Each(EachFunction:TEachFunction):TAQ; override;
 
 		procedure Autorun; virtual;
@@ -201,7 +181,7 @@ type
 	 *}
 	private
 		class var
-		FGCC:TAQ;
+		FGC:TAQ;
 {$IFDEF UseThreadTimer}
 		FTimerThread:TTimerThread;
 {$ELSE}
@@ -215,7 +195,7 @@ type
 		class procedure Initialize;
 		class procedure Finalize;
 
-		class function GCC:TAQ;
+		class function GarbageCollector:TAQ;
 		class procedure GlobalIntervalTimerEvent;
 		class procedure ComponentsNotification(AComponent:TComponent; Operation:TOperation);
 		class function EaseIntegrated(EaseType:TEaseType):TEaseFunction;
@@ -282,7 +262,7 @@ type
 		class function Unmanaged:TAQ;
 
 		class function Take(AObject:TObject):TAQ; overload;
-		class function Take(Objects:TObjectArray):TAQ; overload;
+		class function Take(const Objects:TObjectArray):TAQ; overload;
 		class function Take(Objects:TObjectList):TAQ; overload;
 
 		class function Ease(EaseType:TEaseType;
@@ -771,7 +751,7 @@ begin
 	 *
 	 * Eine Ausnahme besteht für den Garbage-Collector
 	 *}
-	if (Count = 0) and (Self <> FGCC) then
+	if (Count = 0) and (Self <> FGC) then
 	begin
 		Interval.Free;
 		Exit;
@@ -881,14 +861,14 @@ begin
 	{**
 	 * Globale Auswirkungen
 	 *}
-	GCC.Each(
-		function(GCC:TAQ; O:TObject):Boolean
+	GarbageCollector.Each(
+		function(GC:TAQ; O:TObject):Boolean
 		begin
 			{**
 			 * Sollte ein Plugin für diese Instanz existieren, so muss es freigegeben werden
 			 *}
 			if (O is TAQPlugin) and (TAQPlugin(O).WorkAQ = Self) then
-				GCC.Remove(O)
+				GC.Remove(O)
 			{**
 			 * Sollte diese Instanz mit einer anderen zuvor verkettet worden sein, so muss diese
 			 * Verbindung aufgehoben werden
@@ -926,8 +906,8 @@ begin
 		{**
 		 * Die Verbindung zu einer Komponente in allen lebenden TAQ-Instanzen aufheben
 		 *}
-		GCC.Each(
-			function(GCC:TAQ; O:TObject):Boolean
+		GarbageCollector.Each(
+			function(GC:TAQ; O:TObject):Boolean
 			begin
 				if TAQ(O).IsAlive then
 					TAQ(O).Remove(AComponent);
@@ -991,7 +971,7 @@ begin
 					{**
 					 * Der Garbage-Collector darf hier nicht berücksichtigt werden
 					 *}
-					if O = FGCC then
+					if O = FGC then
 						Exit;
 					TargetAQ:=TAQ(O);
 					if TargetAQ.HasActors(ActorRole, ID) and TargetAQ.Contains(SO) then
@@ -1050,7 +1030,7 @@ begin
 				TargetAQ:TAQ;
 			begin
 				Result:=TRUE; // Each soll komplett durchlaufen
-				if Target = FGCC then
+				if Target = FGC then
 					Exit;
 				TargetAQ:=TAQ(Target);
 				Each(
@@ -1995,9 +1975,9 @@ begin
 	FActiveIntervalAQs:=TAQ.Create;
 	FActiveIntervalAQs.Recurse:=FALSE;
 
-	FGCC:=TAQ.Create;
-	FGCC.OwnsObjects:=TRUE;
-	FGCC.Recurse:=FALSE;
+	FGC:=TAQ.Create;
+	FGC.OwnsObjects:=TRUE;
+	FGC.Recurse:=FALSE;
 
 	FComponentsNotifier:=TComponentsNotifier.Create;
 	FComponentsNotifier.OwnsObjects:=FALSE;
@@ -2033,22 +2013,22 @@ begin
 	{**
 	 * Alle offenen TAQ-Instanzen freigeben
 	 *}
-	FreeAndNil(FGCC);
+	FreeAndNil(FGC);
 end;
 
-class function TAQ.GCC:TAQ;
+class function TAQ.GarbageCollector:TAQ;
 begin
 	if Initialized then
-		Exit(FGCC);
+		Exit(FGC);
 
 	Initialize;
 
-	FGCC.EachInterval(GarbageCleanInterval,
+	FGC.EachInterval(GarbageCleanInterval,
 		{**
 		 * In GarbageCollector befindet sich der FGarbageCollector selbst und
 		 * in O eine TAQ-Instanz die auf ihre Lebenszeichen untersucht werden muss.
 		 *}
-		function(GCC:TAQ; O:TObject):Boolean
+		function(GC:TAQ; O:TObject):Boolean
 		var
 			CleanEndTick:Int64;
 			AQsForDestroy:Integer;
@@ -2063,7 +2043,7 @@ begin
 			{**
 			 * Vorbereitungen für die Bereinigung
 			 *}
-			GCC.Each(
+			GC.Each(
 				function(AQ:TAQ; O:TObject):Boolean
 				begin
 					if (O is TAQ) and not TAQ(O).IsAlive then
@@ -2084,12 +2064,12 @@ begin
 
 			CleanEndTick:=FStopWatch.ElapsedMilliseconds + GarbageCleanTime;
 
-			GCC.Each(
-				function(GCC:TAQ; O:TObject):Boolean
+			GC.Each(
+				function(GC:TAQ; O:TObject):Boolean
 				begin
 					if (O is TAQ) and not TAQ(O).IsAlive then
 					begin
-						GCC.Remove(O);
+						GC.Remove(O);
 						Dec(AQsForDestroy);
 						{$IFDEF OutputDebugGCFree}
 						OutputDebugString(PWideChar(Format('TAQ freigegeben. Verbleibend im GarbageCollector: %d.',
@@ -2105,12 +2085,12 @@ begin
 						(CleanEndTick >= FStopWatch.ElapsedMilliseconds);
 				end);
 				{$IFDEF OutputDebugGCFree}
-				if CleanEndTick < timeGetTime then
+				if CleanEndTick < FStopWatch.ElapsedMilliseconds then
 					OutputDebugString('Bereinigungsvorgang vorzeitig abgebrochen, da das Zeitlimit überschritten wurde.');
 				{$ENDIF}
 		end);
 
-	Result:=FGCC;
+	Result:=FGC;
 end;
 
 class procedure TAQ.GlobalIntervalTimerEvent;
@@ -2164,7 +2144,7 @@ begin
 	{**
 	 * Im GarbageCollector nach einer abgelaufenen Instanz suchen
 	 *}
-	GCC.Each(
+	GarbageCollector.Each(
 		function(AQ:TAQ; O:TObject):Boolean
 		begin
 			if (O is TAQ) and not TAQ(O).IsAlive then
@@ -2172,10 +2152,10 @@ begin
 				ManagedAQ:=TAQ(O);
 				ManagedAQ.Clean;
 				ManagedAQ.HeartBeat;
-				{$IFDEF OutputDebugGCRecycle}
-				OutputDebugString(PWideChar(Format('TAQ %p am Index #%d wiederverwendet.',
+{$IFDEF OutputDebugGCRecycle}
+				OutputDebugString(PWideChar(Format('TAQ %p at index #%d of GC recycled.',
 					[@O, AQ.IndexOf(O)])));
-				{$ENDIF}
+{$ENDIF}
 			end;
 			{**
 			 * Die Each soll solange laufen, bis eine abgelaufene Instanz gefunden wurde
@@ -2191,11 +2171,11 @@ begin
 	{**
 	 * Das ist das ganze Geheimnis des TAQ-Objekt-Managing ;)
 	 *}
-	GCC.Add(Result);
-	{$IFDEF OutputDebugGCCreate}
-	OutputDebugString(PWideChar(Format('Neuer TAQ %p am Index #%d.',
+	GarbageCollector.Add(Result);
+{$IFDEF OutputDebugGCCreate}
+	OutputDebugString(PWideChar(Format('New TAQ %p in GC at index #%d.',
 		[@Result, GarbageCollector.IndexOf(Result)])));
-	{$ENDIF}
+{$ENDIF}
 end;
 
 function TAQ.MultiplexChain:TAQ;
@@ -2246,7 +2226,7 @@ function TAQ.Plugin<T>:T;
 begin
 	Result:=T.Create;
 	TAQPlugin(Result).FWorkAQ:=Self;
-	GCC.Add(Result);
+	GarbageCollector.Add(Result);
 	TAQPlugin(Result).Autorun;
 end;
 
@@ -2254,7 +2234,7 @@ function TAQ.EndChain:TAQ;
 begin
 	if SupervisorLock(Result, aqmEndChain) then
 		Exit;
-	if Assigned(FChainedTo) and GCC.Contains(FChainedTo) then
+	if Assigned(FChainedTo) and GarbageCollector.Contains(FChainedTo) then
 		Exit(FChainedTo);
 	Result:=Managed;
 end;
@@ -2343,27 +2323,51 @@ begin
 	end;
 end;
 
-class function TAQ.Take(Objects:TObjectArray):TAQ;
-{$IFDEF RetakeFromGCC}
+{**
+ * Private function, used by the overloaded TAQ.Take methods
+ *
+ * @param AQ Is only assigned, if the result is TRUE
+ *}
+function PrimaryRetakeCheck(CheckForAQ:TObject; First:TObject; ObjectsCount:Integer; out AQ:TAQ):Boolean; inline;
 var
-	ObjectsCount:Integer;
-	AQMatch:TAQ;
+	CheckAQ:TAQ;
 begin
-	ObjectsCount:=Length(Objects);
+	if not (CheckForAQ is TAQ) then
+		Exit(FALSE);
+	CheckAQ:=TAQ(CheckForAQ);
+	Result:=(ObjectsCount > 0) and (CheckAQ.FConditionCount = 0) and
+		(CheckAQ.Count = ObjectsCount) and (CheckAQ[0] = First) and
+		not CheckAQ.ConditionLock and CheckAQ.Recurse
+		{and (AQ.FChainedTo = nil)};
+	if Result then
+		AQ:=CheckAQ;
+end;
+
+procedure RetakeDebugMessage(RetakenAQ:TAQ);
+begin
+	OutputDebugString(PWideChar(Format('TAQ %p at index #%d of GC retaken.',
+		[@RetakenAQ, TAQ.GarbageCollector.IndexOf(RetakenAQ)])));
+end;
+
+class function TAQ.Take(const Objects:TObjectArray):TAQ;
+{$IFDEF RetakeFromGC}
+var
+	AQMatch:TAQ;
+	ObjectsCount:Integer;
+begin
 	AQMatch:=nil;
-	GCC.Each(
-		function(GCC:TAQ; O:TObject):Boolean
+	ObjectsCount:=Length(Objects);
+	GarbageCollector.Each(
+		function(GC:TAQ; O:TObject):Boolean
 		var
 			cc:Integer;
 			Match:Boolean;
 			AQ:TAQ;
 		begin
-			AQ:=TAQ(O);
-			Match:=AQ.Count = ObjectsCount;
-
+			Match:=PrimaryRetakeCheck(O, Objects[0], ObjectsCount, AQ);
 			if Match then
 			begin
-				for cc:=0 to AQ.Count - 1 do
+				for cc:=1 to ObjectsCount - 1 do // Note: Begin at index 1, because IsAQMatch has already tested on 0
 					if AQ[cc] <> Objects[cc] then
 					begin
 						Match:=FALSE;
@@ -2372,12 +2376,17 @@ begin
 				if Match then
 					AQMatch:=AQ;
 			end;
-
-			Result:=not Match;
+			Result:=not Match; // Break the Each, if the first TAQ instance matched
 		end);
 
 	if Assigned(AQMatch) then
-		Result:=AQMatch
+	begin
+		AQMatch.HeartBeat;
+		Result:=AQMatch;
+{$IFDEF OutputDebugGCRetake}
+		RetakeDebugMessage(Result);
+{$ENDIF}
+	end
 	else
 		Result:=Managed.Append(Objects);
 {$ELSE}
@@ -2387,27 +2396,25 @@ begin
 end;
 
 class function TAQ.Take(AObject:TObject):TAQ;
-{$IFDEF RetakeFromGCC}
+{$IFDEF RetakeFromGC}
 var
 	AQMatch:TAQ;
 begin
 	AQMatch:=nil;
-	GCC.Each(
-		function(GCC:TAQ; O:TObject):Boolean
-		var
-			Match:Boolean;
-			AQ:TAQ;
+	GarbageCollector.Each(
+		function(GC:TAQ; O:TObject):Boolean
 		begin
-			AQ:=TAQ(O);
-			Match:=(AQ.Count = 1) and (AQ[0] = AObject);
-			if Match then
-				AQMatch:=AQ;
-
-			Result:=not Match;
+			Result:=not PrimaryRetakeCheck(O, AObject, 1, AQMatch);
 		end);
 
 	if Assigned(AQMatch) then
-		Result:=AQMatch
+	begin
+		AQMatch.HeartBeat;
+		Result:=AQMatch;
+{$IFDEF OutputDebugGCRetake}
+		RetakeDebugMessage(Result);
+{$ENDIF}
+	end
 	else
 		Result:=Managed.Append(AObject);
 {$ELSE}
@@ -2417,26 +2424,24 @@ begin
 end;
 
 class function TAQ.Take(Objects:TObjectList):TAQ;
-{$IFDEF RetakeFromGCC}
+{$IFDEF RetakeFromGC}
 var
-	ObjectsCount:Integer;
 	AQMatch:TAQ;
+	ObjectsCount:Integer;
 begin
-	ObjectsCount:=Objects.Count;
 	AQMatch:=nil;
-	GCC.Each(
-		function(GCC:TAQ; O:TObject):Boolean
+	ObjectsCount:=Objects.Count;
+	GarbageCollector.Each(
+		function(GC:TAQ; O:TObject):Boolean
 		var
 			cc:Integer;
 			Match:Boolean;
 			AQ:TAQ;
 		begin
-			AQ:=TAQ(O);
-			Match:=AQ.Count = ObjectsCount;
-
+			Match:=PrimaryRetakeCheck(O, Objects[0], ObjectsCount, AQ);
 			if Match then
 			begin
-				for cc:=0 to AQ.Count - 1 do
+				for cc:=1 to ObjectsCount - 1 do // Note: Begin at index 1, because IsAQMatch has already tested on 0
 					if AQ[cc] <> Objects[cc] then
 					begin
 						Match:=FALSE;
@@ -2446,11 +2451,17 @@ begin
 					AQMatch:=AQ;
 			end;
 
-			Result:=not Match;
+			Result:=not Match;  // Break the Each, if the first TAQ instance matched
 		end);
 
 	if Assigned(AQMatch) then
-		Result:=AQMatch
+	begin
+		AQMatch.HeartBeat;
+		Result:=AQMatch;
+{$IFDEF OutputDebugGCRetake}
+		RetakeDebugMessage(Result);
+{$ENDIF}
+	end
 	else
 		Result:=Managed.Append(Objects);
 {$ELSE}
@@ -2483,9 +2494,9 @@ begin
 	Result:=WorkAQ.Each(EachFunction);
 end;
 
-function TAQPlugin.GCC:TAQ;
+function TAQPlugin.GarbageCollector:TAQ;
 begin
-	Result:=TAQ.GCC;
+	Result:=TAQ.GarbageCollector;
 end;
 
 function TAQPlugin.GetImmortally:Boolean;
