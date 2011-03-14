@@ -18,8 +18,6 @@
  * All Rights Reserved.
  *
  * @author Waldemar Derr <mail@wladid.de>
- * @see Project-Home (german) http://id.kihiwi.de/WladiD/His/Habe_ich/KiHiWi.187/
- * @version $Id$
  *}
 
 unit AnyiQuack;
