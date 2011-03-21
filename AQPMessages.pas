@@ -25,7 +25,7 @@ unit AQPMessages;
 interface
 
 uses
-	SysUtils, Controls, Windows, Messages, Contnrs, AnyiQuack;
+	SysUtils, Classes, Controls, Windows, Messages, Contnrs, AnyiQuack;
 
 type
 	TAQPMessages = class(TAQPlugin)
@@ -34,7 +34,6 @@ type
 		FListeners:TAQ;
 
 		var
-		FOriginalWindowProc:TWndMethod;
 		FListenForMsg:Cardinal;
 		FListenID:Integer;
 		FEachMsgFunction:TEachMiscFunction<TMessage>;
@@ -42,9 +41,7 @@ type
 		class constructor Create;
 		class destructor Destroy;
 
-		class function GetNextListenerFor(Control:TControl):TAQPMessages;
-
-		procedure HookWindowProc(var Message:TMessage);
+		class procedure DispatchWindowProc(Control:TControl; Message:TMessage);
 	public
 		destructor Destroy; override;
 
@@ -61,16 +58,54 @@ type
 
 implementation
 
+type
+	TWndMethodRec = record
+		Code:Pointer;
+		Obj:TObject;
+	end;
+	PWndProcRec = ^TWndProcRec;
+	TWndProcRec = record
+		OrgWndProc:TWndMethod;
+		Control:TControl;
+	end;
+
+	{**
+	 * TWndProcList is originally written by Andreas Hausladen
+	 * <http://www.delphipraxis.net/8933-post2.html>
+	 *
+	 * Modified for special purposes by Waldemar Derr
+	 *}
+	TWndProcList = class(TList)
+	private
+		function GetIndex(Control:TControl):Integer;
+	protected
+		procedure TransferWndProc(var Message:TMessage); virtual;
+	public
+		procedure HookControl(Control:TControl);
+		procedure UnhookControl(Control:TControl);
+
+		procedure Clear; override;
+	end;
+
+var
+	WndProcList:TWndProcList;
+
+
 {** TAQPMessages **}
 
 class constructor TAQPMessages.Create;
 begin
 	FListeners:=TAQ.Unmanaged;
+	WndProcList:=TWndProcList.Create;
+end;
+
+class destructor TAQPMessages.Destroy;
+begin
+	FreeAndNil(FListeners);
+	WndProcList.Free;
 end;
 
 destructor TAQPMessages.Destroy;
-var
-	NextListener:TAQPMessages;
 begin
 	if not Assigned(FListeners) then
 	begin
@@ -78,44 +113,40 @@ begin
 		Exit;
 	end;
 
-	FListenForMsg:=0;
-
 	FListeners.Remove(Self);
 
-	if WorkAQ.Count = 1 then
-		NextListener:=GetNextListenerFor(TControl(WorkAQ[0]))
-	else
-		NextListener:=nil;
+	if (WorkAQ.Count = 1) and not ListenersExistsFor(TControl(WorkAQ[0])) then
+		WndProcList.UnhookControl(TControl(WorkAQ[0]));
 
-	{**
-	 * Die Original-Window-Prozedur an den nächsten noch aktiven Listener zuweisen
-	 *}
-	if Assigned(NextListener) then
-	begin
-		with NextListener do
-		begin
-			TControl(Self.WorkAQ.Items[0]).WindowProc:=HookWindowProc;
-			if Assigned(Self.FOriginalWindowProc) then
-				FOriginalWindowProc:=Self.FOriginalWindowProc;
-		end;
-	end
-	{**
-	 * Falls es keine weiteren Listener gibt, die Original-Window-Prozedur dem Control zuweisen
-	 *}
-	else if Assigned(FOriginalWindowProc) then
-		Each(
-			function(AQ:TAQ; O:TObject):Boolean
-			begin
-				TControl(O).WindowProc:=FOriginalWindowProc;
-				Result:=TRUE;
-			end);
+	FListenForMsg:=0;
 
 	inherited;
 end;
 
-class destructor TAQPMessages.Destroy;
+class procedure TAQPMessages.DispatchWindowProc(Control:TControl; Message:TMessage);
 begin
-	FreeAndNil(FListeners);
+	if not (Assigned(FListeners) and (FListeners.Count > 0)) then
+		Exit;
+	Take(FListeners)
+		.Each(
+			function(AQ:TAQ; O:TObject):Boolean
+			var
+				MsgPlugin:TAQPMessages;
+			begin
+				MsgPlugin:=TAQPMessages(O);
+				if
+					(MsgPlugin.FListenForMsg = Message.Msg) and
+					(MsgPlugin.WorkAQ.IndexOf(Control) >= 0) then
+				begin
+					MsgPlugin.Each(
+						function(AQ:TAQ; O:TObject):Boolean
+						begin
+							MsgPlugin.FEachMsgFunction(AQ, O, Message);
+							Result:=TRUE;
+						end);
+				end;
+				Result:=TRUE;
+			end);
 end;
 
 function TAQPMessages.CancelMessages(Msg:Cardinal; ListenID:Integer):TAQ;
@@ -174,22 +205,19 @@ begin
 			MsgPlugin.FListenID:=ListenID;
 
 			{**
-			 * Nur die Original-Window-Prozedur wird festgehalten
-			 *}
-			if not ListenersExistsFor(TControl(O)) then
-				MsgPlugin.FOriginalWindowProc:=TControl(O).WindowProc;
-
-			TControl(O).WindowProc:=MsgPlugin.HookWindowProc;
-			{**
 			 * Die TAQ-Instanz und somit auch die Instanz dieses Plugins unsterblich machen, bis...
 			 * - Das verbundene Objekt freigegeben wird
 			 * - CancelMessages entsprechend aufgerufen wird
 			 *}
 			MsgPlugin.Immortally:=TRUE;
 			{**
-			 * Das Plugin in einer klassenweiten TAQ-Instanz festhalten
+			 * Add the plugin to the unmanaged class wide TAQ instance
 			 *}
 			FListeners.Add(MsgPlugin);
+			{**
+			 * Install the hook
+			 *}
+			WndProcList.HookControl(TControl(O));
 		end);
 end;
 
@@ -201,68 +229,6 @@ begin
 	for cc:=0 to Length(Msgs) - 1 do
 		EachMessage(Msgs[cc], EachMsgFunction, ListenID);
 	Result:=WorkAQ;
-end;
-
-class function TAQPMessages.GetNextListenerFor(Control:TControl):TAQPMessages;
-var
-	NextListener:TAQPMessages;
-begin
-	NextListener:=nil;
-	FListeners.Each(
-		function(AQ:TAQ; O:TObject):Boolean
-		begin
-			with TAQPMessages(O) do
-				if(FListenForMsg > 0) and WorkAQ.Contains(Control) then
-					NextListener:=TAQPMessages(O);
-			Result:=not Assigned(NextListener);
-		end);
-	Result:=NextListener;
-end;
-
-procedure TAQPMessages.HookWindowProc(var Message:TMessage);
-var
-	MessageForward:TMessage;
-	cc, EvaluateToIndex:Integer;
-	MsgPlugin:TAQPMessages;
-begin
-	{**
-	 * Important check, because this WindowProc method can be called when this unit is already
-	 * finalized and FListeners is released (sometimes occurs on application termination).
-	 *}
-	if not Assigned(FListeners) then
-		Exit;
-	{**
-	 * Local representaion of Message, because var parameters can't be catched by the following
-	 * closure.
-	 *}
-	MessageForward:=Message;
-	{**
-	 * If any new listeners are added inside, so they shouldn't be executed instantly, but on the
-	 * next call.
-	 *}
-	EvaluateToIndex:=FListeners.Count - 1;
-
-	cc:=0;
-
-	while cc < FListeners.Count do
-	begin
-		MsgPlugin:=TAQPMessages(FListeners[cc]);
-
-		if (WorkAQ.Count = 1) and MsgPlugin.WorkAQ.Contains(WorkAQ[0]) then
-		begin
-			if Assigned(MsgPlugin.FOriginalWindowProc) then
-				MsgPlugin.FOriginalWindowProc(Message);
-
-			if (cc <= EvaluateToIndex) and (MsgPlugin.FListenForMsg = Message.Msg) then
-				MsgPlugin.Each(
-					function(AQ:TAQ; O:TObject):Boolean
-					begin
-						MsgPlugin.FEachMsgFunction(AQ, O, MessageForward);
-						Result:=TRUE;
-					end);
-		end;
-		Inc(cc);
-	end;
 end;
 
 {**
@@ -288,6 +254,90 @@ begin
 			Result:=not ListenersExists;
 		end);
 	Result:=ListenersExists;
+end;
+
+{** TWndProcList **}
+
+procedure TWndProcList.Clear;
+var
+	Index:Integer;
+	P:PWndProcRec;
+begin
+	for Index:=0 to Count - 1 do
+	begin
+		P:=PWndProcRec(Items[Index]);
+		P^.Control.WindowProc:=P^.OrgWndProc;
+		Dispose(P);
+	end;
+	inherited Clear;
+end;
+
+function TWndProcList.GetIndex(Control:TControl):Integer;
+begin
+	for Result:=0 to Count - 1 do
+		if PWndProcRec(Items[Result])^.Control = Control then
+			Exit;
+	Result:=-1;
+end;
+
+procedure TWndProcList.TransferWndProc(var Message:TMessage);
+var
+	Index:Integer;
+	P:PWndProcRec;
+	OrgWndProc:TWndMethod;
+begin
+	// ATTENTION: Self points to the hooked Control!
+	Index:=WndProcList.GetIndex(TControl(Self));
+	if Index = -1 then
+		Exit;
+
+	P:=PWndProcRec(WndProcList.Items[Index]);
+	OrgWndProc:=P^.OrgWndProc;
+
+	if (Message.Msg = WM_DESTROY) or (csDestroying in P^.Control.ComponentState) then
+	begin
+		WndProcList.UnhookControl(P^.Control);
+		OrgWndProc(Message);
+	end
+	else
+	begin
+		OrgWndProc(Message);
+		if not (csDestroying in P^.Control.ComponentState) then
+			TAQPMessages.DispatchWindowProc(P^.Control, Message);
+	end;
+end;
+
+procedure TWndProcList.HookControl(Control:TControl);
+var
+	P:PWndProcRec;
+	Proc:TWndMethod;
+begin
+	if GetIndex(Control) >= 0 then
+		Exit;
+
+	New(P);
+	P^.Control:=Control;
+	P^.OrgWndProc:=Control.WindowProc;
+	Add(P);
+
+	Proc:=TransferWndProc;
+	TWndMethodRec(Proc).Obj:=Control;
+	Control.WindowProc:=Proc;
+end;
+
+procedure TWndProcList.UnhookControl(Control:TControl);
+var
+	Index:Integer;
+	P:PWndProcRec;
+begin
+	Index:=GetIndex(Control);
+	if Index < 0 then
+		Exit;
+
+	P:=PWndProcRec(Items[Index]);
+	Control.WindowProc:=P^.OrgWndProc;
+	Dispose(P);
+	Delete(Index);
 end;
 
 end.

@@ -1957,9 +1957,6 @@ end;
 
 class procedure TAQ.Initialize;
 begin
-	{**
-	 * Der Garbage-Collector fungiert auch als Singleton-Sperre
-	 *}
 	if Initialized then
 		Exit;
 	Initialized:=TRUE;
@@ -2511,9 +2508,9 @@ begin
 	begin
 		AQMatch.HeartBeat;
 		Result:=AQMatch;
-{$IFDEF OutputDebugGCRetake}
-		RetakeDebugMessage(Result);
-{$ENDIF}
+//{$IFDEF OutputDebugGCRetake}
+//		RetakeDebugMessage(Result);
+//{$ENDIF}
 		Exit;
 	end
 	else
