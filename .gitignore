@@ -1,2 +1,9 @@
-__history/
 *.dcu
+*.tvsconfig
+*.identcache
+*.dproj.local
+*.groupproj.local
+__history/
+Examples/*/*.exe
+Examples/EasingSuite/EasingSuite.dres
+Examples/EasingSuite/EasingSuiteResource.rc
