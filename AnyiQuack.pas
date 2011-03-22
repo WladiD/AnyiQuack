@@ -25,8 +25,8 @@ unit AnyiQuack;
 interface
 
 uses
-	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Math, Graphics, Character, SyncObjs,
-	Diagnostics, Generics.Collections;
+	SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Messages, Math, Graphics, Forms,
+	Character, SyncObjs, Diagnostics, Generics.Collections;
 
 {$INCLUDE Compile.inc}
 
@@ -459,7 +459,9 @@ type
 		FTimerProc:TThreadProcedure;
 		FMainSignal:TEvent;
 		FEnabled:Boolean;
+		FWindowHandle:HWND;
 
+		procedure WndProc(var Msg: TMessage);
 		procedure SetInterval(NewInterval:Integer);
 	protected
 		procedure Execute; override;
@@ -2707,6 +2709,8 @@ begin
 	FInterval:=Interval;
 	FTimerProc:=TimerProc;
 	FMainSignal:=TEvent.Create(nil, FALSE, FALSE, '');
+	FWindowHandle:=AllocateHWnd(WndProc);
+
 	inherited Create(FALSE);
 end;
 
@@ -2721,6 +2725,13 @@ begin
 		end, 20) do
 		CheckSynchronize;
 	FMainSignal.Free;
+
+	if FWindowHandle <> 0 then
+	begin
+		DeallocateHWnd(FWindowHandle);
+		FWindowHandle:=0;
+	end;
+
 	inherited Destroy;
 end;
 
@@ -2754,9 +2765,34 @@ begin
 	FMainSignal.SetEvent;
 end;
 
+procedure TTimerThread.WndProc(var Msg:TMessage);
+begin
+	with Msg do
+		if Msg = WM_TIMER then
+			try
+				FTimerProc;
+			except
+				Application.HandleException(Self);
+			end
+			else
+				Result:=DefWindowProc(FWindowHandle, Msg, wParam, lParam);
+end;
+
 procedure TTimerThread.Execute;
 var
 	LocalInterval:Integer;
+
+	procedure RaiseTimer;
+	var
+		MessageResult:Cardinal;
+	begin
+		SendMessageTimeout(FWindowHandle, WM_TIMER, 0, 0, SMTO_ABORTIFHUNG, LocalInterval,
+			MessageResult);
+		{**
+		 * Old solution
+		 *}
+		// Synchronize(FTimerProc);
+	end;
 begin
 	while not Terminated do
 	begin
@@ -2772,7 +2808,7 @@ begin
 				begin
 					Result:=Terminated or not Enabled or (LocalInterval <> Interval);
 				end, LocalInterval) do
-				Synchronize(FTimerProc);
+				RaiseTimer;
 		end;
 	end;
 end;
