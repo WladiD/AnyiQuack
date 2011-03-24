@@ -2679,7 +2679,7 @@ end;
 
 procedure TComponentsNotifier.Notify(Ptr:Pointer; Action:TListNotification);
 begin
-	if Action = lnExtracted then
+	if (Action = lnExtracted) and not Finalized then
 		TAQ.ComponentsNotification(TComponent(Ptr), opRemove);
 	inherited Notify(Ptr, Action);
 end;
