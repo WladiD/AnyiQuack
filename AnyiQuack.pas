@@ -909,7 +909,7 @@ end;
 
 class procedure TAQ.ComponentsNotification(AComponent:TComponent; Operation:TOperation);
 begin
-	if Operation = opRemove then
+	if (Operation = opRemove) and not Finalized then
 		{**
 		 * Die Verbindung zu einer Komponente in allen lebenden TAQ-Instanzen aufheben
 		 *}
@@ -2339,9 +2339,8 @@ begin
 	if not (CheckForAQ is TAQ) then
 		Exit(FALSE);
 	CheckAQ:=TAQ(CheckForAQ);
-	Result:=(ObjectsCount > 0) and (CheckAQ.FConditionCount = 0) and
-		(CheckAQ.Count = ObjectsCount) and (CheckAQ[0] = First) and
-		not CheckAQ.ConditionLock and CheckAQ.Recurse
+	Result:=(CheckAQ.Count = ObjectsCount) and (CheckAQ.FConditionCount = 0) and
+		 (CheckAQ[0] = First) and not CheckAQ.ConditionLock and CheckAQ.Recurse
 		{and (AQ.FChainedTo = nil)};
 	if Result then
 		AQ:=CheckAQ;
@@ -2361,27 +2360,29 @@ var
 begin
 	AQMatch:=nil;
 	ObjectsCount:=Length(Objects);
-	GarbageCollector.Each(
-		function(GC:TAQ; O:TObject):Boolean
-		var
-			cc:Integer;
-			Match:Boolean;
-			AQ:TAQ;
-		begin
-			Match:=PrimaryRetakeCheck(O, Objects[0], ObjectsCount, AQ);
-			if Match then
+
+	if ObjectsCount > 0 then
+		GarbageCollector.Each(
+			function(GC:TAQ; O:TObject):Boolean
+			var
+				cc:Integer;
+				Match:Boolean;
+				AQ:TAQ;
 			begin
-				for cc:=1 to ObjectsCount - 1 do // Note: Begin at index 1, because IsAQMatch has already tested on 0
-					if AQ[cc] <> Objects[cc] then
-					begin
-						Match:=FALSE;
-						Break;
-					end;
+				Match:=PrimaryRetakeCheck(O, Objects[0], ObjectsCount, AQ);
 				if Match then
-					AQMatch:=AQ;
-			end;
-			Result:=not Match; // Break the Each, if the first TAQ instance matched
-		end);
+				begin
+					for cc:=1 to ObjectsCount - 1 do // Note: Begin at index 1, because IsAQMatch has already tested on 0
+						if AQ[cc] <> Objects[cc] then
+						begin
+							Match:=FALSE;
+							Break;
+						end;
+					if Match then
+						AQMatch:=AQ;
+				end;
+				Result:=not Match; // Break the Each, if the first TAQ instance matched
+			end);
 
 	if Assigned(AQMatch) then
 	begin
@@ -2435,28 +2436,30 @@ var
 begin
 	AQMatch:=nil;
 	ObjectsCount:=Objects.Count;
-	GarbageCollector.Each(
-		function(GC:TAQ; O:TObject):Boolean
-		var
-			cc:Integer;
-			Match:Boolean;
-			AQ:TAQ;
-		begin
-			Match:=PrimaryRetakeCheck(O, Objects[0], ObjectsCount, AQ);
-			if Match then
-			begin
-				for cc:=1 to ObjectsCount - 1 do // Note: Begin at index 1, because IsAQMatch has already tested on 0
-					if AQ[cc] <> Objects[cc] then
-					begin
-						Match:=FALSE;
-						Break;
-					end;
-				if Match then
-					AQMatch:=AQ;
-			end;
 
-			Result:=not Match;  // Break the Each, if the first TAQ instance matched
-		end);
+	if ObjectsCount > 0 then
+		GarbageCollector.Each(
+			function(GC:TAQ; O:TObject):Boolean
+			var
+				cc:Integer;
+				Match:Boolean;
+				AQ:TAQ;
+			begin
+				Match:=PrimaryRetakeCheck(O, Objects[0], ObjectsCount, AQ);
+				if Match then
+				begin
+					for cc:=1 to ObjectsCount - 1 do // Note: Begin at index 1, because IsAQMatch has already tested on 0
+						if AQ[cc] <> Objects[cc] then
+						begin
+							Match:=FALSE;
+							Break;
+						end;
+					if Match then
+						AQMatch:=AQ;
+				end;
+
+				Result:=not Match;  // Break the Each, if the first TAQ instance matched
+			end);
 
 	if Assigned(AQMatch) then
 	begin
@@ -2483,28 +2486,30 @@ var
 begin
 	AQMatch:=nil;
 	ObjectsCount:=Objects.Count;
-	GarbageCollector.Each(
-		function(GC:TAQ; O:TObject):Boolean
-		var
-			cc:Integer;
-			Match:Boolean;
-			AQ:TAQ;
-		begin
-			Match:=PrimaryRetakeCheck(O, Objects[0], ObjectsCount, AQ);
-			if Match then
-			begin
-				for cc:=1 to ObjectsCount - 1 do // Note: Begin at index 1, because IsAQMatch has already tested on 0
-					if AQ[cc] <> TObject(Objects[cc]) then
-					begin
-						Match:=FALSE;
-						Break;
-					end;
-				if Match then
-					AQMatch:=AQ;
-			end;
 
-			Result:=not Match;  // Break the Each, if the first TAQ instance matched
-		end);
+	if ObjectsCount > 0 then
+		GarbageCollector.Each(
+			function(GC:TAQ; O:TObject):Boolean
+			var
+				cc:Integer;
+				Match:Boolean;
+				AQ:TAQ;
+			begin
+				Match:=PrimaryRetakeCheck(O, Objects[0], ObjectsCount, AQ);
+				if Match then
+				begin
+					for cc:=1 to ObjectsCount - 1 do // Note: Begin at index 1, because IsAQMatch has already tested on 0
+						if AQ[cc] <> TObject(Objects[cc]) then
+						begin
+							Match:=FALSE;
+							Break;
+						end;
+					if Match then
+						AQMatch:=AQ;
+				end;
+
+				Result:=not Match;  // Break the Each, if the first TAQ instance matched
+			end);
 
 	if Assigned(AQMatch) then
 	begin
@@ -2679,7 +2684,7 @@ end;
 
 procedure TComponentsNotifier.Notify(Ptr:Pointer; Action:TListNotification);
 begin
-	if (Action = lnExtracted) and not Finalized then
+	if Action in [lnExtracted, lnDeleted] then
 		TAQ.ComponentsNotification(TComponent(Ptr), opRemove);
 	inherited Notify(Ptr, Action);
 end;
