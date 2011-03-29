@@ -32,6 +32,7 @@ type
 	protected
 		class var
 		FListeners:TAQ;
+		FInDispatchWindowProc:Boolean;
 
 		var
 		FListenForMsg:Cardinal;
@@ -127,30 +128,40 @@ class procedure TAQPMessages.DispatchWindowProc(Control:TControl; Message:TMessa
 begin
 	if not (Assigned(FListeners) and (FListeners.Count > 0)) then
 		Exit;
-	Take(FListeners)
-		.Each(
-			function(AQ:TAQ; O:TObject):Boolean
-			var
-				MsgPlugin:TAQPMessages;
-			begin
-				MsgPlugin:=TAQPMessages(O);
-				if
-					(MsgPlugin.FListenForMsg = Message.Msg) and
-					(MsgPlugin.WorkAQ.IndexOf(Control) >= 0) then
+	FInDispatchWindowProc:=TRUE;
+	try
+		FListeners
+			.Each(
+				function(AQ:TAQ; O:TObject):Boolean
+				var
+					MsgPlugin:TAQPMessages;
 				begin
-					MsgPlugin.Each(
-						function(AQ:TAQ; O:TObject):Boolean
-						begin
-							MsgPlugin.FEachMsgFunction(AQ, O, Message);
-							Result:=TRUE;
-						end);
-				end;
-				Result:=TRUE;
-			end);
+					MsgPlugin:=TAQPMessages(O);
+					if
+						(MsgPlugin.FListenForMsg = Message.Msg) and
+						(MsgPlugin.WorkAQ.IndexOf(Control) >= 0) then
+					begin
+						MsgPlugin.Each(
+							function(AQ:TAQ; O:TObject):Boolean
+							begin
+								MsgPlugin.FEachMsgFunction(AQ, O, Message);
+								Result:=TRUE;
+							end);
+					end;
+					Result:=TRUE;
+				end);
+	finally
+		FInDispatchWindowProc:=FALSE;
+	end;
 end;
 
 function TAQPMessages.CancelMessages(Msg:Cardinal; ListenID:Integer):TAQ;
+var
+	CancelPlugs:TAQ;
+	CancelEach:TEachFunction;
 begin
+	CancelPlugs:=TAQ.Managed;
+
 	FListeners
 		.Each(
 			function(AQ:TAQ; O:TObject):Boolean
@@ -162,15 +173,33 @@ begin
 					(CheckMsgPlugin.FListenForMsg = Msg) and
 					MatchID(ListenID, CheckMsgPlugin.FListenID) and
 					(CheckMsgPlugin.WorkAQ.IfContainsAny(Self.WorkAQ).Die.Count > 0) then
-				begin
-					{**
-					 * Hierdurch stirbt die verbundene TAQ-Instanz, da keine Ticks gemacht wurden
-					 *}
-					CheckMsgPlugin.Immortally:=FALSE;
-					GarbageCollector.Remove(CheckMsgPlugin);
-				end;
+					CancelPlugs.Add(CheckMsgPlugin);
 				Result:=TRUE;
 			end);
+
+	if CancelPlugs.Count > 0 then
+	begin
+		CancelEach:=function(AQ:TAQ; O:TObject):Boolean
+		begin
+			TAQPMessages(O).Immortally:=FALSE;
+			GarbageCollector.Remove(TAQPMessages(O));
+			Result:=TRUE;
+		end;
+		{**
+		 * If this method was called from a listener closure, so me must execute the real cancel
+		 * at the end of the current message loop and exactly this does EachDelay(0, ...)
+		 *}
+		if FInDispatchWindowProc then
+			CancelPlugs.EachDelay(0, CancelEach)
+		{**
+		 * Otherwise it's sure to cancel immediately
+		 *}
+		else
+			CancelPlugs.Each(CancelEach);
+	end
+	else
+		CancelPlugs.Die;
+
 	Result:=WorkAQ;
 end;
 
