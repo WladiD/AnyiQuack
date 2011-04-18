@@ -1779,11 +1779,8 @@ procedure TAQ.HeartBeat;
 		cc:Integer;
 	begin
 		for cc:=0 to AQ.Count - 1 do
-			if AQ[cc] is TAQ then
-			begin
+			if Assigned(AQ[cc]) and (AQ[cc] is TAQ) then
 				TAQ(AQ[cc]).HeartBeat;
-				HeartBeatEcho(TAQ(AQ[cc]));
-			end;
 	end;
 begin
 	FLifeTick:=TAQ.Tick;
