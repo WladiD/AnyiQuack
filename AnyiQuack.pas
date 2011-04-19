@@ -2788,12 +2788,8 @@ var
 	var
 		MessageResult:Cardinal;
 	begin
-		SendMessageTimeout(FWindowHandle, WM_TIMER, 0, 0, SMTO_ABORTIFHUNG, LocalInterval,
+		SendMessageTimeout(FWindowHandle, WM_TIMER, 0, 0, SMTO_ABORTIFHUNG, 10000,
 			MessageResult);
-		{**
-		 * Old solution
-		 *}
-		// Synchronize(FTimerProc);
 	end;
 begin
 	while not Terminated do
