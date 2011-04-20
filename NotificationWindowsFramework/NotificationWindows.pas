@@ -203,7 +203,7 @@ begin
 							InPositionAnimationDuration),
 						PositionAnimationID, TAQ.Ease(etBack, emInInverted));
 					AlphaBlendAnimation(MAXBYTE, InAlphaAnimationDuration,
-						AlphaAnimationID, TAQ.Ease(etSinus))
+						AlphaAnimationID, TAQ.Ease(etSinus));
 				end;
 
 				Inc(WindowIndex);
@@ -220,6 +220,7 @@ begin
 	NotificationWindow.Top:=Screen.PrimaryMonitor.BoundsRect.Bottom;
 	ShowWindow(NotificationWindow.WindowHandle, SW_SHOWNOACTIVATE);
 	NotificationWindow.Visible:=TRUE;
+	NotificationWindow.AlphaBlend:=TRUE;
 	UpdatePositions;
 end;
 

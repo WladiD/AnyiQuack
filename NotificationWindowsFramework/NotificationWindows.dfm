@@ -1,7 +1,6 @@
 object NotificationWindow: TNotificationWindow
   Left = 0
   Top = 0
-  AlphaBlend = True
   AlphaBlendValue = 0
   BorderStyle = bsToolWindow
   Caption = 'NotificationWindow'
