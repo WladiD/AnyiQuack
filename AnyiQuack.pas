@@ -61,7 +61,7 @@ type
 
 	TAQBase = class(TObjectList)
 	protected
-		function Each(EachFunction:TEachFunction):TAQ; virtual; abstract;
+		function Each(const EachFunction:TEachFunction):TAQ; virtual; abstract;
 	public
 		constructor Create; reintroduce; virtual;
 	end;
@@ -71,7 +71,7 @@ type
 		FWorkAQ:TAQ;
 
 		function GarbageCollector:TAQ;
-		function Each(EachFunction:TEachFunction):TAQ; override;
+		function Each(const EachFunction:TEachFunction):TAQ; override;
 
 		procedure Autorun; virtual;
 
@@ -220,7 +220,7 @@ type
 		procedure ProcessInterval(Interval:TInterval);
 		procedure RemoveInterval(Interval:TInterval);
 
-		function CustomFiller(Filler:TEachFunction; Append, Recurse:Boolean):TAQ;
+		function CustomFiller(const Filler:TEachFunction; Append, Recurse:Boolean):TAQ;
 		procedure CustomCancel(ActorRole:TActorRole; ID:Integer; Finish:Boolean);
 		function CustomActors(ActorRole:TActorRole; ID:Integer; IncludeOrphans:Boolean):TAQ;
 
@@ -274,32 +274,32 @@ type
 		class function EaseReal(StartValue, EndValue, Progress:Real; EaseType:TEaseType;
 			EaseModifier:TEaseModifier = emIn):Real; overload;
 		class function EaseReal(StartValue, EndValue, Progress:Real;
-			EaseFunction:TEaseFunction):Real; overload;
+			const EaseFunction:TEaseFunction):Real; overload;
 
 		class function EaseInteger(StartValue, EndValue:Integer; Progress:Real; EaseType:TEaseType;
 			EaseModifier:TEaseModifier = emIn):Integer; overload;
 		class function EaseInteger(StartValue, EndValue:Integer; Progress:Real;
-			EaseFunction:TEaseFunction):Integer; overload;
+			const EaseFunction:TEaseFunction):Integer; overload;
 
 		class function EaseColor(StartColor, EndColor:TColor; Progress:Real; EaseType:TEaseType;
 			EaseModifier:TEaseModifier = emIn):TColor; overload;
 		class function EaseColor(StartColor, EndColor:TColor; Progress:Real;
-			EaseFunction:TEaseFunction):TColor; overload;
+			const EaseFunction:TEaseFunction):TColor; overload;
 
 		class function EasePoint(StartPoint, EndPoint:TPoint; Progress:Real; EaseType:TEaseType;
 			EaseModifier:TEaseModifier = emIn):TPoint; overload;
 		class function EasePoint(StartPoint, EndPoint:TPoint; Progress:Real;
-			EaseFunction:TEaseFunction):TPoint; overload;
+			const EaseFunction:TEaseFunction):TPoint; overload;
 
 		class function EaseRect(StartRect, EndRect:TRect; Progress:Real; EaseType:TEaseType;
 			EaseModifier:TEaseModifier = emIn):TRect; overload;
 		class function EaseRect(StartRect, EndRect:TRect; Progress:Real;
-			EaseFunction:TEaseFunction):TRect; overload;
+			const EaseFunction:TEaseFunction):TRect; overload;
 
 		class function EaseString(StartString, EndString:String; Progress:Real; EaseType:TEaseType;
 			EaseModifier:TEaseModifier = emIn):String; overload;
 		class function EaseString(StartString, EndString:String; Progress:Real;
-			EaseFunction:TEaseFunction):String; overload;
+			const EaseFunction:TEaseFunction):String; overload;
 	{**
 	 * Public object related stuff
 	 *}
@@ -307,14 +307,14 @@ type
 		constructor Create; override;
 		destructor Destroy; override;
 
-		function Each(EachFunction:TEachFunction):TAQ; override;
-		function EachInterval(Interval:Integer; Each:TEachFunction; ID:Integer = 0):TAQ;
-		function EachTimer(Duration:Integer; Each:TEachFunction; LastEach:TEachFunction = nil;
-			ID:Integer = 0):TAQ;
-		function EachAnimation(Duration:Integer; Each:TEachFunction; LastEach:TEachFunction = nil;
-			ID:Integer = 0):TAQ;
-		function EachDelay(Delay:Integer; Each:TEachFunction; ID:Integer = 0):TAQ;
-		function EachRepeat(Times:Integer; EachFunction:TEachFunction):TAQ;
+		function Each(const EachFunction:TEachFunction):TAQ; override;
+		function EachInterval(Interval:Integer; const Each:TEachFunction; ID:Integer = 0):TAQ;
+		function EachTimer(Duration:Integer; const Each:TEachFunction;
+			const LastEach:TEachFunction = nil; ID:Integer = 0):TAQ;
+		function EachAnimation(Duration:Integer; const Each:TEachFunction;
+			const LastEach:TEachFunction = nil; ID:Integer = 0):TAQ;
+		function EachDelay(Delay:Integer; const Each:TEachFunction; ID:Integer = 0):TAQ;
+		function EachRepeat(Times:Integer; const EachFunction:TEachFunction):TAQ;
 		{**
 		 * !Ist erstmal nur ein Entwurf!
 		 *
@@ -360,10 +360,14 @@ type
 		function Append(Objects:TObjectList):TAQ; overload;
 		function AppendAQ(AQ:TAQ):TAQ;
 
-		function ChildrenAppend(Recurse:Boolean = FALSE; ChildrenFiller:TEachFunction = nil):TAQ;
-		function ChildrenChain(Recurse:Boolean = FALSE; ChildrenFiller:TEachFunction = nil):TAQ;
-		function ParentsAppend(Recurse:Boolean = FALSE; ParentsFiller:TEachFunction = nil):TAQ;
-		function ParentsChain(Recurse:Boolean = FALSE; ParentsFiller:TEachFunction = nil):TAQ;
+		function ChildrenAppend(Recurse:Boolean = FALSE;
+			const ChildrenFiller:TEachFunction = nil):TAQ;
+		function ChildrenChain(Recurse:Boolean = FALSE;
+			const ChildrenFiller:TEachFunction = nil):TAQ;
+		function ParentsAppend(Recurse:Boolean = FALSE;
+			const ParentsFiller:TEachFunction = nil):TAQ;
+		function ParentsChain(Recurse:Boolean = FALSE;
+			const ParentsFiller:TEachFunction = nil):TAQ;
 
 		function MultiplexChain:TAQ;
 		function DemultiplexChain:TAQ;
@@ -381,21 +385,21 @@ type
 		function CancelIntervals(ID:Integer = 0):TAQ;
 
 		function FilterChain(ByClass:TClass):TAQ; overload;
-		function FilterChain(FilterEach:TEachFunction):TAQ; overload;
+		function FilterChain(const FilterEach:TEachFunction):TAQ; overload;
 
 		function ExcludeChain(ByClass:TClass):TAQ; overload;
 		function ExcludeChain(AObject:TObject):TAQ; overload;
 		function ExcludeChain(Objects:TObjectArray):TAQ; overload;
 		function ExcludeChain(Objects:TObjectList):TAQ; overload;
 		function ExcludeChain(AQ:TAQ):TAQ; overload;
-		function ExcludeChain(ExcludeEach:TEachFunction):TAQ; overload;
+		function ExcludeChain(const ExcludeEach:TEachFunction):TAQ; overload;
 
 		function IfThen(Condition:Boolean):TAQ;
 		function IfElse:TAQ;
 		function IfEnd:TAQ;
 
-		function IfAll(EachFunction:TEachFunction):TAQ;
-		function IfAny(EachFunction:TEachFunction):TAQ;
+		function IfAll(const EachFunction:TEachFunction):TAQ;
+		function IfAny(const EachFunction:TEachFunction):TAQ;
 
 		function IfContains(AObject:TObject):TAQ;
 
@@ -434,10 +438,10 @@ type
 	protected
 		procedure UpdateNextTick;
 	public
-		constructor Infinite(Interval:Integer; Each:TEachFunction; ActorRole:TActorRole;
+		constructor Infinite(Interval:Integer; const Each:TEachFunction; ActorRole:TActorRole;
 			ID:Integer);
-		constructor Finite(Duration:Integer; Each, LastEach:TEachFunction; ActorRole:TActorRole;
-			ID:Integer);
+		constructor Finite(Duration:Integer; const Each, LastEach:TEachFunction;
+			ActorRole:TActorRole; ID:Integer);
 		destructor Destroy; override;
 
 		function Each:TEachFunction;
@@ -831,22 +835,24 @@ begin
 	end;
 end;
 
-function TAQ.ChildrenAppend(Recurse:Boolean; ChildrenFiller:TEachFunction):TAQ;
+function TAQ.ChildrenAppend(Recurse:Boolean; const ChildrenFiller:TEachFunction):TAQ;
 begin
 	if SupervisorLock(Result, aqmChildrenAppend) then
 		Exit;
-	if not Assigned(ChildrenFiller) then
-		ChildrenFiller:=Self.ChildrenFiller;
-	Result:=CustomFiller(ChildrenFiller, TRUE, Recurse);
+	if Assigned(ChildrenFiller) then
+		Result:=CustomFiller(ChildrenFiller, TRUE, Recurse)
+	else
+		Result:=CustomFiller(Self.ChildrenFiller, TRUE, Recurse)
 end;
 
-function TAQ.ChildrenChain(Recurse:Boolean; ChildrenFiller:TEachFunction):TAQ;
+function TAQ.ChildrenChain(Recurse:Boolean; const ChildrenFiller:TEachFunction):TAQ;
 begin
 	if SupervisorLock(Result, aqmChildrenChain) then
 		Exit;
-	if not Assigned(ChildrenFiller) then
-		ChildrenFiller:=Self.ChildrenFiller;
-	Result:=CustomFiller(ChildrenFiller, FALSE, Recurse);
+	if Assigned(ChildrenFiller) then
+		Result:=CustomFiller(ChildrenFiller, FALSE, Recurse)
+	else
+		Result:=CustomFiller(Self.ChildrenFiller, FALSE, Recurse);
 end;
 
 function TAQ.ChildrenFiller(AQ:TAQ; O:TObject):Boolean;
@@ -1065,7 +1071,7 @@ begin
 	Perform:=nil;
 end;
 
-function TAQ.CustomFiller(Filler:TEachFunction; Append, Recurse:Boolean):TAQ;
+function TAQ.CustomFiller(const Filler:TEachFunction; Append, Recurse:Boolean):TAQ;
 var
 	TargetAQ:TAQ;
 
@@ -1184,7 +1190,7 @@ begin
 	FLifeTick:=0;
 end;
 
-function TAQ.Each(EachFunction:TEachFunction):TAQ;
+function TAQ.Each(const EachFunction:TEachFunction):TAQ;
 var
 	cc:Integer;
 	O:TObject;
@@ -1207,7 +1213,7 @@ begin
 	end;
 end;
 
-function TAQ.EachAnimation(Duration:Integer; Each, LastEach:TEachFunction; ID:Integer):TAQ;
+function TAQ.EachAnimation(Duration:Integer; const Each, LastEach:TEachFunction; ID:Integer):TAQ;
 begin
 	if Duration >= MaxLifeTime then
 		raise EAQ.CreateFmt('Dauer der Animation (%d) muss kleiner als MaxLifeTime (%d) sein.',
@@ -1217,7 +1223,7 @@ begin
 	AddInterval(TInterval.Finite(Duration, Each, LastEach, arAnimation, ID));
 end;
 
-function TAQ.EachDelay(Delay:Integer; Each:TEachFunction; ID:Integer):TAQ;
+function TAQ.EachDelay(Delay:Integer; const Each:TEachFunction; ID:Integer):TAQ;
 begin
 	if Delay >= MaxLifeTime then
 		raise EAQ.CreateFmt('Delay (%d) muss kleiner als MaxLifeTime (%d) sein.',
@@ -1227,7 +1233,7 @@ begin
 	AddInterval(TInterval.Finite(Delay, nil, Each, arDelay, ID));
 end;
 
-function TAQ.EachInterval(Interval:Integer; Each:TEachFunction; ID:Integer):TAQ;
+function TAQ.EachInterval(Interval:Integer; const Each:TEachFunction; ID:Integer):TAQ;
 begin
 	if Interval >= MaxLifeTime then
 		raise EAQ.CreateFmt('Interval (%d) muss kleiner als MaxLifeTime (%d) sein.',
@@ -1237,7 +1243,7 @@ begin
 	AddInterval(TInterval.Infinite(Interval, Each, arInterval, ID));
 end;
 
-function TAQ.EachRepeat(Times:Integer; EachFunction:TEachFunction):TAQ;
+function TAQ.EachRepeat(Times:Integer; const EachFunction:TEachFunction):TAQ;
 var
 	cc:Integer;
 begin
@@ -1247,7 +1253,7 @@ begin
 		Each(EachFunction);
 end;
 
-function TAQ.EachTimer(Duration:Integer; Each, LastEach:TEachFunction; ID:Integer):TAQ;
+function TAQ.EachTimer(Duration:Integer; const Each, LastEach:TEachFunction; ID:Integer):TAQ;
 begin
 	if Duration >= MaxLifeTime then
 		raise EAQ.CreateFmt('Dauer des Timers (%d) muss kleiner als MaxLifeTime (%d) sein.',
@@ -1308,7 +1314,7 @@ begin
 		end);
 end;
 
-function TAQ.ExcludeChain(ExcludeEach:TEachFunction):TAQ;
+function TAQ.ExcludeChain(const ExcludeEach:TEachFunction):TAQ;
 var
 	NewAQ:TAQ;
 begin
@@ -1542,7 +1548,7 @@ begin
 end;
 
 class function TAQ.EaseColor(StartColor, EndColor:TColor; Progress:Real;
-	EaseFunction:TEaseFunction):TColor;
+	const EaseFunction:TEaseFunction):TColor;
 var
 	StartR, StartG, StartB,
 	EndR, EndG, EndB:Byte;
@@ -1584,7 +1590,7 @@ begin
 end;
 
 class function TAQ.EaseInteger(StartValue, EndValue:Integer; Progress:Real;
-	EaseFunction:TEaseFunction):Integer;
+	const EaseFunction:TEaseFunction):Integer;
 begin
 	if Assigned(EaseFunction) then
 		Progress:=EaseFunction(Progress);
@@ -1592,7 +1598,7 @@ begin
 end;
 
 class function TAQ.EasePoint(StartPoint, EndPoint:TPoint; Progress:Real;
-	EaseFunction:TEaseFunction):TPoint;
+	const EaseFunction:TEaseFunction):TPoint;
 begin
 	if Assigned(EaseFunction) then
 		Progress:=EaseFunction(Progress);
@@ -1613,7 +1619,8 @@ begin
 	Result:=EaseInteger(StartValue, EndValue, Progress, Ease(EaseType, EaseModifier));
 end;
 
-class function TAQ.EaseReal(StartValue, EndValue, Progress:Real; EaseFunction:TEaseFunction):Real;
+class function TAQ.EaseReal(StartValue, EndValue, Progress:Real;
+	const EaseFunction:TEaseFunction):Real;
 begin
 	if Assigned(EaseFunction) then
 		Progress:=EaseFunction(Progress);
@@ -1621,7 +1628,7 @@ begin
 end;
 
 class function TAQ.EaseRect(StartRect, EndRect:TRect; Progress:Real;
-	EaseFunction:TEaseFunction):TRect;
+	const EaseFunction:TEaseFunction):TRect;
 begin
 	if Assigned(EaseFunction) then
 		Progress:=EaseFunction(Progress);
@@ -1637,7 +1644,7 @@ begin
 end;
 
 class function TAQ.EaseString(StartString, EndString:String; Progress:Real;
-	EaseFunction:TEaseFunction):String;
+	const EaseFunction:TEaseFunction):String;
 var
 	StartStringLength, EndStringLength, EasedStringLength:Integer;
 	StartChar, EndChar, EasedChar:Char;
@@ -1694,7 +1701,7 @@ begin
 		end);
 end;
 
-function TAQ.FilterChain(FilterEach:TEachFunction):TAQ;
+function TAQ.FilterChain(const FilterEach:TEachFunction):TAQ;
 var
 	NewAQ:TAQ;
 begin
@@ -1793,7 +1800,7 @@ begin
 		HeartBeatEcho(Self);
 end;
 
-function TAQ.IfAll(EachFunction:TEachFunction):TAQ;
+function TAQ.IfAll(const EachFunction:TEachFunction):TAQ;
 var
 	Condition:Boolean;
 begin
@@ -1809,7 +1816,7 @@ begin
 	Result:=IfThen(Condition);
 end;
 
-function TAQ.IfAny(EachFunction:TEachFunction):TAQ;
+function TAQ.IfAny(const EachFunction:TEachFunction):TAQ;
 var
 	Condition:Boolean;
 begin
@@ -2197,22 +2204,24 @@ begin
 		end);
 end;
 
-function TAQ.ParentsAppend(Recurse:Boolean; ParentsFiller:TEachFunction):TAQ;
+function TAQ.ParentsAppend(Recurse:Boolean; const ParentsFiller:TEachFunction):TAQ;
 begin
 	if SupervisorLock(Result, aqmParentsAppend) then
 		Exit;
-	if not Assigned(ParentsFiller) then
-		ParentsFiller:=Self.ParentsFiller;
-	Result:=CustomFiller(ParentsFiller, TRUE, Recurse);
+	if Assigned(ParentsFiller) then
+		Result:=CustomFiller(ParentsFiller, TRUE, Recurse)
+	else
+		Result:=CustomFiller(Self.ParentsFiller, TRUE, Recurse);
 end;
 
-function TAQ.ParentsChain(Recurse:Boolean; ParentsFiller:TEachFunction):TAQ;
+function TAQ.ParentsChain(Recurse:Boolean; const ParentsFiller:TEachFunction):TAQ;
 begin
 	if SupervisorLock(Result, aqmParentsChain) then
 		Exit;
-	if not Assigned(ParentsFiller) then
-		ParentsFiller:=Self.ParentsFiller;
-	Result:=CustomFiller(ParentsFiller, FALSE, Recurse);
+	if Assigned(ParentsFiller) then
+		Result:=CustomFiller(ParentsFiller, FALSE, Recurse)
+	else
+		Result:=CustomFiller(Self.ParentsFiller, FALSE, Recurse);
 end;
 
 function TAQ.ParentsFiller(AQ:TAQ; O:TObject):Boolean;
@@ -2546,7 +2555,7 @@ begin
 	// Can be implemented in custom plugins
 end;
 
-function TAQPlugin.Each(EachFunction:TEachFunction):TAQ;
+function TAQPlugin.Each(const EachFunction:TEachFunction):TAQ;
 begin
 	Result:=WorkAQ.Each(EachFunction);
 end;
@@ -2568,8 +2577,8 @@ end;
 
 {** TInterval **}
 
-constructor TInterval.Finite(Duration:Integer; Each, LastEach:TEachFunction; ActorRole:TActorRole;
-	ID:Integer);
+constructor TInterval.Finite(Duration:Integer; const Each, LastEach:TEachFunction;
+	ActorRole:TActorRole; ID:Integer);
 begin
 	FID:=ID;
 	FActorRole:=ActorRole;
@@ -2583,7 +2592,7 @@ begin
 	UpdateNextTick;
 end;
 
-constructor TInterval.Infinite(Interval:Integer; Each:TEachFunction; ActorRole:TActorRole;
+constructor TInterval.Infinite(Interval:Integer; const Each:TEachFunction; ActorRole:TActorRole;
 	ID:Integer);
 begin
 	FID:=ID;
