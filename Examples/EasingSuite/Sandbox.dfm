@@ -34,7 +34,6 @@ object SandboxForm: TSandboxForm
     Align = alBottom
     ScrollBars = ssVertical
     TabOrder = 0
-    ExplicitTop = 281
   end
   object Panel1: TPanel
     Left = 0
@@ -83,7 +82,6 @@ object SandboxForm: TSandboxForm
     Highlighter = SynPasSyn1
     Options = [eoAutoIndent, eoDragDropEditing, eoEnhanceEndKey, eoGroupUndo, eoScrollPastEol, eoShowScrollHint, eoSmartTabDelete, eoSmartTabs, eoTabIndent, eoTabsToSpaces, eoTrimTrailingSpaces]
     WantTabs = True
-    ExplicitHeight = 229
   end
   object SynPasSyn1: TSynPasSyn
     CommentAttri.Foreground = clGrayText

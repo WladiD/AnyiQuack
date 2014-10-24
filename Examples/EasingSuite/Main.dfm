@@ -265,6 +265,10 @@ object MainForm: TMainForm
     object EaseRealTabSheet: TTabSheet
       Caption = 'EaseReal'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object EaseRealImage: TImage32
         Left = 0
         Top = 0
@@ -311,6 +315,10 @@ object MainForm: TMainForm
     object EaseStringTabSheet: TTabSheet
       Caption = 'EaseString'
       ImageIndex = 3
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         542
         446)
@@ -388,6 +396,10 @@ object MainForm: TMainForm
     object LookupTabSheet: TTabSheet
       Caption = 'Lookup table'
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Panel4: TPanel
         Left = 0
         Top = 361
@@ -430,6 +442,10 @@ object MainForm: TMainForm
           TabOrder = 1
           object LookupIntegerTabSheet: TTabSheet
             Caption = 'Integer'
+            ExplicitLeft = 0
+            ExplicitTop = 0
+            ExplicitWidth = 0
+            ExplicitHeight = 0
             object Label1: TLabel
               Left = 3
               Top = 14
@@ -468,6 +484,10 @@ object MainForm: TMainForm
           object LookupRealTabSheet: TTabSheet
             Caption = 'Real'
             ImageIndex = 1
+            ExplicitLeft = 0
+            ExplicitTop = 0
+            ExplicitWidth = 0
+            ExplicitHeight = 0
             object Label8: TLabel
               Left = 3
               Top = 14
@@ -508,6 +528,10 @@ object MainForm: TMainForm
           object LookupColorTabSheet: TTabSheet
             Caption = 'TColor'
             ImageIndex = 2
+            ExplicitLeft = 0
+            ExplicitTop = 0
+            ExplicitWidth = 0
+            ExplicitHeight = 0
             object Label4: TLabel
               Left = 3
               Top = 14
@@ -547,6 +571,10 @@ object MainForm: TMainForm
           object LookupStringTabSheet: TTabSheet
             Caption = 'String'
             ImageIndex = 3
+            ExplicitLeft = 0
+            ExplicitTop = 0
+            ExplicitWidth = 0
+            ExplicitHeight = 0
             object Label6: TLabel
               Left = 3
               Top = 14
