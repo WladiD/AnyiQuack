@@ -49,10 +49,10 @@ type
 		class function ListenersExistsFor(Control:TControl; Msg:Cardinal = 0;
 			ListenID:Integer = 0):Boolean;
 
-		function EachMessage(Msg:Cardinal; const EachMsgFunction:TEachMiscFunction<TMessage>;
+		function EachMessage(Msg:Cardinal; EachMsgFunction:TEachMiscFunction<TMessage>;
 			ListenID:Integer = 0):TAQ; overload;
-		function EachMessage(Msgs:array of Cardinal;
-			const EachMsgFunction:TEachMiscFunction<TMessage>; ListenID:Integer = 0):TAQ; overload;
+		function EachMessage(Msgs:array of Cardinal; EachMsgFunction:TEachMiscFunction<TMessage>;
+			ListenID:Integer = 0):TAQ; overload;
 		function CancelMessages(Msg:Cardinal; ListenID:Integer = 0):TAQ; overload;
 		function CancelMessages(Msgs:array of Cardinal; ListenID:Integer = 0):TAQ; overload;
 	end;
@@ -212,7 +212,7 @@ begin
 	Result:=WorkAQ;
 end;
 
-function TAQPMessages.EachMessage(Msg:Cardinal; const EachMsgFunction:TEachMiscFunction<TMessage>;
+function TAQPMessages.EachMessage(Msg:Cardinal; EachMsgFunction:TEachMiscFunction<TMessage>;
 	ListenID:Integer):TAQ;
 begin
 	Result:=Each(
@@ -251,7 +251,7 @@ begin
 end;
 
 function TAQPMessages.EachMessage(Msgs:array of Cardinal;
-	const EachMsgFunction:TEachMiscFunction<TMessage>; ListenID:Integer):TAQ;
+	EachMsgFunction:TEachMiscFunction<TMessage>; ListenID:Integer):TAQ;
 var
 	cc:Integer;
 begin
