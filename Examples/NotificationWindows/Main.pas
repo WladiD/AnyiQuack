@@ -3,66 +3,66 @@ unit Main;
 interface
 
 uses
-	Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-	Dialogs, StdCtrls, NotificationWindows, MyNotificationWindow, ExtCtrls;
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, StdCtrls, NotificationWindows, MyNotificationWindow, ExtCtrls;
 
 type
-	TMainForm = class(TForm)
-		AddButton:TButton;
-		AutoCloseCheckBox:TCheckBox;
-		AutoCreateCheckBox:TCheckBox;
-		Timer1:TTimer;
-		CloseButton:TButton;
-		procedure FormCreate(Sender:TObject);
-		procedure FormDestroy(Sender:TObject);
-		procedure AddButtonClick(Sender:TObject);
-		procedure Timer1Timer(Sender:TObject);
-		procedure AutoCreateCheckBoxClick(Sender:TObject);
-		procedure CloseButtonClick(Sender:TObject);
-	private
-		FStack:TNotificationStack;
-	end;
+  TMainForm = class(TForm)
+    AddButton: TButton;
+    AutoCloseCheckBox: TCheckBox;
+    AutoCreateCheckBox: TCheckBox;
+    Timer1: TTimer;
+    CloseButton: TButton;
+    procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
+    procedure AddButtonClick(Sender: TObject);
+    procedure Timer1Timer(Sender: TObject);
+    procedure AutoCreateCheckBoxClick(Sender: TObject);
+    procedure CloseButtonClick(Sender: TObject);
+  private
+    FStack: TNotificationStack;
+  end;
 
 var
-	MainForm:TMainForm;
+  MainForm: TMainForm;
 
 implementation
 
 {$R *.dfm}
 
-procedure TMainForm.AddButtonClick(Sender:TObject);
+procedure TMainForm.AddButtonClick(Sender: TObject);
 var
-	MNW:TMyNotificationWindow;
+  MNW: TMyNotificationWindow;
 begin
-	MNW:=TMyNotificationWindow.Create(nil);
-	if AutoCloseCheckBox.Checked then
-		MNW.CloseTimeout:=5000;
-	FStack.Add(MNW);
+  MNW := TMyNotificationWindow.Create(nil);
+  if AutoCloseCheckBox.Checked then
+    MNW.CloseTimeout := 5000;
+  FStack.Add(MNW);
 end;
 
-procedure TMainForm.CloseButtonClick(Sender:TObject);
+procedure TMainForm.CloseButtonClick(Sender: TObject);
 begin
-	FStack.CloseAll;
+  FStack.CloseAll;
 end;
 
-procedure TMainForm.AutoCreateCheckBoxClick(Sender:TObject);
+procedure TMainForm.AutoCreateCheckBoxClick(Sender: TObject);
 begin
-	Timer1.Enabled:=AutoCreateCheckBox.Checked;
+  Timer1.Enabled := AutoCreateCheckBox.Checked;
 end;
 
 procedure TMainForm.FormCreate(Sender:TObject);
 begin
-	FStack:=TNotificationStack.Create;
+  FStack := TNotificationStack.Create;
 end;
 
-procedure TMainForm.FormDestroy(Sender:TObject);
+procedure TMainForm.FormDestroy(Sender: TObject);
 begin
-	FStack.Free;
+  FStack.Free;
 end;
 
-procedure TMainForm.Timer1Timer(Sender:TObject);
+procedure TMainForm.Timer1Timer(Sender: TObject);
 begin
-	AddButton.Click;
+  AddButton.Click;
 end;
 
 end.
