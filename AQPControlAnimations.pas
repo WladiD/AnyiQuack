@@ -16,8 +16,6 @@
  * All Rights Reserved.
  *
  * @author Waldemar Derr <mail@wladid.de>
- * @see Project-Home (german) http://id.kihiwi.de/WladiD/His/Habe_ich/KiHiWi.187/
- * @version $Id$
  *}
 
 unit AQPControlAnimations;
@@ -25,52 +23,52 @@ unit AQPControlAnimations;
 interface
 
 uses
-	Windows, Controls, Forms, Math, Graphics, AnyiQuack;
+  Windows, Controls, Forms, Math, Graphics, AnyiQuack;
 
 type
-	TAQPControlAnimations = class(TAQPlugin)
-	protected
-		function Swing(Times, Diff:Integer; Progress:Real):Integer;
-		procedure CustomColorAnimation(FromColor, ToColor:TColor; Duration:Integer; ID:Integer;
-			const ColorAssignFunction:TEachMiscFunction<TColor>; EaseFunction:TEaseFunction = nil;
-			const OnComplete:TAnonymNotifyEvent = nil);
-	public
-		function AlphaBlendAnimation(ToAlphaBlendValue:Byte; Duration:Integer; ID:Integer = 0;
-			const EaseFunction:TEaseFunction = nil; const OnComplete:TAnonymNotifyEvent = nil):TAQ;
-		function BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight:Integer; Duration:Integer;
-			ID:Integer = 0; const EaseFunction:TEaseFunction = nil;
-			const OnComplete:TAnonymNotifyEvent = nil):TAQ;
-		function ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration:Integer; ID:Integer = 0;
-			const OnComplete:TAnonymNotifyEvent = nil):TAQ;
-		function BackgroundColorAnimation(ToColor:TColor; Duration:Integer; ID:Integer = 0;
-			const EaseFunction:TEaseFunction = nil; const OnComplete:TAnonymNotifyEvent = nil):TAQ;
-		function FontColorAnimation(ToColor:TColor; Duration:Integer; ID:Integer = 0;
-			const EaseFunction:TEaseFunction = nil; const OnComplete:TAnonymNotifyEvent = nil):TAQ;
-	end;
+  TAQPControlAnimations = class(TAQPlugin)
+  protected
+    function Swing(Times, Diff: Integer; Progress: Real): Integer;
+    procedure CustomColorAnimation(FromColor, ToColor: TColor; Duration: Integer; ID: Integer;
+      ColorAssignFunction: TEachMiscFunction<TColor>; EaseFunction: TEaseFunction = nil;
+      OnComplete: TAnonymNotifyEvent = nil);
+  public
+    function AlphaBlendAnimation(ToAlphaBlendValue: Byte; Duration: Integer; ID: Integer = 0;
+      EaseFunction: TEaseFunction = nil; OnComplete: TAnonymNotifyEvent = nil): TAQ;
+    function BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight: Integer; Duration: Integer;
+      ID: Integer = 0; EaseFunction: TEaseFunction = nil;
+      OnComplete: TAnonymNotifyEvent = nil): TAQ;
+    function ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration: Integer; ID: Integer = 0;
+      OnComplete: TAnonymNotifyEvent = nil): TAQ;
+    function BackgroundColorAnimation(ToColor: TColor; Duration: Integer; ID: Integer = 0;
+      EaseFunction: TEaseFunction = nil; OnComplete: TAnonymNotifyEvent = nil): TAQ;
+    function FontColorAnimation(ToColor: TColor; Duration: Integer; ID: Integer = 0;
+      EaseFunction: TEaseFunction = nil; OnComplete: TAnonymNotifyEvent = nil): TAQ;
+  end;
 
 implementation
 
 type
-	TControlRobin = class helper for TControl
-	protected
-		function GetBackgroundColor:TColor;
-		procedure SetBackgroundColor(NewColor:TColor);
-		function GetFontColor:TColor;
-		procedure SetFontColor(NewColor:TColor);
-	public
-		property BackgroundColor:TColor read GetBackgroundColor write SetBackgroundColor;
-		property FontColor:TColor read GetFontColor write SetFontColor;
-	end;
+  TControlRobin = class helper for TControl
+  protected
+    function GetBackgroundColor: TColor;
+    procedure SetBackgroundColor(NewColor: TColor);
+    function GetFontColor: TColor;
+    procedure SetFontColor(NewColor: TColor);
+  public
+    property BackgroundColor: TColor read GetBackgroundColor write SetBackgroundColor;
+    property FontColor: TColor read GetFontColor write SetFontColor;
+  end;
 
-	TFormRobin = class helper for TCustomForm
-	protected
-		function GetAlphaBlendActivated:Boolean;
-		function GetAlphaBlendValue:Byte;
-		procedure SetAlphaBlendValue(NewAlphaBlendValue:Byte);
-	public
-		property AlphaBlendActivated:Boolean read GetAlphaBlendActivated;
-		property AlphaBlendValue:Byte read GetAlphaBlendValue write SetAlphaBlendValue;
-	end;
+  TFormRobin = class helper for TCustomForm
+  protected
+    function GetAlphaBlendActivated: Boolean;
+    function GetAlphaBlendValue: Byte;
+    procedure SetAlphaBlendValue(NewAlphaBlendValue: Byte);
+  public
+    property AlphaBlendActivated: Boolean read GetAlphaBlendActivated;
+    property AlphaBlendValue: Byte read GetAlphaBlendValue write SetAlphaBlendValue;
+  end;
 
 
 {** TAQPControlAnimations **}
@@ -80,270 +78,266 @@ type
  *
  * TCustomForm.AlphaBlend must be set to TRUE previously.
  *}
-function TAQPControlAnimations.AlphaBlendAnimation(ToAlphaBlendValue:Byte; Duration, ID:Integer;
-	const EaseFunction:TEaseFunction; const OnComplete:TAnonymNotifyEvent):TAQ;
+function TAQPControlAnimations.AlphaBlendAnimation(ToAlphaBlendValue: Byte; Duration, ID: Integer;
+  EaseFunction: TEaseFunction; OnComplete: TAnonymNotifyEvent): TAQ;
 begin
-	Result:=Each(
-		function(AQ:TAQ; O:TObject):Boolean
-		var
-			StartAlphaBlendValue:Byte;
-		begin
-			Result:=TRUE;
+  Result := Each(
+    function(AQ: TAQ; O: TObject): Boolean
+    var
+      StartAlphaBlendValue: Byte;
+    begin
+      Result := TRUE;
 
-			if not (
-				(O is TCustomForm) and
-				TCustomForm(O).AlphaBlendActivated and
-				(TCustomForm(O).AlphaBlendValue <> ToAlphaBlendValue)) then
-				Exit;
+      if not (
+        (O is TCustomForm) and
+        TCustomForm(O).AlphaBlendActivated and
+        (TCustomForm(O).AlphaBlendValue <> ToAlphaBlendValue)) then
+        Exit;
 
-			StartAlphaBlendValue:=TCustomForm(O).AlphaBlendValue;
+      StartAlphaBlendValue := TCustomForm(O).AlphaBlendValue;
 
-			Take(O)
-				.EachAnimation(Duration,
-					function(AQ:TAQ; O:TObject):Boolean
-					begin
-						TCustomForm(O).AlphaBlendValue:=Byte(TAQ.EaseInteger(
-							StartAlphaBlendValue, ToAlphaBlendValue, AQ.CurrentInterval.Progress,
-							EaseFunction));
+      Take(O)
+        .EachAnimation(Duration,
+          function(AQ: TAQ; O: TObject): Boolean
+          begin
+            TCustomForm(O).AlphaBlendValue := Byte(TAQ.EaseInteger(
+              StartAlphaBlendValue, ToAlphaBlendValue, AQ.CurrentInterval.Progress,
+              EaseFunction));
 
-						if Assigned(OnComplete) and (AQ.CurrentInterval.Progress = 1) then
-							OnComplete(O);
+            if Assigned(OnComplete) and (AQ.CurrentInterval.Progress = 1) then
+              OnComplete(O);
 
-						Result:=TRUE;
-					end);
-		end);
+            Result := TRUE;
+          end);
+    end);
 end;
 
-function TAQPControlAnimations.BackgroundColorAnimation(ToColor:TColor; Duration, ID:Integer;
-	const EaseFunction:TEaseFunction; const OnComplete:TAnonymNotifyEvent):TAQ;
+function TAQPControlAnimations.BackgroundColorAnimation(ToColor: TColor; Duration, ID: Integer;
+  EaseFunction: TEaseFunction; OnComplete: TAnonymNotifyEvent): TAQ;
 begin
-	Result:=Each(
-		function(AQ:TAQ; O:TObject):Boolean
-		begin
-			Result:=TRUE; // Komplett durchlaufen
-			if O is TControl then
-				Take(O)
-					.Plugin<TAQPControlAnimations>
-					.CustomColorAnimation(TControl(O).BackgroundColor, ToColor, Duration, ID,
-						function(AQ:TAQ; O:TObject; Color:TColor):Boolean
-						begin
-							TControl(O).BackgroundColor:=Color;
-							Result:=TRUE;
-						end,
-						EaseFunction, OnComplete);
-		end);
+  Result := Each(
+    function(AQ: TAQ; O: TObject): Boolean
+    begin
+      Result := TRUE; // Komplett durchlaufen
+      if O is TControl then
+        Take(O)
+          .Plugin<TAQPControlAnimations>
+          .CustomColorAnimation(TControl(O).BackgroundColor, ToColor, Duration, ID,
+            function(AQ: TAQ; O: TObject; Color: TColor): Boolean
+            begin
+              TControl(O).BackgroundColor := Color;
+              Result := TRUE;
+            end,
+            EaseFunction, OnComplete);
+    end);
 end;
 
 function TAQPControlAnimations.BoundsAnimation(
-	NewLeft, NewTop, NewWidth, NewHeight, Duration, ID:Integer;
-	const EaseFunction:TEaseFunction; const OnComplete:TAnonymNotifyEvent):TAQ;
+  NewLeft, NewTop, NewWidth, NewHeight, Duration, ID: Integer;
+  EaseFunction: TEaseFunction; OnComplete: TAnonymNotifyEvent): TAQ;
 var
-	WholeEach:TEachFunction;
+  WholeEach: TEachFunction;
 begin
-	WholeEach:=function(AQ:TAQ; O:TObject):Boolean
-	var
-		EachF:TEachFunction;
-		PrevLeft, PrevTop, PrevWidth, PrevHeight:Integer;
-	begin
-		Result:=TRUE;
-		if not (O is TControl) then
-			Exit;
+  WholeEach := function(AQ: TAQ; O: TObject): Boolean
+  var
+    EachF: TEachFunction;
+    PrevLeft, PrevTop, PrevWidth, PrevHeight: Integer;
+  begin
+    Result := TRUE;
+    if not (O is TControl) then
+      Exit;
 
-		with TControl(O) do
-		begin
-			PrevLeft:=Left;
-			PrevTop:=Top;
-			PrevWidth:=Width;
-			PrevHeight:=Height;
-		end;
+    with TControl(O) do
+    begin
+      PrevLeft := Left;
+      PrevTop := Top;
+      PrevWidth := Width;
+      PrevHeight := Height;
+    end;
 
-		EachF:=function(AQ:TAQ; O:TObject):Boolean
-		var
-			Progress:Real;
-			AniLeft, AniTop, AniWidth, AniHeight:Integer;
-		begin
-			Result:=TRUE;
-			Progress:=AQ.CurrentInterval.Progress;
+    EachF := function(AQ: TAQ; O: TObject): Boolean
+    var
+      Progress: Real;
+      AniLeft, AniTop, AniWidth, AniHeight: Integer;
+    begin
+      Result := TRUE;
+      Progress := AQ.CurrentInterval.Progress;
 
-			AniLeft:=TAQ.EaseInteger(PrevLeft, NewLeft, Progress, EaseFunction);
-			AniTop:=TAQ.EaseInteger(PrevTop, NewTop, Progress, EaseFunction);
-			if NewWidth >= 0 then
-				AniWidth:=TAQ.EaseInteger(PrevWidth, NewWidth, Progress, EaseFunction)
-			else
-				AniWidth:=TControl(O).Width;
-			if NewHeight >= 0 then
-				AniHeight:=TAQ.EaseInteger(PrevHeight, NewHeight, Progress, EaseFunction)
-			else
-				AniHeight:=TControl(O).Height;
+      AniLeft := TAQ.EaseInteger(PrevLeft, NewLeft, Progress, EaseFunction);
+      AniTop := TAQ.EaseInteger(PrevTop, NewTop, Progress, EaseFunction);
+      if NewWidth >= 0 then
+        AniWidth := TAQ.EaseInteger(PrevWidth, NewWidth, Progress, EaseFunction)
+      else
+        AniWidth := TControl(O).Width;
+      if NewHeight >= 0 then
+        AniHeight := TAQ.EaseInteger(PrevHeight, NewHeight, Progress, EaseFunction)
+      else
+        AniHeight := TControl(O).Height;
 
-			TControl(O).SetBounds(AniLeft, AniTop, AniWidth, AniHeight);
+      TControl(O).SetBounds(AniLeft, AniTop, AniWidth, AniHeight);
 
-			if Progress = 1 then
-			begin
-				{$IFDEF OutputDebugAnimation}
-				OutputDebugString(PWideChar('BoundsAnimation beendet für $' +
-					IntToHex(Integer(O), SizeOf(Integer) * 2)));
-				{$ENDIF}
+      if Progress = 1 then
+      begin
+        {$IFDEF OutputDebugAnimation}
+        OutputDebugString(PWideChar('BoundsAnimation beendet für $' +
+          IntToHex(Integer(O), SizeOf(Integer) * 2)));
+        {$ENDIF}
 
-				if Assigned(OnComplete) then
-					OnComplete(O);
-			end;
-		end;
+        if Assigned(OnComplete) then
+          OnComplete(O);
+      end;
+    end;
 
-		Take(O).EachAnimation(Duration, EachF, nil, ID);
-	end;
+    Take(O).EachAnimation(Duration, EachF, nil, ID);
+  end;
 
-	Result:=Each(WholeEach);
+  Result := Each(WholeEach);
 end;
 
-procedure TAQPControlAnimations.CustomColorAnimation(FromColor, ToColor:TColor;
-	Duration, ID:Integer;
-	const ColorAssignFunction:TEachMiscFunction<TColor>;
-	EaseFunction:TEaseFunction; const OnComplete:TAnonymNotifyEvent);
+procedure TAQPControlAnimations.CustomColorAnimation(FromColor, ToColor: TColor;
+  Duration, ID: Integer; ColorAssignFunction: TEachMiscFunction<TColor>;
+  EaseFunction: TEaseFunction; OnComplete: TAnonymNotifyEvent);
 begin
-	if FromColor = ToColor then
-		Exit;
+  if FromColor = ToColor then
+    Exit;
 
-	if not Assigned(EaseFunction) then
-		EaseFunction:=TAQ.Ease(etLinear);
-	WorkAQ.EachAnimation(Duration,
-		function(AQ:TAQ; O:TObject):Boolean
-		var
-			Progress:Real;
-		begin
-			Progress:=AQ.CurrentInterval.Progress;
-			Result:=ColorAssignFunction(AQ, O,
-				TAQ.EaseColor(FromColor, ToColor, Progress, EaseFunction));
+  EaseFunction := (TAQ.Ease(EaseFunction));
+  WorkAQ.EachAnimation(Duration,
+    function(AQ: TAQ; O: TObject): Boolean
+    var
+      Progress: Real;
+    begin
+      Progress := AQ.CurrentInterval.Progress;
+      Result := ColorAssignFunction(AQ, O,
+        TAQ.EaseColor(FromColor, ToColor, Progress, EaseFunction));
 
-			if (Progress = 1) and Assigned(OnComplete) then
-				OnComplete(O);
-		end,
-		nil, ID);
+      if (Progress = 1) and Assigned(OnComplete) then
+        OnComplete(O);
+    end,
+    nil, ID);
 end;
 
-function TAQPControlAnimations.FontColorAnimation(ToColor:TColor; Duration, ID:Integer;
-	const EaseFunction:TEaseFunction; const OnComplete:TAnonymNotifyEvent):TAQ;
+function TAQPControlAnimations.FontColorAnimation(ToColor: TColor; Duration, ID: Integer;
+  EaseFunction: TEaseFunction; OnComplete: TAnonymNotifyEvent): TAQ;
 begin
-	Result:=Each(
-		function(AQ:TAQ; O:TObject):Boolean
-		begin
-			Result:=TRUE; // Komplett durchlaufen
-			if O is TControl then
-				Take(O)
-					.Plugin<TAQPControlAnimations>
-					.CustomColorAnimation(TControl(O).FontColor, ToColor, Duration, ID,
-						function(AQ:TAQ; O:TObject; Color:TColor):Boolean
-						begin
-							TControl(O).FontColor:=Color;
-							Result:=TRUE;
-						end,
-						EaseFunction, OnComplete);
-		end);
+  Result := Each(
+    function(AQ: TAQ; O: TObject): Boolean
+    begin
+      Result := TRUE; // Komplett durchlaufen
+      if O is TControl then
+        Take(O)
+          .Plugin<TAQPControlAnimations>
+          .CustomColorAnimation(TControl(O).FontColor, ToColor, Duration, ID,
+            function(AQ: TAQ; O: TObject; Color: TColor): Boolean
+            begin
+              TControl(O).FontColor := Color;
+              Result := TRUE;
+            end,
+            EaseFunction, OnComplete);
+    end);
 end;
 
-function TAQPControlAnimations.ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration, ID:Integer;
-	const OnComplete:TAnonymNotifyEvent):TAQ;
+function TAQPControlAnimations.ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration, ID: Integer;
+  OnComplete: TAnonymNotifyEvent): TAQ;
 var
-	WholeEach:TEachFunction;
+  WholeEach: TEachFunction;
 begin
-	WholeEach:=function(AQ:TAQ; O:TObject):Boolean
-	var
-		EachF:TEachFunction;
-		PrevLeft, PrevTop:Integer;
-	begin
-		Result:=TRUE;
-		if not (O is TControl) then
-			Exit;
+  WholeEach := function(AQ: TAQ; O: TObject): Boolean
+  var
+    EachF: TEachFunction;
+    PrevLeft, PrevTop: Integer;
+  begin
+    Result := TRUE;
+    if not (O is TControl) then
+      Exit;
 
-		with TControl(O) do
-		begin
-			PrevLeft:=Left;
-			PrevTop:=Top;
-		end;
+    with TControl(O) do
+    begin
+      PrevLeft:=Left;
+      PrevTop:=Top;
+    end;
 
-		EachF:=function(AQ:TAQ; O:TObject):Boolean
-		var
-			Progress:Real;
-			AniLeft, AniTop:Integer;
+    EachF:=function(AQ: TAQ; O: TObject): Boolean
+    var
+      Progress: Real;
+      AniLeft, AniTop: Integer;
+    begin
+      Result := TRUE;
+      Progress := AQ.CurrentInterval.Progress;
+      AniLeft := PrevLeft;
+      AniTop := PrevTop;
 
+      if Progress < 1 then
+      begin
+        if XDiff > 0 then
+          AniLeft := AniLeft + Swing(XTimes, XDiff, Progress);
+        if YDiff > 0 then
+          AniTop := PrevTop + Swing(YTimes, YDiff, Progress);
+      end;
 
-		begin
-			Result:=TRUE;
-			Progress:=AQ.CurrentInterval.Progress;
-			AniLeft:=PrevLeft;
-			AniTop:=PrevTop;
+      with TControl(O) do
+        SetBounds(AniLeft, AniTop, Width, Height);
 
-			if Progress < 1 then
-			begin
-				if XDiff > 0 then
-					AniLeft:=AniLeft + Swing(XTimes, XDiff, Progress);
-				if YDiff > 0 then
-					AniTop:=PrevTop + Swing(YTimes, YDiff, Progress);
-			end;
+      if Progress = 1 then
+      begin
+        {$IFDEF OutputDebugAnimation}
+        OutputDebugString(PWideChar('ShakeAnimation beendet für $' + IntToHex(Integer(O),
+          SizeOf(Integer) * 2)));
+        {$ENDIF}
 
-			with TControl(O) do
-				SetBounds(AniLeft, AniTop, Width, Height);
+        if Assigned(OnComplete) then
+          OnComplete(O);
+      end;
+    end;
 
-			if Progress = 1 then
-			begin
-				{$IFDEF OutputDebugAnimation}
-				OutputDebugString(PWideChar('ShakeAnimation beendet für $' + IntToHex(Integer(O),
-					SizeOf(Integer) * 2)));
-				{$ENDIF}
+    Take(O).EachAnimation(Duration, EachF, nil, ID);
+  end;
 
-				if Assigned(OnComplete) then
-					OnComplete(O);
-			end;
-		end;
-
-		Take(O).EachAnimation(Duration, EachF, nil, ID);
-	end;
-
-	Result:=Each(WholeEach);
+  Result := Each(WholeEach);
 end;
 
-function TAQPControlAnimations.Swing(Times, Diff:Integer; Progress:Real):Integer;
+function TAQPControlAnimations.Swing(Times, Diff: Integer; Progress: Real): Integer;
 begin
-	Result:=Ceil(Diff * Sin(Progress * Times * Pi * 2));
+  Result := Ceil(Diff * Sin(Progress * Times * Pi * 2));
 end;
 
 {** TControlRobin **}
 
-function TControlRobin.GetBackgroundColor:TColor;
+function TControlRobin.GetBackgroundColor: TColor;
 begin
-	Result:=Color;
+  Result := Color;
 end;
 
 function TControlRobin.GetFontColor: TColor;
 begin
-	Result:=Font.Color;
+  Result := Font.Color;
 end;
 
-procedure TControlRobin.SetBackgroundColor(NewColor:TColor);
+procedure TControlRobin.SetBackgroundColor(NewColor: TColor);
 begin
-	Color:=NewColor;
+  Color := NewColor;
 end;
 
-procedure TControlRobin.SetFontColor(NewColor:TColor);
+procedure TControlRobin.SetFontColor(NewColor: TColor);
 begin
-	Font.Color:=NewColor;
+  Font.Color := NewColor;
 end;
 
 {** TFormRobin **}
 
-function TFormRobin.GetAlphaBlendActivated:Boolean;
+function TFormRobin.GetAlphaBlendActivated: Boolean;
 begin
-	Result:=AlphaBlend;
+  Result := AlphaBlend;
 end;
 
-function TFormRobin.GetAlphaBlendValue:Byte;
+function TFormRobin.GetAlphaBlendValue: Byte;
 begin
-	Result:=inherited AlphaBlendValue;
+  Result := inherited AlphaBlendValue;
 end;
 
-procedure TFormRobin.SetAlphaBlendValue(NewAlphaBlendValue:Byte);
+procedure TFormRobin.SetAlphaBlendValue(NewAlphaBlendValue: Byte);
 begin
-	inherited AlphaBlendValue:=NewAlphaBlendValue;
+  inherited AlphaBlendValue := NewAlphaBlendValue;
 end;
 
 end.
