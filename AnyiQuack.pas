@@ -9,9 +9,7 @@
  * License for the specific language governing rights and limitations
  * under the License.
  *
- * The Original Code is AnyiQuack.pas (Renamed at 2010-09-15 from
- *                                     AccessQuery.pas by the
- *                                     Initial Developer)
+ * The Original Code is AnyiQuack.pas
  *
  * The Initial Developer of the Original Code is Waldemar Derr.
  * Portions created by Waldemar Derr are Copyright (C) Waldemar Derr.
