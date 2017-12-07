@@ -9,6 +9,11 @@ uses
   AQPControlAnimations; // AnyiQuack-Plugin
 
 type
+  TPanel = class(ExtCtrls.TPanel)
+  private
+    procedure WMEraseBackground(var Message: TMessage); message WM_ERASEBKGND;
+  end;
+
   TMainForm = class(TForm)
     AddPanelButton: TButton;
     PanelSizeTrackBar: TTrackBar;
@@ -52,19 +57,19 @@ const
   HoverAnimationID = 2;
 
 procedure TMainForm.AddPanelButtonClick(Sender: TObject);
+var
+  P: TPanel;
 begin
   Inc(FPanelCounter);
-  with TPanel.Create(Self) do
-  begin
-    Parent := Self;
-    SetBounds(-100, -100, 100, 100);
-    ParentBackground := FALSE;
-    Color := clBtnFace;
-    Caption := Format('Panel #%d', [FPanelCounter]);
-    OnMouseEnter := PanelMouseEnter;
-    OnMouseLeave := PanelMouseLeave;
-    BringToFront;
-  end;
+  P := TPanel.Create(Self);
+  P.Parent := Self;
+  P.SetBounds(-100, -100, 100, 100);
+  P.ParentBackground := FALSE;
+  P.Color := clBtnFace;
+  P.Caption := Format('Panel #%d', [FPanelCounter]);
+  P.OnMouseEnter := PanelMouseEnter;
+  P.OnMouseLeave := PanelMouseLeave;
+  P.BringToFront;
   TopPanel.BringToFront;
   BottomPanel.BringToFront;
   UpdateAlign;
@@ -207,6 +212,13 @@ begin
         Inc(PIndex);
       end, UpdateAnimationID)
     .Die;
+end;
+
+{ TPanel }
+
+procedure TPanel.WMEraseBackground(var Message: TMessage);
+begin
+  Message.Result := 1;
 end;
 
 end.

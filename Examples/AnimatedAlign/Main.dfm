@@ -139,7 +139,6 @@ object MainForm: TMainForm
       Margins.Left = 5
       Margins.Top = 0
       Margins.Right = 0
-      Margins.Bottom = 0
       Align = alLeft
       AutoSize = False
       Caption = 'Note: Flickering is a issue of VCL.'
@@ -155,7 +154,7 @@ object MainForm: TMainForm
       Width = 75
       Height = 25
       Align = alRight
-      Caption = 'Add Panel'
+      Caption = '&Add Panel'
       TabOrder = 0
       OnClick = AddPanelButtonClick
     end
@@ -166,7 +165,7 @@ object MainForm: TMainForm
       Width = 82
       Height = 25
       Align = alRight
-      Caption = 'Remove Panel'
+      Caption = '&Remove Panel'
       Enabled = False
       TabOrder = 1
       OnClick = RemovePanelButtonClick

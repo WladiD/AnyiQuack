@@ -15,7 +15,7 @@
  * Portions created by Waldemar Derr are Copyright (C) 2010 Waldemar Derr.
  * All Rights Reserved.
  *
- * @author Waldemar Derr <mail@wladid.de>
+ * @author Waldemar Derr <furevest@gmail.com>
  *}
 
 unit AQPControlAnimations;
