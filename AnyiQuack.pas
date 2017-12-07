@@ -15,7 +15,7 @@
  * Portions created by Waldemar Derr are Copyright (C) Waldemar Derr.
  * All Rights Reserved.
  *
- * @author Waldemar Derr <mail@wladid.de>
+ * @author Waldemar Derr <furevest@gmail.com>
  *}
 
 unit AnyiQuack;
@@ -23,7 +23,7 @@ unit AnyiQuack;
 interface
 
 uses
-  SysUtils, Classes, Controls, ExtCtrls, Contnrs, Windows, Messages, Math, Graphics, Forms,
+  SysUtils, Types, Classes, Controls, ExtCtrls, Contnrs, Windows, Messages, Math, Graphics, Forms,
   Character, SyncObjs, Diagnostics, Generics.Collections;
 
 {$INCLUDE Compile.inc}
@@ -1660,7 +1660,7 @@ begin
     if StartChar <> EndChar then
     begin
       EasedChar := WideChar(EaseInteger(Integer(StartChar), Integer(EndChar), Progress, nil));
-      if IsControl(EasedChar) then
+      if EasedChar.IsControl then
         EasedChar := '-';
       Result := Result + EasedChar;
     end
@@ -2791,7 +2791,7 @@ var
 {$IFEND}
   begin
     SendMessageTimeout(FWindowHandle, WM_TIMER, 0, 0, SMTO_ABORTIFHUNG, LocalInterval,
-      MessageResult);
+      @MessageResult);
     {**
      * Old solution
      *}
