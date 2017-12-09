@@ -63,6 +63,7 @@ begin
   P.Caption := Format('Panel #%d', [FPanelCounter]);
   P.OnMouseEnter := PanelMouseEnter;
   P.OnMouseLeave := PanelMouseLeave;
+  P.DoubleBuffered := True;
   P.BringToFront;
   TopPanel.BringToFront;
   BottomPanel.BringToFront;

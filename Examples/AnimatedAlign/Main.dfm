@@ -18,12 +18,11 @@ object MainForm: TMainForm
   PixelsPerInch = 96
   TextHeight = 13
   object Label3: TLabel
-    Left = 324
-    Top = 268
-    Width = 311
-    Height = 33
+    Left = 384
+    Top = 256
+    Width = 248
+    Height = 38
     Anchors = [akRight, akBottom]
-    AutoSize = False
     Caption = 
       'Add a couple of panels and play with the size of form or panels.' +
       ' Also try the different handling for disturbed animations.'
