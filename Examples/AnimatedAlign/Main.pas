@@ -9,11 +9,6 @@ uses
   AQPControlAnimations; // AnyiQuack-Plugin
 
 type
-  TPanel = class(ExtCtrls.TPanel)
-  private
-    procedure WMEraseBackground(var Message: TMessage); message WM_ERASEBKGND;
-  end;
-
   TMainForm = class(TForm)
     AddPanelButton: TButton;
     PanelSizeTrackBar: TTrackBar;
@@ -22,7 +17,6 @@ type
     DisturbedComboBox: TComboBox;
     Label2: TLabel;
     Label3: TLabel;
-    Label4: TLabel;
     TopPanel: TPanel;
     BottomPanel: TPanel;
     Label5: TLabel;
@@ -53,7 +47,7 @@ implementation
 {$R *.dfm}
 
 const
-  UpdateAnimationID = 1;
+  BoundsAnimationID = 1;
   HoverAnimationID = 2;
 
 procedure TMainForm.AddPanelButtonClick(Sender: TObject);
@@ -120,30 +114,26 @@ begin
 end;
 
 procedure TMainForm.PanelHoverHandler(Sender: TObject; MouseOver: Boolean);
+var
+  AQ: TAQ;
+  AQAniPlugin: TAQPControlAnimations;
 begin
-  with Take(Sender) do
+  AQ := Take(Sender);
+
+  if MouseOver then
   begin
-    if MouseOver then
-    begin
-      with CancelAnimations(HoverAnimationID)
-        .Plugin<TAQPControlAnimations> do
-      begin
-        FontColorAnimation(ColorToRGB(HoverColorBox.Selected) xor $FFFFFF, 600,
-          HoverAnimationID, TAQ.Ease(etCubic));
-        BackgroundColorAnimation(HoverColorBox.Selected, 300, HoverAnimationID,
-          TAQ.Ease(etSinus));
-      end;
-    end
-    else
-    begin
-      with FinishAnimations(HoverAnimationID)
-        .Plugin<TAQPControlAnimations> do
-      begin
-        FontColorAnimation(clWindowText, 750, HoverAnimationID,
-          TAQ.Ease(etCubic));
-        BackgroundColorAnimation(clBtnFace, 1500, HoverAnimationID, TAQ.Ease(etSinus));
-      end;
-    end;
+    AQAniPlugin := AQ.CancelAnimations(HoverAnimationID).Plugin<TAQPControlAnimations>;
+    AQAniPlugin.FontColorAnimation(ColorToRGB(HoverColorBox.Selected) xor $FFFFFF, 600,
+      HoverAnimationID, TAQ.Ease(etCubic));
+    AQAniPlugin.BackgroundColorAnimation(HoverColorBox.Selected, 300, HoverAnimationID,
+      TAQ.Ease(etSinus));
+  end
+  else
+  begin
+    AQAniPlugin := AQ.FinishAnimations(HoverAnimationID).Plugin<TAQPControlAnimations>;
+    AQAniPlugin.FontColorAnimation(clWindowText, 750, HoverAnimationID,
+      TAQ.Ease(etCubic));
+    AQAniPlugin.BackgroundColorAnimation(clBtnFace, 1500, HoverAnimationID, TAQ.Ease(etSinus));
   end;
 end;
 
@@ -180,23 +170,23 @@ begin
   PIndex := 0;
 
   PanelsAQ
-    .CancelDelays(UpdateAnimationID)
+    .CancelDelays(BoundsAnimationID)
     .EachDelay(50,
       function(AQ: TAQ; O: TObject): Boolean
       var
         TargetLeft, TargetTop: Integer;
         XTile, YTile, Dummy: Word;
       begin
-        Result := TRUE;
+        Result := True;
         {**
          * Anstehende Animationen beenden oder abbrechen
          *}
         if PIndex = 0 then
         begin
           if DisturbedComboBox.ItemIndex = 0 then
-            AQ.CancelAnimations(UpdateAnimationID)
+            AQ.CancelAnimations(BoundsAnimationID)
           else
-            AQ.FinishAnimations(UpdateAnimationID);
+            AQ.FinishAnimations(BoundsAnimationID);
         end;
 
         YTile := Floor(PIndex/PColumns);
@@ -208,17 +198,10 @@ begin
         Take(O)
           .Plugin<TAQPControlAnimations>
           .BoundsAnimation(TargetLeft, TargetTop, PQSize, PQSize,
-            AnimationDurationTrackBar.Position, UpdateAnimationID, TAQ.Ease(etElastic));
+            AnimationDurationTrackBar.Position, BoundsAnimationID, TAQ.Ease(etElastic));
         Inc(PIndex);
-      end, UpdateAnimationID)
+      end, BoundsAnimationID)
     .Die;
-end;
-
-{ TPanel }
-
-procedure TPanel.WMEraseBackground(var Message: TMessage);
-begin
-  Message.Result := 1;
 end;
 
 end.

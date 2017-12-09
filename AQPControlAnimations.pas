@@ -159,6 +159,7 @@ begin
     var
       Progress: Real;
       AniLeft, AniTop, AniWidth, AniHeight: Integer;
+      OC: TControl absolute O;
     begin
       Result := TRUE;
       Progress := AQ.CurrentInterval.Progress;
@@ -168,13 +169,13 @@ begin
       if NewWidth >= 0 then
         AniWidth := TAQ.EaseInteger(PrevWidth, NewWidth, Progress, EaseFunction)
       else
-        AniWidth := TControl(O).Width;
+        AniWidth := OC.Width;
       if NewHeight >= 0 then
         AniHeight := TAQ.EaseInteger(PrevHeight, NewHeight, Progress, EaseFunction)
       else
-        AniHeight := TControl(O).Height;
+        AniHeight := OC.Height;
 
-      TControl(O).SetBounds(AniLeft, AniTop, AniWidth, AniHeight);
+      OC.SetBounds(AniLeft, AniTop, AniWidth, AniHeight);
 
       if Progress = 1 then
       begin
