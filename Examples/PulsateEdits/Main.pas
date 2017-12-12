@@ -36,7 +36,7 @@ var
   Incorrect: TAQ;
 begin
   Incorrect := Take(Self)
-    .ChildrenChain(TRUE)
+    .ChildrenChain(True)
     .FilterChain(
       function(AQ: TAQ; O: TObject): Boolean
       var
@@ -62,7 +62,7 @@ begin
       function(AQ: TAQ; O: TObject): Boolean
       begin
         TEdit(O).SetFocus;
-        Result := FALSE; // Es soll nur das 1. nicht ausgefüllte Feld fokussiert werden
+        Result := False; // Es soll nur das 1. nicht ausgefüllte Feld fokussiert werden
       end);
 end;
 
@@ -93,7 +93,7 @@ begin
       function(AQ: TAQ; O: TObject): Boolean
       begin
         Pulsate(O);
-        Result := TRUE;
+        Result := True;
       end);
 end;
 

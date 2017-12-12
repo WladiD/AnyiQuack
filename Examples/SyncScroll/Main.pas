@@ -51,30 +51,30 @@ begin
     .EachDelay(500,
       function(AQ: TAQ; O: TObject): Boolean
       begin
-        Result := TRUE;
+        Result := True;
         SyncScrollBar.SetParams(0, 0, TTrackBar(Sender).Position - 1);
         ListBoxesAQ
           .Each(
             function(AQ: TAQ; O: TObject): Boolean
+            var
+              LB: TListBox absolute O;
             begin
-              Result := TRUE;
-              with TListBox(O) do
-              begin
-                Clear;
-                Items.BeginUpdate
-              end;
+              Result := True;
+              LB.Clear;
+              LB.Items.BeginUpdate;
             end)
           .EachRepeat(TTrackBar(O).Position,
             function(AQ: TAQ; O: TObject): Boolean
+            var
+              LB: TListBox absolute O;
             begin
-              Result := TRUE;
-              with TListBox(O) do
-                Items.Add(Format('Item #%d', [Items.Count + 1]));
+              Result := True;
+              LB.Items.Add(Format('Item #%d', [LB.Items.Count + 1]));
             end)
           .Each(
             function(AQ: TAQ; O: TObject): Boolean
             begin
-              Result := TRUE;
+              Result := True;
               TListBox(O).Items.EndUpdate;
             end);
       end);
@@ -83,7 +83,7 @@ end;
 function TForm1.ListBoxesAQ: TAQ;
 begin
   Result := Take(Form1)
-    .ChildrenChain(TRUE)
+    .ChildrenChain(True)
     .FilterChain(TListBox);
 end;
 
@@ -97,21 +97,23 @@ begin
   Form1.Caption := IntToStr(ScrollItemIndex);
 
   ScrollEach := function(AQ: TAQ; O: TObject): Boolean
+  var
+    LB: TListBox absolute O;
   begin
-    Result := TRUE;
+    Result := True;
     if not (O is TListBox) then
       Exit;
     {**
      * Animiert
      *}
     if Assigned(AQ.CurrentInterval) then
-      TListBox(O).TopIndex := TAQ.EaseInteger(FirstItemIndex, ScrollItemIndex,
+      LB.TopIndex := TAQ.EaseInteger(FirstItemIndex, ScrollItemIndex,
         AQ.CurrentInterval.Progress, TEaseType(Ord(AnimationStyleComboBox.ItemIndex)))
     {**
      * Sofort
      *}
     else
-      TListBox(O).TopIndex := ScrollItemIndex;
+      LB.TopIndex := ScrollItemIndex;
   end;
 
   ListBoxesAQ

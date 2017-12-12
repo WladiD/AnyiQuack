@@ -25,6 +25,7 @@ var
   NewLeft, NewWidth: Integer;
   NewColor: TColor;
   NewAlphaBlend: Byte;
+  AniPlugin: TAQPControlAnimations;
 begin
   NewWidth := Screen.WorkAreaWidth div 2;
   if Left <> 0 then
@@ -40,15 +41,13 @@ begin
     NewAlphaBlend := MAXBYTE;
   end;
 
-  with Take(Sender)
+  AniPlugin := Take(Sender)
     .FinishAnimations
-    .Plugin<TAQPControlAnimations> do
-  begin
-    BoundsAnimation(NewLeft, 0, NewWidth, Screen.WorkAreaHeight,
+    .Plugin<TAQPControlAnimations>;
+  AniPlugin.BoundsAnimation(NewLeft, 0, NewWidth, Screen.WorkAreaHeight,
       500, 0, TAQ.Ease(etBack, emInSnake));
-    BackgroundColorAnimation(NewColor, 1000, 0, TAQ.Ease(etCubic));
-    AlphaBlendAnimation(NewAlphaBlend, 2000, 0, TAQ.Ease(etCircle, emInInverted));
-  end;
+  AniPlugin.BackgroundColorAnimation(NewColor, 1000, 0, TAQ.Ease(etCubic));
+  AniPlugin.AlphaBlendAnimation(NewAlphaBlend, 2000, 0, TAQ.Ease(etCircle, emInInverted));
 end;
 
 end.
