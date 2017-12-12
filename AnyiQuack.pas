@@ -331,11 +331,11 @@ type
      *            jedoch mindestens 2 (bei einem i7-920 wären es z.B. 8)
      *        > 1 Es werden maximal soviele Threads erstellt
      * @param Synchronize Sagt aus, ob die Methode die Beendigung aller Threads abwarten soll.
-     *        - Bei TRUE läuft die Verarbeitung der Objekte zwar über mehrere Threads ab,
+     *        - Bei True läuft die Verarbeitung der Objekte zwar über mehrere Threads ab,
      *          jedoch wird der Haupt-Thread (Anwendung) blockiert, bis die Verarbeitung
      *          abgeschlossen wurde. Dies ermöglicht den Einsatz von nahezu allen Objekten, auch
      *          wenn Teile davon nicht Thread-Safe sind.
-     *        - Bei FALSE wird die Anwendung nicht blockiert und die Threads werden parallel
+     *        - Bei False wird die Anwendung nicht blockiert und die Threads werden parallel
      *          gestartet. Setzt Kenntniss über die Funktionsweise der zu verarbeiteten Objekte
      *          voraus.
      * @param TerminateEach Optional. Standard ist nil. Wird im Kontext des Haupt-Threads
@@ -345,7 +345,7 @@ type
      *        Objekte beendet ist, also wenn alle Threads fertig sind.
      *}
 //		function EachThread(MainEach: TEachFunction; ConcurrentThreads: Byte = 1;
-//			Synchronize: Boolean = FALSE;
+//			Synchronize: Boolean = False;
 //			TerminateEach: TEachFunction = nil; FinalizeEach: TEachFunction = nil): TAQ;
 
     function NewChain: TAQ;
@@ -358,18 +358,18 @@ type
     function Append(Objects: TObjectList): TAQ; overload;
     function AppendAQ(AQ: TAQ): TAQ;
 
-    function ChildrenAppend(Recurse: Boolean = FALSE; ChildrenFiller: TEachFunction = nil): TAQ;
-    function ChildrenChain(Recurse: Boolean = FALSE; ChildrenFiller: TEachFunction = nil): TAQ;
-    function ParentsAppend(Recurse: Boolean = FALSE; ParentsFiller: TEachFunction = nil): TAQ;
-    function ParentsChain(Recurse: Boolean = FALSE; ParentsFiller: TEachFunction = nil): TAQ;
+    function ChildrenAppend(Recurse: Boolean = False; ChildrenFiller: TEachFunction = nil): TAQ;
+    function ChildrenChain(Recurse: Boolean = False; ChildrenFiller: TEachFunction = nil): TAQ;
+    function ParentsAppend(Recurse: Boolean = False; ParentsFiller: TEachFunction = nil): TAQ;
+    function ParentsChain(Recurse: Boolean = False; ParentsFiller: TEachFunction = nil): TAQ;
 
     function MultiplexChain: TAQ;
     function DemultiplexChain: TAQ;
 
-    function AnimationActorsChain(ID: Integer = 0; IncludeOrphans: Boolean = FALSE): TAQ;
-    function IntervalActorsChain(ID: Integer = 0; IncludeOrphans: Boolean = FALSE): TAQ;
-    function TimerActorsChain(ID: Integer = 0; IncludeOrphans: Boolean = FALSE): TAQ;
-    function DelayActorsChain(ID: Integer = 0; IncludeOrphans: Boolean = FALSE): TAQ;
+    function AnimationActorsChain(ID: Integer = 0; IncludeOrphans: Boolean = False): TAQ;
+    function IntervalActorsChain(ID: Integer = 0; IncludeOrphans: Boolean = False): TAQ;
+    function TimerActorsChain(ID: Integer = 0; IncludeOrphans: Boolean = False): TAQ;
+    function DelayActorsChain(ID: Integer = 0; IncludeOrphans: Boolean = False): TAQ;
 
     function FinishAnimations(ID: Integer = 0): TAQ;
     function CancelAnimations(ID: Integer = 0): TAQ;
@@ -675,7 +675,7 @@ end;
  *
  * Folgende Regeln werden angewendet:
  * - ist CompareID = 0,  so wird CurrentID nicht verglichen
- *                       und es wird TRUE geliefert
+ *                       und es wird True geliefert
  * - ist CompareID > 0,  so muss CurrentID gleich sein
  * - ist CompareID = -1, so muss CurrentID = 0 sein
  * - ist CompareID = -2, so muss CurrentID > 0 sein
@@ -705,7 +705,7 @@ end;
 
 constructor TAQBase.Create;
 begin
-  inherited Create(FALSE);
+  inherited Create(False);
 end;
 
 {** TAQ **}
@@ -782,28 +782,28 @@ function TAQ.CancelAnimations(ID: Integer): TAQ;
 begin
   if SupervisorLock(Result, aqmCancelAnimations) then
     Exit;
-  CustomCancel(arAnimation, ID, FALSE);
+  CustomCancel(arAnimation, ID, False);
 end;
 
 function TAQ.CancelDelays(ID: Integer): TAQ;
 begin
   if SupervisorLock(Result, aqmCancelDelays) then
     Exit;
-  CustomCancel(arDelay, ID, FALSE);
+  CustomCancel(arDelay, ID, False);
 end;
 
 function TAQ.CancelIntervals(ID: Integer): TAQ;
 begin
   if SupervisorLock(Result, aqmCancelIntervals) then
     Exit;
-  CustomCancel(arInterval, ID, FALSE);
+  CustomCancel(arInterval, ID, False);
 end;
 
 function TAQ.CancelTimers(ID: Integer): TAQ;
 begin
   if SupervisorLock(Result, aqmCancelTimers) then
     Exit;
-  CustomCancel(arTimer, ID, FALSE);
+  CustomCancel(arTimer, ID, False);
 end;
 
 function TAQ.NewChain: TAQ;
@@ -835,7 +835,7 @@ begin
     Exit;
   if not Assigned(ChildrenFiller) then
     ChildrenFiller := Self.ChildrenFiller;
-  Result := CustomFiller(ChildrenFiller, TRUE, Recurse);
+  Result := CustomFiller(ChildrenFiller, True, Recurse);
 end;
 
 function TAQ.ChildrenChain(Recurse: Boolean; ChildrenFiller: TEachFunction): TAQ;
@@ -844,14 +844,14 @@ begin
     Exit;
   if not Assigned(ChildrenFiller) then
     ChildrenFiller := Self.ChildrenFiller;
-  Result := CustomFiller(ChildrenFiller, FALSE, Recurse);
+  Result := CustomFiller(ChildrenFiller, False, Recurse);
 end;
 
 function TAQ.ChildrenFiller(AQ: TAQ; O: TObject): Boolean;
 var
   cc: Integer;
 begin
-  Result := TRUE;
+  Result := True;
   if not (O is TComponent) then
     Exit;
   with TComponent(O) do
@@ -880,14 +880,14 @@ begin
          *}
         else if (O is TAQ) and (TAQ(O).FChainedTo = Self) then
           TAQ(O).FChainedTo := nil;
-        Result := TRUE; // Kompletter Scan
+        Result := True; // Kompletter Scan
       end);
   end;
 
   Clear;
   FConditionCount := 0;
   FBools := 0;
-  Recurse := TRUE;
+  Recurse := True;
   FCurrentInterval := nil;
   FChainedTo := nil;
 
@@ -917,7 +917,7 @@ begin
       begin
         if TAQ(O).IsAlive then
           TAQ(O).Remove(AComponent);
-        Result := TRUE;
+        Result := True;
       end);
 end;
 
@@ -925,7 +925,7 @@ function TAQ.Contains(AObject: TObject): Boolean;
 var
   Found: Boolean;
 begin
-  Found := FALSE;
+  Found := False;
   Each(
     function(AQ: TAQ; O: TObject): Boolean
     begin
@@ -940,7 +940,7 @@ begin
   inherited Create;
   FConditionCount := 0;
   FBools := 0;
-  Recurse := TRUE;
+  Recurse := True;
 end;
 
 
@@ -961,8 +961,8 @@ begin
     var
       SOFound: Boolean;
     begin
-      Result := TRUE; // Each soll stets komplett durchlaufen
-      SOFound := FALSE;
+      Result := True; // Each soll stets komplett durchlaufen
+      SOFound := False;
       FActiveIntervalAQs.Each(
         {**
          * @param AQ Enthält FActiveIntervalAQs
@@ -973,7 +973,7 @@ begin
         var
           TargetAQ: TAQ;
         begin
-          Result := TRUE; // Each soll stets komplett durchlaufen
+          Result := True; // Each soll stets komplett durchlaufen
           {**
            * Der Garbage-Collector darf hier nicht berücksichtigt werden
            *}
@@ -983,7 +983,7 @@ begin
           if TargetAQ.HasActors(ActorRole, ID) and TargetAQ.Contains(SO) then
           begin
             Actors.Add(O);
-            SOFound := TRUE;
+            SOFound := True;
           end;
         end);
       if IncludeOrphans and not SOFound then
@@ -1002,7 +1002,7 @@ begin
     TempAQ: TAQ;
     CI: TInterval; // Abkürzung für CurrentInterval
   begin
-    Result := TRUE; // Each soll komplett durchlaufen
+    Result := True; // Each soll komplett durchlaufen
     if not (O is TAQ) then
       Exit;
     TempAQ := TAQ(O);
@@ -1035,7 +1035,7 @@ begin
       var
         TargetAQ: TAQ;
       begin
-        Result := TRUE; // Each soll komplett durchlaufen
+        Result := True; // Each soll komplett durchlaufen
         if Target = FGC then
           Exit;
         TargetAQ := TAQ(Target);
@@ -1046,14 +1046,14 @@ begin
            *}
           function(AQ: TAQ; O: TObject): Boolean
           begin
-            Result := TRUE;
+            Result := True;
             if O is TAQ then
               Exit;
             if TargetAQ.IndexOf(O) >= 0 then
             begin
               TargetAQ.Each(Perform);
               Perform(nil, TargetAQ);
-              Result := FALSE; // Es wird nur ein Objekt-Vorkommen benötigt
+              Result := False; // Es wird nur ein Objekt-Vorkommen benötigt
             end;
           end);
       end);
@@ -1161,7 +1161,7 @@ begin
   Each(
     function(AQ: TAQ; O: TObject): Boolean
     begin
-      Result := TRUE;
+      Result := True;
       if O is TAQ then
         Exit;
       SimpleAQ.Add(O);
@@ -1264,7 +1264,7 @@ begin
     Dec(FConditionCount);
   if FConditionCount = 0 then
   begin
-    ConditionLock := FALSE;
+    ConditionLock := False;
     Result := EndChain;
   end;
 end;
@@ -1280,8 +1280,8 @@ begin
     begin
       for cc := 0 to Length(Objects) - 1 do
         if Objects[cc] = O then
-          Exit(TRUE);
-      Result := FALSE;
+          Exit(True);
+      Result := False;
     end);
 end;
 
@@ -1319,7 +1319,7 @@ begin
     begin
       if not ExcludeEach(AQ, O) then
         NewAQ.Add(O);
-      Result := TRUE;
+      Result := True;
     end);
   Result := NewAQ;
 end;
@@ -1703,7 +1703,7 @@ begin
   Each(
     function(OAQ: TAQ; OO: TObject): Boolean
     begin
-      Result := TRUE;
+      Result := True;
       if FilterEach(OAQ, OO) then
         NewAQ.Add(OO);
     end);
@@ -1714,14 +1714,14 @@ function TAQ.FinishAnimations(ID: Integer): TAQ;
 begin
   if SupervisorLock(Result, aqmFinishAnimations) then
     Exit;
-  CustomCancel(arAnimation, ID, TRUE);
+  CustomCancel(arAnimation, ID, True);
 end;
 
 function TAQ.FinishTimers(ID: Integer): TAQ;
 begin
   if SupervisorLock(Result, aqmFinishTimers) then
     Exit;
-  CustomCancel(arTimer, ID, TRUE);
+  CustomCancel(arTimer, ID, True);
 end;
 
 function TAQ.GetConditionLock: Boolean;
@@ -1737,7 +1737,7 @@ end;
 function TAQ.GetIntervals: TObjectList;
 begin
   if not Assigned(FIntervals) then
-    FIntervals := TObjectList.Create(TRUE);
+    FIntervals := TObjectList.Create(True);
   Result := FIntervals;
 end;
 
@@ -1750,10 +1750,10 @@ function TAQ.HasActors(ActorRole: TActorRole; ID: Integer): Boolean;
 var
   AnyActors: Boolean;
 begin
-  Result := FALSE;
+  Result := False;
   if not (Assigned(FIntervals) and (FIntervals.Count > 0)) then
     Exit;
-  AnyActors := FALSE;
+  AnyActors := False;
   TAQ.Take(FIntervals)
     .Each(
       function(AQ: TAQ; O: TObject): Boolean
@@ -1814,7 +1814,7 @@ var
 begin
   if SupervisorLock(Result, aqmIfAny) then
     Exit;
-  Condition := FALSE;
+  Condition := False;
   Each(
     function(AQ: TAQ; O: TObject): Boolean
     begin
@@ -1901,10 +1901,10 @@ begin
   var
     cc: Integer;
   begin
-    Result := FALSE;
+    Result := False;
     for cc := 0 to Length(Objects) - 1 do
       if O = Objects[cc] then
-        Exit(TRUE);
+        Exit(True);
   end;
 end;
 
@@ -1957,7 +1957,7 @@ class procedure TAQ.Initialize;
 begin
   if Initialized then
     Exit;
-  Initialized := TRUE;
+  Initialized := True;
   {**
    * Die Initialisierung der gesamten Klasse
    **********************************************************************************************}
@@ -1973,14 +1973,14 @@ begin
 {$ENDIF}
 
   FActiveIntervalAQs := TAQ.Create;
-  FActiveIntervalAQs.Recurse := FALSE;
+  FActiveIntervalAQs.Recurse := False;
 
   FGC := TAQ.Create;
-  FGC.OwnsObjects := TRUE;
-  FGC.Recurse := FALSE;
+  FGC.OwnsObjects := True;
+  FGC.Recurse := False;
 
   FComponentsNotifier := TComponentsNotifier.Create;
-  FComponentsNotifier.OwnsObjects := FALSE;
+  FComponentsNotifier.OwnsObjects := False;
 end;
 
 class procedure TAQ.Finalize;
@@ -1990,7 +1990,7 @@ begin
   {**
    * Freigabe von allem, was in der Klassenmethode TAQ.Initialize instanziert wurde
    *}
-  Finalized := TRUE;
+  Finalized := True;
   {**
    * Dieser Timer wird zusammen mit FGarbageCollector erstellt, muss auch dementsprechend zusammen
    * freigegeben werden.
@@ -2037,7 +2037,7 @@ begin
        * Soll nur einmal ausgeführt werden, da die eigentliche Bereinigung in den
        * untergeordeneten Eachs abläuft
        *}
-      Result := FALSE;
+      Result := False;
 
       AQsForDestroy := 0;
       {**
@@ -2048,7 +2048,7 @@ begin
         begin
           if (O is TAQ) and not TAQ(O).IsAlive then
             Inc(AQsForDestroy);
-          Result := TRUE;
+          Result := True;
         end);
       {**
        * Bedingter Start für die Bereinigung
@@ -2106,7 +2106,7 @@ begin
     function(AQ: TAQ; O: TObject): Boolean
     begin
       TAQ(O).LocalIntervalTimerEvent;
-      Result := TRUE; // Die Each soll komplett durchlaufen
+      Result := True; // Die Each soll komplett durchlaufen
     end);
 end;
 
@@ -2189,7 +2189,7 @@ begin
   Each(
     function(AQ: TAQ; O: TObject): Boolean
     begin
-      Result := TRUE;
+      Result := True;
       if O is TAQ then
         Exit;
       MultiAQ.AppendAQ(TAQ.Take(O));
@@ -2202,7 +2202,7 @@ begin
     Exit;
   if not Assigned(ParentsFiller) then
     ParentsFiller := Self.ParentsFiller;
-  Result := CustomFiller(ParentsFiller, TRUE, Recurse);
+  Result := CustomFiller(ParentsFiller, True, Recurse);
 end;
 
 function TAQ.ParentsChain(Recurse: Boolean; ParentsFiller: TEachFunction): TAQ;
@@ -2211,12 +2211,12 @@ begin
     Exit;
   if not Assigned(ParentsFiller) then
     ParentsFiller := Self.ParentsFiller;
-  Result := CustomFiller(ParentsFiller, FALSE, Recurse);
+  Result := CustomFiller(ParentsFiller, False, Recurse);
 end;
 
 function TAQ.ParentsFiller(AQ: TAQ; O: TObject): Boolean;
 begin
-  Result := TRUE;
+  Result := True;
   if not ((O is TComponent) and (TComponent(O).HasParent)) then
     Exit;
   AQ.Add(TComponent(O).GetParentComponent);
@@ -2314,7 +2314,7 @@ function TAQ.SupervisorLock(out AQ: TAQ; Method: TAQMethod): Boolean;
 var
   RelatedMethod: Boolean;
 begin
-  Result := FALSE;
+  Result := False;
   AQ := Self;
   if ConditionLock then
   begin
@@ -2326,14 +2326,14 @@ end;
 {**
  * Private function, used by the overloaded TAQ.Take methods
  *
- * @param AQ Is only assigned, if the result is TRUE
+ * @param AQ Is only assigned, if the result is True
  *}
 function PrimaryRetakeCheck(CheckForAQ: TObject; First: TObject; ObjectsCount: Integer; out AQ: TAQ): Boolean; inline;
 var
   CheckAQ: TAQ;
 begin
   if not (CheckForAQ is TAQ) then
-    Exit(FALSE);
+    Exit(False);
   CheckAQ := TAQ(CheckForAQ);
   Result := (CheckAQ.Count = ObjectsCount) and (CheckAQ.FConditionCount = 0) and
      (CheckAQ[0] = First) and not CheckAQ.ConditionLock and CheckAQ.Recurse
@@ -2371,7 +2371,7 @@ begin
           for cc := 1 to ObjectsCount - 1 do // Note: Begin at index 1, because IsAQMatch has already tested on 0
             if AQ[cc] <> Objects[cc] then
             begin
-              Match := FALSE;
+              Match := False;
               Break;
             end;
           if Match then
@@ -2447,7 +2447,7 @@ begin
           for cc := 1 to ObjectsCount - 1 do // Note: Begin at index 1, because IsAQMatch has already tested on 0
             if AQ[cc] <> Objects[cc] then
             begin
-              Match := FALSE;
+              Match := False;
               Break;
             end;
           if Match then
@@ -2497,7 +2497,7 @@ begin
           for cc := 1 to ObjectsCount - 1 do // Note: Begin at index 1, because IsAQMatch has already tested on 0
             if AQ[cc] <> TObject(Objects[cc]) then
             begin
-              Match := FALSE;
+              Match := False;
               Break;
             end;
           if Match then
@@ -2709,10 +2709,10 @@ constructor TTimerThread.Create(Interval: Integer; TimerProc: TThreadProcedure);
 begin
   FInterval := Interval;
   FTimerProc := TimerProc;
-  FMainSignal := TEvent.Create(nil, FALSE, FALSE, '');
+  FMainSignal := TEvent.Create(nil, False, False, '');
   FWindowHandle := AllocateHWnd(WndProc);
 
-  inherited Create(FALSE);
+  inherited Create(False);
 end;
 
 destructor TTimerThread.Destroy;
@@ -2740,7 +2740,7 @@ procedure TTimerThread.Disable;
 begin
   if Enabled then
   begin
-    FEnabled := FALSE;
+    FEnabled := False;
     FMainSignal.SetEvent;
   end;
 end;
@@ -2749,7 +2749,7 @@ procedure TTimerThread.Enable;
 begin
   if not Enabled then
   begin
-    FEnabled := TRUE;
+    FEnabled := True;
     FMainSignal.SetEvent;
   end;
 end;
@@ -2820,8 +2820,8 @@ end;
 
 
 initialization
-Initialized := FALSE;
-Finalized := FALSE;
+Initialized := False;
+Finalized := False;
 
 finalization
 
