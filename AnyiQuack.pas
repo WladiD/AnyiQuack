@@ -861,27 +861,28 @@ end;
 
 procedure TAQ.Clean;
 begin
-  if Finalized then
-    Exit;
-  {**
-   * Globale Auswirkungen
-   *}
-  GarbageCollector.Each(
-    function(GC: TAQ; O: TObject): Boolean
-    begin
-      {**
-       * Sollte ein Plugin für diese Instanz existieren, so muss es freigegeben werden
-       *}
-      if (O is TAQPlugin) and (TAQPlugin(O).WorkAQ = Self) then
-        GC.Remove(O)
-      {**
-       * Sollte diese Instanz mit einer anderen zuvor verkettet worden sein, so muss diese
-       * Verbindung aufgehoben werden
-       *}
-      else if (O is TAQ) and (TAQ(O).FChainedTo = Self) then
-        TAQ(O).FChainedTo := nil;
-      Result := TRUE; // Kompletter Scan
-    end);
+  if not Finalized then
+  begin
+    {**
+     * Globale Auswirkungen
+     *}
+    GarbageCollector.Each(
+      function(GC: TAQ; O: TObject): Boolean
+      begin
+        {**
+         * Sollte ein Plugin für diese Instanz existieren, so muss es freigegeben werden
+         *}
+        if (O is TAQPlugin) and (TAQPlugin(O).WorkAQ = Self) then
+          GC.Remove(O)
+        {**
+         * Sollte diese Instanz mit einer anderen zuvor verkettet worden sein, so muss diese
+         * Verbindung aufgehoben werden
+         *}
+        else if (O is TAQ) and (TAQ(O).FChainedTo = Self) then
+          TAQ(O).FChainedTo := nil;
+        Result := TRUE; // Kompletter Scan
+      end);
+  end;
 
   Clear;
   FConditionCount := 0;
@@ -2001,11 +2002,6 @@ begin
     FTimerHandler := 0;
 {$ENDIF}
   {**
-   * Diese unverwaltete TAQ-Instanz wird ebenfalls mit dem FGarbageCollector erstellt und muss
-   * hier manuell freigegeben werden.
-   *}
-  FreeAndNil(FActiveIntervalAQs);
-  {**
    * Komponentenhelfer freigeben
    *}
   FreeAndNil(FComponentsNotifier);
@@ -2013,6 +2009,11 @@ begin
    * Alle offenen TAQ-Instanzen freigeben
    *}
   FreeAndNil(FGC);
+  {**
+   * Diese unverwaltete TAQ-Instanz wird ebenfalls mit dem FGarbageCollector erstellt und muss
+   * hier manuell freigegeben werden.
+   *}
+  FreeAndNil(FActiveIntervalAQs);
 end;
 
 class function TAQ.GarbageCollector: TAQ;
