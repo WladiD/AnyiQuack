@@ -82,46 +82,36 @@ type
   end;
 
   TAQ = class sealed (TAQBase)
-  {**
-   * This private section is introduced for local types and constants
-   *}
+  // Private section for local types and constants
   private
     type
-    {**
-     * Enumeration for all public TAQ methods, which returns a TAQ instance
-     *}
+    // Enumeration for all public TAQ methods, which returns a TAQ instance
     TAQMethod = (
-      {**
-       * Each related
-       *}
+      // Each related
       aqmEach,
       aqmEachAnimation,
       aqmEachDelay,
       aqmEachInterval,
       aqmEachRepeat,
       aqmEachTimer,
-      {**
-       * Append related
-       *}
+
+      // Append related
       aqmAppend,
       aqmAppendAQ,
       aqmChildrenAppend,
       aqmParentsAppend,
-      {**
-       * Finish related
-       *}
+
+      // Finish related
       aqmFinishAnimations,
       aqmFinishTimers,
-      {**
-       * Cancel related
-       *}
+
+      // Cancel related
       aqmCancelAnimations,
       aqmCancelDelays,
       aqmCancelIntervals,
       aqmCancelTimers,
-      {**
-       * Chain related
-       *}
+
+      // Chain related
       aqmNewChain,
       aqmExcludeChain,
       aqmFilterChain,
@@ -135,9 +125,8 @@ type
       aqmParentsChain,
       aqmSliceChain,
       aqmEndChain,
-      {**
-       * Conditional chain related
-       *}
+
+      // Conditional chain related
       aqmIfThen,
       aqmIfAll,
       aqmIfAny,
@@ -146,9 +135,8 @@ type
       aqmIfContains,
       aqmIfElse,
       aqmIfEnd,
-      {**
-       * Misc
-       *}
+
+      // Misc
       aqmDebugMessage,
       aqmDie);
 
@@ -172,9 +160,8 @@ type
 
     AQConditionMethods: TAQMethods = [aqmIfThen, aqmIfAll, aqmIfAny, aqmIfContainsAll,
       aqmIfContainsAny, aqmIfContains, aqmIfElse, aqmIfEnd];
-  {**
-   * Private class related stuff
-   *}
+
+  // Private class related stuff
   private
     class var
     FGC: TAQ;
@@ -197,9 +184,8 @@ type
     class function EaseIntegrated(EaseType: TEaseType): TEaseFunction;
 
     class property Tick: Int64 read FTick;
-  {**
-   * Private object related stuff
-   *}
+
+  // Private instance related stuff
   private
     FLifeTick: Int64;
     FIntervals: TObjectList;
@@ -245,14 +231,12 @@ type
     property Recurse: Boolean read GetRecurse write SetRecurse;
     property ConditionLock: Boolean read GetConditionLock write SetConditionLock;
     property Immortally: Boolean read GetImmortally write SetImmortally;
-  {**
-   * Because TAQ is sealed, no new methods are introduced as protected, but some must be overriden
-   *}
+
+  // Because TAQ is sealed, no new methods are introduced as protected, but some must be overriden
   protected
     procedure Notify(Ptr: Pointer; Action: TListNotification); override;
-  {**
-   * Public class related stuff
-   *}
+
+  // Public class related stuff
   public
     class function Managed: TAQ;
     class function Unmanaged: TAQ;
@@ -298,9 +282,8 @@ type
       EaseModifier: TEaseModifier = emIn): String; overload;
     class function EaseString(StartString, EndString: String; Progress: Real;
       EaseFunction: TEaseFunction): String; overload;
-  {**
-   * Public object related stuff
-   *}
+
+  // Public instance related stuff
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -479,6 +462,7 @@ type
     property Interval: Integer read FInterval write SetInterval;
   end;
 
+  // Shortcuts to appropriate `TAQ.Take` methods
   function Take(AObject: TObject): TAQ; overload;
   function Take(Objects: TObjectArray): TAQ; overload;
   function Take(Objects: TObjectList): TAQ; overload;
@@ -710,6 +694,7 @@ end;
 
 {** TAQ **}
 
+// Appends all in the TObjectArray contained objects to the current TAQ instance
 function TAQ.Append(Objects: TObjectArray): TAQ;
 var
   cc: Integer;
@@ -720,6 +705,8 @@ begin
     Add(Objects[cc]);
 end;
 
+// Appends all in Objects contained objects, but not the TObjectList by itself,
+// to the current TAQ instance
 function TAQ.Append(Objects: TObjectList): TAQ;
 var
   cc: Integer;
@@ -735,6 +722,7 @@ begin
     Add(Objects[cc]);
 end;
 
+// Appends AObject to the current TAQ instance
 function TAQ.Append(AObject: TObject): TAQ;
 begin
   if SupervisorLock(Result, aqmAppend) then
@@ -742,6 +730,16 @@ begin
   Add(AObject);
 end;
 
+// Appends an other TAQ instance to the current one
+//
+// This method is handy for recursive tasks. For example you have already some TAQ instances with
+// some objects and want to perform an action on all of them:
+// ```delphi
+// Take(MyInstanceA).AppendAQ(MyInstanceB).AppendAQ(MyInstanceC).Each({...Your action...});
+// ```
+//
+// In contrast to `TAQ.Append` it appends just the passed TAQ instance to the current instance
+// instead of the contained object.
 function TAQ.AppendAQ(AQ: TAQ): TAQ;
 begin
   if SupervisorLock(Result, aqmAppendAQ) then
@@ -1100,7 +1098,6 @@ begin
   Result := TargetAQ;
 end;
 
-
 function TAQ.DebugMessage(HeadMessage: String = ''; Caption: String = ''): TAQ;
 {$IFDEF DEBUG}
 var
@@ -1142,7 +1139,6 @@ begin
   {$ENDIF}
 end;
 
-
 function TAQ.DelayActorsChain(ID: Integer; IncludeOrphans: Boolean): TAQ;
 begin
   if SupervisorLock(Result, aqmDelayActorsChain) then
@@ -1174,6 +1170,12 @@ begin
   inherited Destroy;
 end;
 
+// Try to let die the current TAQ instance
+//
+// It is impossible to die if there are any active intervals, such as animations, delays etc.
+// The main reason for this method is to mark an *intermediate* TAQ instance as died,
+// so it can be faster reused from the garbage collector. Under special conditions this
+// can you save a lot of memory and unnecessary garbage clean ups.
 function TAQ.Die: TAQ;
 begin
   if SupervisorLock(Result, aqmDie) then
@@ -1183,6 +1185,15 @@ begin
   FLifeTick := 0;
 end;
 
+// Performs the passed method/closure on each in TAQ contained object
+//
+// Each is the core method of AnyiQuack. Although its implementation looks simple, it is very
+// powerful.
+// The passed EachFunction gets as first paramater the processing TAQ instance (Self) and
+// in the second parameter the subject object. You are able to break the Each from inside of
+// EachFunction by returning False. Otherwise you have to return True for further/full processing.
+// If the current TAQ instance contains other TAQ instances (appended by `TAQ.AppendAQ`) and
+// `TAQ.Recurse` is True (Default) EachFunction is also performed on them.
 function TAQ.Each(EachFunction: TEachFunction): TAQ;
 var
   cc: Integer;
@@ -1209,7 +1220,7 @@ end;
 function TAQ.EachAnimation(Duration: Integer; Each, LastEach: TEachFunction; ID: Integer): TAQ;
 begin
   if Duration >= MaxLifeTime then
-    raise EAQ.CreateFmt('Dauer der Animation (%d) muss kleiner als MaxLifeTime (%d) sein.',
+    raise EAQ.CreateFmt('Duration of the animation (%d) should be lower than MaxLifeTime (%d)',
       [Duration, MaxLifeTime])
   else if SupervisorLock(Result, aqmEachAnimation) then
     Exit;
@@ -1219,7 +1230,7 @@ end;
 function TAQ.EachDelay(Delay: Integer; Each: TEachFunction; ID: Integer): TAQ;
 begin
   if Delay >= MaxLifeTime then
-    raise EAQ.CreateFmt('Delay (%d) muss kleiner als MaxLifeTime (%d) sein.',
+    raise EAQ.CreateFmt('Delay (%d) must bew lower than MaxLifeTime (%d)',
       [Delay, MaxLifeTime])
   else if SupervisorLock(Result, aqmEachDelay) then
      Exit;
@@ -1229,7 +1240,7 @@ end;
 function TAQ.EachInterval(Interval: Integer; Each: TEachFunction; ID: Integer): TAQ;
 begin
   if Interval >= MaxLifeTime then
-    raise EAQ.CreateFmt('Interval (%d) muss kleiner als MaxLifeTime (%d) sein.',
+    raise EAQ.CreateFmt('Interval (%d) must be lower than MaxLifeTime (%d)',
       [Interval, MaxLifeTime])
   else if SupervisorLock(Result, aqmEachInterval) then
     Exit;
@@ -1760,9 +1771,7 @@ begin
       begin
         AnyActors := (TInterval(O).ActorRole = ActorRole) and
           ((ID = 0) or (TInterval(O).ID = ID)) and not TInterval(O).IsFinished;
-        {**
-         * Die Each soll nur laufen, bis der erste Actor gefunden wird
-         *}
+        // Let run the Each until we have found our first Actor
         Result := not AnyActors;
       end)
     .Die;
@@ -1770,9 +1779,7 @@ begin
 end;
 
 procedure TAQ.HeartBeat;
-  {**
-   * Leitet den Herzschlag an ggf. enthaltene TAQ-Instanzen rekursiv weiter
-   *}
+
   procedure HeartBeatEcho(AQ: TAQ);
   var
     cc: Integer;
@@ -1781,13 +1788,12 @@ procedure TAQ.HeartBeat;
       if Assigned(AQ[cc]) and (AQ[cc] is TAQ) then
         TAQ(AQ[cc]).HeartBeat;
   end;
+
 begin
   FLifeTick := TAQ.Tick;
-  {**
-   * Der Herzschlag muss an enthaltene TAQ-Instanzen weitergereicht werden, wenn diese Instanz
-   * Rekursiv (TAQ.Recurse) ist. Standardmäßig sind alle TAQ-Instanzen rekursiv.
-   * Ausnahmen: TAQ.FGarbageCollector
-   *}
+  // The heartbeat must be routed to the contained TAQ instances if the `TAQ.Recurse` property
+  // is True. By default are TAQ instances recurse.
+  // Except: `TAQ.FGarbageCollector`
   if Recurse then
     HeartBeatEcho(Self);
 end;
@@ -1983,36 +1989,24 @@ begin
   FComponentsNotifier.OwnsObjects := False;
 end;
 
+// Free all class related stuff which is initialized in `TAQ.Initialize`
 class procedure TAQ.Finalize;
 begin
   if Finalized or not Initialized then
     Exit;
-  {**
-   * Freigabe von allem, was in der Klassenmethode TAQ.Initialize instanziert wurde
-   *}
+
   Finalized := True;
-  {**
-   * Dieser Timer wird zusammen mit FGarbageCollector erstellt, muss auch dementsprechend zusammen
-   * freigegeben werden.
-   *}
+
+  // This timer is created together with FGarbageCollector, so accordingly it must be freed with it.
 {$IFDEF UseThreadTimer}
   FreeAndNil(FTimerThread);
 {$ELSE}
   if (FTimerHandler > 0) and KillTimer(0, FTimerHandler) then
     FTimerHandler := 0;
 {$ENDIF}
-  {**
-   * Komponentenhelfer freigeben
-   *}
+
   FreeAndNil(FComponentsNotifier);
-  {**
-   * Alle offenen TAQ-Instanzen freigeben
-   *}
-  FreeAndNil(FGC);
-  {**
-   * Diese unverwaltete TAQ-Instanz wird ebenfalls mit dem FGarbageCollector erstellt und muss
-   * hier manuell freigegeben werden.
-   *}
+  FreeAndNil(FGC); // Release the garbage collector with all the managed instances
   FreeAndNil(FActiveIntervalAQs);
 end;
 
@@ -2037,12 +2031,12 @@ begin
        * Soll nur einmal ausgeführt werden, da die eigentliche Bereinigung in den
        * untergeordeneten Eachs abläuft
        *}
+      // False means here, that this closure is only called once per Interval, because the
+      // actually clean up is performed in the subsequent Each calls.
       Result := False;
 
+      // Determine the count of dead TAQ instances
       AQsForDestroy := 0;
-      {**
-       * Vorbereitungen für die Bereinigung
-       *}
       GC.Each(
         function(AQ: TAQ; O: TObject): Boolean
         begin
@@ -2050,13 +2044,12 @@ begin
             Inc(AQsForDestroy);
           Result := True;
         end);
-      {**
-       * Bedingter Start für die Bereinigung
-       *}
+
+      // Clean up is only performed when SpareAQsCount is exceeded
       if AQsForDestroy < SpareAQsCount then
       begin
         {$IFDEF OutputDebugGCFree}
-        OutputDebugString(PWideChar(Format('Bereinigungsvorgang findet nicht statt, da das Sparlimit (%d) nicht erreicht wurde (%d).',
+        OutputDebugString(PWideChar(Format('Clean up skipped, beacause the spare limit (%d) isn''t exsceeded (%d)',
           [SpareAQsCount, AQsForDestroy])));
         {$ENDIF}
         Exit;
@@ -2072,21 +2065,19 @@ begin
             GC.Remove(O);
             Dec(AQsForDestroy);
             {$IFDEF OutputDebugGCFree}
-            OutputDebugString(PWideChar(Format('TAQ freigegeben. Verbleibend im GarbageCollector: %d.',
+            OutputDebugString(PWideChar(Format('TAQ released. Left instances in GarbageCollector: %d.',
               [GarbageCollector.Count])));
             {$ENDIF}
           end;
-          {**
-           * Bedingte Laufzeit der Bereinigung
-           * Läuft, solange Anzahl abgelaufener Instanzen größer SpareAQsCount ist und
-           * solange die verfügbare Bereingungsdauer nicht überschritten wird.
-           *}
+          // Conditional cleanup runtime
+          // It runs as long there are more destroyable instances as SpareAQsCount
+          // or until GarbageCleanTime expired
           Result := (AQsForDestroy > SpareAQsCount) or
             (CleanEndTick >= FStopWatch.ElapsedMilliseconds);
         end);
         {$IFDEF OutputDebugGCFree}
         if CleanEndTick < FStopWatch.ElapsedMilliseconds then
-          OutputDebugString('Bereinigungsvorgang vorzeitig abgebrochen, da das Zeitlimit überschritten wurde.');
+          OutputDebugString('Cleanup process aborted prematurely, because the timeout expired.');
         {$ENDIF}
     end);
 
@@ -2100,13 +2091,13 @@ begin
   FTick := FStopWatch.ElapsedMilliseconds;
   FActiveIntervalAQs.Each(
     {**
-     * @param AQ Enthält FActiveIntervalAQs
-     * @param O Enthält ein TAQ-Objekt, welches mind. ein Interval besitzt
+     * @param AQ Contains FActiveIntervalAQs
+     * @param O Contains a TAQ instance, which at least contains one Interval
      *}
     function(AQ: TAQ; O: TObject): Boolean
     begin
       TAQ(O).LocalIntervalTimerEvent;
-      Result := True; // Die Each soll komplett durchlaufen
+      Result := True; // full Each scan
     end);
 end;
 
@@ -2135,15 +2126,19 @@ begin
   HeartBeat;
 end;
 
+// Returns a managed TAQ instance
+//
+// Managed means, that you don't need to worry about memory leaks ;-)
+// There is a simple (but maybe powerful) garbage collector implementation. By requesting for a
+// managed instance it looks primary in the garabage for an died TAQ instance and in case returning
+// it.
 class function TAQ.Managed: TAQ;
 var
   ManagedAQ: TAQ;
 begin
   ManagedAQ := nil;
 
-  {**
-   * Im GarbageCollector nach einer abgelaufenen Instanz suchen
-   *}
+  // Looks in in the GarbageCollector for an died TAQ instance
   GarbageCollector.Each(
     function(AQ: TAQ; O: TObject): Boolean
     begin
@@ -2157,9 +2152,7 @@ begin
           [@O, AQ.IndexOf(O)])));
 {$ENDIF}
       end;
-      {**
-       * Die Each soll solange laufen, bis eine abgelaufene Instanz gefunden wurde
-       *}
+      // Let the Each run, until we find an died TAQ instance
       Result := not Assigned(ManagedAQ);
     end);
 
@@ -2168,9 +2161,7 @@ begin
 
   Result := TAQ.Create;
   Result.HeartBeat;
-  {**
-   * Das ist das ganze Geheimnis des TAQ-Objekt-Managing ;)
-   *}
+  // This is the whole magic behind the managed TAQ instance
   GarbageCollector.Add(Result);
 {$IFDEF OutputDebugGCCreate}
   OutputDebugString(PWideChar(Format('New TAQ %p in GC at index #%d.',
@@ -2262,7 +2253,7 @@ begin
   if FIntervals.Count = 0 then
     FActiveIntervalAQs.Remove(Self);
   {$IFDEF OutputDebugActiveIntervals}
-    OutputDebugString(PWideChar('TAQ-Instanzen mit Intervallen: ' +
+    OutputDebugString(PWideChar('TAQ instances with intervals: ' +
       IntToStr(FActiveIntervalAQs.Count)));
   {$ENDIF}
 end;
@@ -2323,12 +2314,11 @@ begin
   end;
 end;
 
-{**
- * Private function, used by the overloaded TAQ.Take methods
- *
- * @param AQ Is only assigned, if the result is True
- *}
-function PrimaryRetakeCheck(CheckForAQ: TObject; First: TObject; ObjectsCount: Integer; out AQ: TAQ): Boolean; inline;
+// Private function, used by the overloaded TAQ.Take methods
+//
+// @param AQ Is will be only assigned, if the result is True
+function PrimaryRetakeCheck(CheckForAQ: TObject; First: TObject; ObjectsCount: Integer;
+  out AQ: TAQ): Boolean; inline;
 var
   CheckAQ: TAQ;
 begin
@@ -2612,17 +2602,14 @@ begin
   Result := nil;
   if IsCanceled then
     Exit;
-  {**
-   * Infinite interval
-   *}
+
+  // Infinite interval
   if (FLastTick = 0) and (TAQ.Tick >= FNextTick) then
   begin
     Result := FNextEach;
     UpdateNextTick;
   end
-  {**
-   * Finite interval
-   *}
+  // Finite interval
   else if (FLastTick > 0) then
   begin
     if TAQ.Tick >= FLastTick then
@@ -2676,7 +2663,7 @@ begin
   FNextTick := TAQ.Tick + Cardinal(FInterval);
 end;
 
-{** TComponentsNotifier **}
+{ TComponentsNotifier }
 
 procedure TComponentsNotifier.Notify(Ptr: Pointer; Action: TListNotification);
 begin
@@ -2685,7 +2672,7 @@ begin
   inherited Notify(Ptr, Action);
 end;
 
-{** TSpinWait **}
+{ TSpinWait }
 
 {$IF RTLVersion < 22}
 class function TSpinWait.SpinUntil(const ACondition: TFunc<Boolean>; Timeout: LongWord): Boolean;
@@ -2703,7 +2690,7 @@ begin
 end;
 {$IFEND}
 
-{** TTimerThread **}
+{ TTimerThread }
 
 constructor TTimerThread.Create(Interval: Integer; TimerProc: TThreadProcedure);
 begin
@@ -2818,13 +2805,9 @@ begin
   end;
 end;
 
-
 initialization
-Initialized := False;
-Finalized := False;
 
 finalization
-
 TAQ.Finalize;
 
 end.
