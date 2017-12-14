@@ -30,7 +30,7 @@ begin
     // Create a plugin chain
     .Plugin<TAQPControlAnimations> 
     // Play a shake animation on all contained buttons
-    .ShakeAnimation(1, 10, 0, 0, 300); 
+    .ShakeAnimation(1, 10, 2, 5, 300); 
 end;
 
 ```
