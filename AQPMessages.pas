@@ -59,13 +59,13 @@ implementation
 
 type
   TWndMethodRec = record
-    Code:Pointer;
-    Obj:TObject;
+    Code: Pointer;
+    Obj: TObject;
   end;
   PWndProcRec = ^TWndProcRec;
   TWndProcRec = record
-    OrgWndProc:TWndMethod;
-    Control:TControl;
+    OrgWndProc: TWndMethod;
+    Control: TControl;
   end;
 
   {**
@@ -76,18 +76,18 @@ type
    *}
   TWndProcList = class(TList)
   private
-    function GetIndex(Control:TControl):Integer;
+    function GetIndex(Control: TControl): Integer;
   protected
-    procedure TransferWndProc(var Message:TMessage); virtual;
+    procedure TransferWndProc(var Message: TMessage); virtual;
   public
-    procedure HookControl(Control:TControl);
-    procedure UnhookControl(Control:TControl);
+    procedure HookControl(Control: TControl);
+    procedure UnhookControl(Control: TControl);
 
     procedure Clear; override;
   end;
 
 var
-  WndProcList:TWndProcList;
+  WndProcList: TWndProcList;
 
 
 {** TAQPMessages **}
@@ -126,7 +126,7 @@ class procedure TAQPMessages.DispatchWindowProc(Control: TControl; Message: TMes
 begin
   if not (Assigned(FListeners) and (FListeners.Count > 0)) then
     Exit;
-  FInDispatchWindowProc := TRUE;
+  FInDispatchWindowProc := True;
   try
     FListeners
       .Each(
@@ -135,21 +135,20 @@ begin
           MsgPlugin: TAQPMessages;
         begin
           MsgPlugin := TAQPMessages(O);
-          if
-            (MsgPlugin.FListenForMsg = Message.Msg) and
+          if (MsgPlugin.FListenForMsg = Message.Msg) and
             (MsgPlugin.WorkAQ.IndexOf(Control) >= 0) then
           begin
             MsgPlugin.Each(
               function(AQ: TAQ; O: TObject): Boolean
               begin
                 MsgPlugin.FEachMsgFunction(AQ, O, Message);
-                Result := TRUE;
+                Result := True;
               end);
           end;
-          Result := TRUE;
+          Result := True;
         end);
   finally
-    FInDispatchWindowProc := FALSE;
+    FInDispatchWindowProc := False;
   end;
 end;
 
@@ -172,19 +171,19 @@ begin
           MatchID(ListenID, CheckMsgPlugin.FListenID) and
           (CheckMsgPlugin.WorkAQ.IfContainsAny(Self.WorkAQ).Die.Count > 0) then
           CancelPlugs.Add(CheckMsgPlugin);
-        Result := TRUE;
+        Result := True;
       end);
 
   if CancelPlugs.Count > 0 then
   begin
     CancelEach := function(AQ: TAQ; O: TObject): Boolean
     begin
-      TAQPMessages(O).Immortally := FALSE;
+      TAQPMessages(O).Immortally := False;
       GarbageCollector.Remove(TAQPMessages(O));
-      Result := TRUE;
+      Result := True;
     end;
     {**
-     * If this method was called from a listener closure, so me must execute the real cancel
+     * If this method was called from a listener closure, so we must execute the real cancel
      * at the end of the current message loop and exactly this does EachDelay(0, ...)
      *}
     if FInDispatchWindowProc then
@@ -218,7 +217,7 @@ begin
     var
       MsgPlugin: TAQPMessages;
     begin
-      Result := TRUE;
+      Result := True;
       if not (O is TControl) then
         Exit;
       {**
@@ -236,7 +235,7 @@ begin
        * - Das verbundene Objekt freigegeben wird
        * - CancelMessages entsprechend aufgerufen wird
        *}
-      MsgPlugin.Immortally := TRUE;
+      MsgPlugin.Immortally := True;
       {**
        * Add the plugin to the unmanaged class wide TAQ instance
        *}
@@ -266,18 +265,19 @@ class function TAQPMessages.ListenersExistsFor(Control: TControl; Msg: Cardinal;
 var
   ListenersExists: Boolean;
 begin
-  ListenersExists := FALSE;
+  ListenersExists := False;
   FListeners.Each(
     function(AQ: TAQ; O: TObject): Boolean
+    var
+      MsgPlugin: TAQPMessages absolute O;
     begin
-      with TAQPMessages(O) do
-        ListenersExists:=
-          (
-            ((Msg = 0) and (FListenForMsg > 0)) or
-            ((Msg > 0) and (FListenForMsg = Msg))
-          ) and
-          WorkAQ.Contains(Control) and
-          MatchID(ListenID, FListenID);
+      ListenersExists :=
+        (
+          ((Msg = 0) and (MsgPlugin.FListenForMsg > 0)) or
+          ((Msg > 0) and (MsgPlugin.FListenForMsg = Msg))
+        ) and
+        MsgPlugin.WorkAQ.Contains(Control) and
+        MatchID(ListenID, MsgPlugin.FListenID);
       Result := not ListenersExists;
     end);
   Result := ListenersExists;
@@ -312,6 +312,7 @@ var
   Index: Integer;
   P: PWndProcRec;
   OrgWndProc: TWndMethod;
+  InDestroyState: Boolean;
 begin
   // ATTENTION: Self points to the hooked Control!
   Index := WndProcList.GetIndex(TControl(Self));
@@ -320,8 +321,9 @@ begin
 
   P := PWndProcRec(WndProcList.Items[Index]);
   OrgWndProc := P^.OrgWndProc;
+  InDestroyState := csDestroying in P^.Control.ComponentState;
 
-  if (Message.Msg = WM_DESTROY) or (csDestroying in P^.Control.ComponentState) then
+  if (Message.Msg = WM_DESTROY) or InDestroyState then
   begin
     WndProcList.UnhookControl(P^.Control);
     OrgWndProc(Message);
@@ -329,7 +331,7 @@ begin
   else
   begin
     OrgWndProc(Message);
-    if not (csDestroying in P^.Control.ComponentState) then
+    if not InDestroyState then
       TAQPMessages.DispatchWindowProc(P^.Control, Message);
   end;
 end;

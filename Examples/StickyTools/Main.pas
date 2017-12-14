@@ -24,6 +24,10 @@ implementation
 uses
   Tools, AQPStickyTools;
 
+const
+  FontColorAniID = 75;
+  BGColorAniID = 76;
+
 procedure TMainForm.AnimateCheckBoxClick(Sender: TObject);
 begin
   TAQPStickyTools.AnimateStick := AnimateCheckBox.Checked;
@@ -91,26 +95,33 @@ begin
       begin
         Inc(ExitSizeMoveCount);
         Caption := 'WM_EXITSIZEMOVE ' + IntToStr(ExitSizeMoveCount);
-        Result := TRUE;
+        Result := True;
       end, 111);
     EachMessage(WM_WINDOWPOSCHANGED,
       function(AQ: TAQ; O: TObject; Message: TMessage): Boolean
       begin
         Inc(WindowPosChangedCount);
         Caption := 'WM_WINDOWPOSCHANGED ' + IntToStr(WindowPosChangedCount);
-        Result := TRUE;
+        Result := True;
       end, 111);
     EachMessage(WM_LBUTTONDOWN,
       function(AQ: TAQ; O: TObject; Message: TMessage): Boolean
       begin
+        Take(O)
+          .CancelAnimations(BGColorAniID)
+          .Plugin<TAQPControlAnimations>
+          .BackgroundColorAnimation(clBlack, 250, BGColorAniID, TAQ.Ease(etCubic));
         TForm(O).Color := clBlack;
-        Result := TRUE;
+        Result := True;
       end);
     EachMessage(WM_LBUTTONUP,
       function(AQ: TAQ; O: TObject; Message: TMessage): Boolean
       begin
-        TForm(O).Color := clBtnFace;
-        Result := TRUE;
+        Take(O)
+          .CancelAnimations(BGColorAniID)
+          .Plugin<TAQPControlAnimations>
+          .BackgroundColorAnimation(clBtnFace, 250, BGColorAniID, TAQ.Ease(etCubic));
+        Result := True;
       end);
   end;
 
@@ -125,12 +136,12 @@ begin
 
     AQ
       .Plugin<TAQPControlAnimations>
-      .FontColorAnimation(TargetColor, 500, 0, TAQ.Ease(etQuint),
+      .FontColorAnimation(TargetColor, 500, FontColorAniID, TAQ.Ease(etQuint),
         procedure(Sender: TObject)
         begin
           Take(Sender).EachDelay(200, BlinkEach);
         end);
-    Result := FALSE;
+    Result := False;
   end;
   Take(Label1).Each(BlinkEach);
 end;

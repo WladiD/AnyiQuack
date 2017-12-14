@@ -14,7 +14,7 @@ object MainForm: TMainForm
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
-  Position = poDesktopCenter
+  Position = poScreenCenter
   OnCreate = FormCreate
   DesignSize = (
     645
@@ -39,10 +39,10 @@ object MainForm: TMainForm
   object AnimateCheckBox: TCheckBox
     Left = 8
     Top = 427
-    Width = 97
+    Width = 209
     Height = 17
     Anchors = [akLeft, akBottom]
-    Caption = 'Animate'
+    Caption = 'Animate child windows movements'
     Checked = True
     State = cbChecked
     TabOrder = 0
