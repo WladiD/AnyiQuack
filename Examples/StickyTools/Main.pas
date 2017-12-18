@@ -12,6 +12,9 @@ type
     AnimateCheckBox: TCheckBox;
     procedure FormCreate(Sender: TObject);
     procedure AnimateCheckBoxClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+  private
+    function LabelBlink(AQ: TAQ; O: TObject): Boolean;
   end;
 
 var
@@ -34,9 +37,17 @@ begin
 end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
+
+  function CreateToolsForm: TToolsForm;
+  begin
+    Result := TToolsForm.Create(Self);
+    Result.PopupParent := Self;
+  end;
+
 var
   PaddingLeft, PaddingTop, ExitSizeMoveCount, WindowPosChangedCount: Integer;
-  BlinkEach: TEachFunction;
+  TF: TToolsForm;
+  MsgPlugin: TAQPMessages;
 begin
   PaddingLeft := GetSystemMetrics(SM_CXSIZEFRAME)
     + GetSystemMetrics(SM_CXBORDER)
@@ -47,36 +58,70 @@ begin
     + GetSystemMetrics(SM_CXPADDEDBORDER)
     + 1;
 
-  with TToolsForm.Create(Self) do
-  begin
-    PopupParent := Self;
-    Top := Self.Top;
-    Left := Self.Left - 80 - PaddingLeft;
-    Height := 300;
-    Width := 80;
-    Show;
-  end;
+  TF := CreateToolsForm;
+  TF.Top := Self.Top;
+  TF.Left := Self.Left - 80 - PaddingLeft;
+  TF.Height := 300;
+  TF.Width := 80;
+  TF.Show;
 
-  with TToolsForm.Create(Self) do
-  begin
-    PopupParent := Self;
-    Top := Self.Top + Self.Height + PaddingTop;
-    Left := Self.Left;
-    Height := 80;
-    Width := Self.Width;
-    Show;
-  end;
+  TF := CreateToolsForm;
+  TF.Top := Self.Top + Self.Height + PaddingTop;
+  TF.Left := Self.Left;
+  TF.Height := 80;
+  TF.Width := Self.Width;
+  TF.Show;
 
-  with TToolsForm.Create(Self) do
-  begin
-    PopupParent := Self;
-    Top := Self.Top + PaddingTop + GetSystemMetrics(SM_CYCAPTION) - 1;
-    Left := Self.Left + Self.ClientWidth - 202;
-    Height := 200;
-    Width := 200;
-    Show;
-  end;
+  TF := CreateToolsForm;
+  TF.Top := Self.Top + PaddingTop + GetSystemMetrics(SM_CYCAPTION) - 1;
+  TF.Left := Self.Left + Self.ClientWidth - 202;
+  TF.Height := 200;
+  TF.Width := 200;
+  TF.Show;
 
+  ExitSizeMoveCount := 0;
+  WindowPosChangedCount := 0;
+  MsgPlugin := Take(Self).Plugin<TAQPMessages>;
+
+  MsgPlugin.EachMessage(WM_EXITSIZEMOVE,
+    function(AQ: TAQ; O: TObject; Message: TMessage): Boolean
+    begin
+      Inc(ExitSizeMoveCount);
+      Caption := 'WM_EXITSIZEMOVE ' + IntToStr(ExitSizeMoveCount);
+      Result := True;
+    end, 111);
+  MsgPlugin.EachMessage(WM_WINDOWPOSCHANGED,
+    function(AQ: TAQ; O: TObject; Message: TMessage): Boolean
+    begin
+      Inc(WindowPosChangedCount);
+      Caption := 'WM_WINDOWPOSCHANGED ' + IntToStr(WindowPosChangedCount);
+      Result := True;
+    end, 111);
+  MsgPlugin.EachMessage(WM_LBUTTONDOWN,
+    function(AQ: TAQ; O: TObject; Message: TMessage): Boolean
+    begin
+      Take(O)
+        .CancelAnimations(BGColorAniID)
+        .Plugin<TAQPControlAnimations>
+        .BackgroundColorAnimation(clBlack, 250, BGColorAniID, TAQ.Ease(etCubic));
+      TForm(O).Color := clBlack;
+      Result := True;
+    end);
+  MsgPlugin.EachMessage(WM_LBUTTONUP,
+    function(AQ: TAQ; O: TObject; Message: TMessage): Boolean
+    begin
+      Take(O)
+        .CancelAnimations(BGColorAniID)
+        .Plugin<TAQPControlAnimations>
+        .BackgroundColorAnimation(clBtnFace, 250, BGColorAniID, TAQ.Ease(etCubic));
+      Result := True;
+    end);
+
+  Take(Label1).Each(LabelBlink);
+end;
+
+procedure TMainForm.FormShow(Sender: TObject);
+begin
   Take(Self)
     .ChildrenChain
       .FilterChain(TToolsForm)
@@ -85,65 +130,25 @@ begin
       .EndChain
       .Die
     .EndChain;
+end;
 
-  ExitSizeMoveCount := 0;
-  WindowPosChangedCount := 0;
-  with Take(Self).Plugin<TAQPMessages> do
-  begin
-    EachMessage(WM_EXITSIZEMOVE,
-      function(AQ: TAQ; O: TObject; Message: TMessage): Boolean
+function TMainForm.LabelBlink(AQ: TAQ; O: TObject): Boolean;
+var
+  TargetColor: TColor;
+begin
+  if TLabel(O).Font.Color = clBlack then
+    TargetColor := clRed
+  else
+    TargetColor := clBlack;
+
+  AQ
+    .Plugin<TAQPControlAnimations>
+    .FontColorAnimation(TargetColor, 500, FontColorAniID, TAQ.Ease(etQuint),
+      procedure(Sender: TObject)
       begin
-        Inc(ExitSizeMoveCount);
-        Caption := 'WM_EXITSIZEMOVE ' + IntToStr(ExitSizeMoveCount);
-        Result := True;
-      end, 111);
-    EachMessage(WM_WINDOWPOSCHANGED,
-      function(AQ: TAQ; O: TObject; Message: TMessage): Boolean
-      begin
-        Inc(WindowPosChangedCount);
-        Caption := 'WM_WINDOWPOSCHANGED ' + IntToStr(WindowPosChangedCount);
-        Result := True;
-      end, 111);
-    EachMessage(WM_LBUTTONDOWN,
-      function(AQ: TAQ; O: TObject; Message: TMessage): Boolean
-      begin
-        Take(O)
-          .CancelAnimations(BGColorAniID)
-          .Plugin<TAQPControlAnimations>
-          .BackgroundColorAnimation(clBlack, 250, BGColorAniID, TAQ.Ease(etCubic));
-        TForm(O).Color := clBlack;
-        Result := True;
+        Take(Sender).EachDelay(200, LabelBlink);
       end);
-    EachMessage(WM_LBUTTONUP,
-      function(AQ: TAQ; O: TObject; Message: TMessage): Boolean
-      begin
-        Take(O)
-          .CancelAnimations(BGColorAniID)
-          .Plugin<TAQPControlAnimations>
-          .BackgroundColorAnimation(clBtnFace, 250, BGColorAniID, TAQ.Ease(etCubic));
-        Result := True;
-      end);
-  end;
-
-  BlinkEach := function(AQ: TAQ; O: TObject): Boolean
-  var
-    TargetColor: TColor;
-  begin
-    if TLabel(O).Font.Color = clBlack then
-      TargetColor := clRed
-    else
-      TargetColor := clBlack;
-
-    AQ
-      .Plugin<TAQPControlAnimations>
-      .FontColorAnimation(TargetColor, 500, FontColorAniID, TAQ.Ease(etQuint),
-        procedure(Sender: TObject)
-        begin
-          Take(Sender).EachDelay(200, BlinkEach);
-        end);
-    Result := False;
-  end;
-  Take(Label1).Each(BlinkEach);
+  Result := False;
 end;
 
 end.

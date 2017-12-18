@@ -12,10 +12,10 @@
  * The Original Code is AQPMessages.pas.
  *
  * The Initial Developer of the Original Code is Waldemar Derr.
- * Portions created by Waldemar Derr are Copyright (C) 2014 Waldemar Derr.
+ * Portions created by Waldemar Derr are Copyright (C) Waldemar Derr.
  * All Rights Reserved.
  *
- * @author Waldemar Derr <mail@wladid.de>
+ * @author Waldemar Derr <furevest@gmail.com>
  *}
 
 unit AQPMessages;
@@ -23,7 +23,10 @@ unit AQPMessages;
 interface
 
 uses
-  SysUtils, Classes, Controls, Windows, Messages, Contnrs, AnyiQuack;
+  System.SysUtils, System.Classes, System.Contnrs, System.Types, Vcl.Controls, Winapi.Windows,
+  Winapi.Messages,
+
+  AnyiQuack;
 
 type
   TAQPMessages = class(TAQPlugin)
@@ -132,20 +135,20 @@ begin
       .Each(
         function(AQ: TAQ; O: TObject): Boolean
         var
-          MsgPlugin: TAQPMessages;
+          MsgPlugin: TAQPMessages absolute O;
+          PluginAQ: TAQ;
         begin
-          MsgPlugin := TAQPMessages(O);
-          if (MsgPlugin.FListenForMsg = Message.Msg) and
-            (MsgPlugin.WorkAQ.IndexOf(Control) >= 0) then
-          begin
-            MsgPlugin.Each(
-              function(AQ: TAQ; O: TObject): Boolean
-              begin
-                MsgPlugin.FEachMsgFunction(AQ, O, Message);
-                Result := True;
-              end);
-          end;
           Result := True;
+
+          if MsgPlugin.FListenForMsg = Message.Msg then
+          begin
+            PluginAQ := MsgPlugin.WorkAQ;
+
+            // It looks dangerous, but as we know that we have only one control per TAQ instance
+            // for this purposes, we must rely on it.
+            if PluginAQ[0] = Control then
+              Result := MsgPlugin.FEachMsgFunction(PluginAQ, PluginAQ[0], Message);
+          end;
         end);
   finally
     FInDispatchWindowProc := False;
@@ -220,10 +223,8 @@ begin
       Result := True;
       if not (O is TControl) then
         Exit;
-      {**
-       * Jedes TControl muss in einer eigenen TAQ-Instanz residieren, da es sonst keinen
-       * Zusammenhang zwischen der Message und dem zugehörigen TControl gibt.
-       *}
+
+      // Each TControl resists in its own TAQ instance
       MsgPlugin := Take(O).Plugin<TAQPMessages>;
 
       MsgPlugin.FEachMsgFunction := EachMsgFunction;
@@ -276,7 +277,7 @@ begin
           ((Msg = 0) and (MsgPlugin.FListenForMsg > 0)) or
           ((Msg > 0) and (MsgPlugin.FListenForMsg = Msg))
         ) and
-        MsgPlugin.WorkAQ.Contains(Control) and
+        (MsgPlugin.WorkAQ[0] = Control) and
         MatchID(ListenID, MsgPlugin.FListenID);
       Result := not ListenersExists;
     end);

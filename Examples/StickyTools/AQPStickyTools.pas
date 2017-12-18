@@ -27,6 +27,8 @@ uses
 {** TAQPStickyTools **}
 
 procedure TAQPStickyTools.Autorun;
+const
+  MessageListenID = 3;
 begin
   inherited Autorun;
 
@@ -39,19 +41,20 @@ begin
       if not (O is TToolsForm) then
         Exit;
       if not TAQPMessages
-        .ListenersExistsFor(TControl(ToolsForm.Owner), WM_WINDOWPOSCHANGED) then
+        .ListenersExistsFor(TControl(ToolsForm.Owner), WM_WINDOWPOSCHANGED, MessageListenID) then
         Take(ToolsForm.Owner)
           .Plugin<TAQPMessages>
           .EachMessage(WM_WINDOWPOSCHANGED,
             function(AQ: TAQ; O: TObject; Message: TMessage): Boolean
             begin
-              AQ
-                .ChildrenChain
-                  .Each(StickyEach)
-                  .Die
-                .EndChain;
+              AQ.ChildrenChain //.DebugMessage('Nach ChildrenChain')
+                  .FilterChain(TToolsForm) //.DebugMessage('Nach FilterChain')
+                    .Each(StickyEach)
+                  .EndChain.Die
+                .EndChain.Die;
+
               Result := False;
-            end);
+            end, MessageListenID);
     end);
 end;
 
@@ -80,6 +83,6 @@ begin
 end;
 
 initialization
-  TAQPStickyTools.AnimateStick := TRUE;
+  TAQPStickyTools.AnimateStick := True;
 
 end.
