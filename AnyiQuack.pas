@@ -998,9 +998,9 @@ begin
   var
     cc: Integer;
     TempAQ: TAQ;
-    CI: TInterval; // Abkürzung für CurrentInterval
+    CI: TInterval; // Shortcut for CurrentInterval
   begin
-    Result := True; // Each soll komplett durchlaufen
+    Result := True; // Performed Each should go through completely
     if not (O is TAQ) then
       Exit;
     TempAQ := TAQ(O);
@@ -1024,16 +1024,15 @@ begin
 
   if not Assigned(FActiveIntervalAQs) then
     Exit;
-  {**
-   * Abbrüche und Beendigungen können sich nur an aktive TAQ-Instanzen richten
-   *}
+
+  // Cancelation could only subjected to active TAQ instances
   FActiveIntervalAQs
     .Each(
       function(GC: TAQ; Target: TObject): Boolean
       var
         TargetAQ: TAQ;
       begin
-        Result := True; // Each soll komplett durchlaufen
+        Result := True; // Full Each scan
         if Target = FGC then
           Exit;
         TargetAQ := TAQ(Target);
@@ -1051,14 +1050,13 @@ begin
             begin
               TargetAQ.Each(Perform);
               Perform(nil, TargetAQ);
-              Result := False; // Es wird nur ein Objekt-Vorkommen benötigt
+              Result := False; // Only one occurence required, so break the Each
             end;
           end);
       end);
-  {**
-   * Very important reset, because this closure is used nested in previous
-   * FActiveIntervalAQs.Each call and otherwise it's not released -> produces memory leaks.
-   *}
+
+  // Very important reset, because this closure is used nested in previous
+  // FActiveIntervalAQs.Each call and otherwise it's not released -> produces memory leaks.
   Perform := nil;
 end;
 
@@ -1237,6 +1235,11 @@ begin
   AddInterval(TInterval.Finite(Delay, nil, Each, arDelay, ID));
 end;
 
+// Performs the passed method/closure on each in TAQ contained object each interval repeatedly
+//
+// The Each is called each interval until you cancel it with `TAQ.CancelIntervals`.
+// Unit of Interval is millisecond. If you consider to perform several EachInterval's on the same
+// objects, you should define an ID, so you'll be able to cancel only the specific intervaled Each.
 function TAQ.EachInterval(Interval: Integer; Each: TEachFunction; ID: Integer): TAQ;
 begin
   if Interval >= MaxLifeTime then
@@ -1247,6 +1250,7 @@ begin
   AddInterval(TInterval.Infinite(Interval, Each, arInterval, ID));
 end;
 
+// Performs the passed method/closure on each in TAQ contained object x times
 function TAQ.EachRepeat(Times: Integer; EachFunction: TEachFunction): TAQ;
 var
   cc: Integer;
@@ -1257,10 +1261,16 @@ begin
     Each(EachFunction);
 end;
 
+// Performs the passed methods/closures on each in TAQ contained object as long as the timer
+// runs (parameter Each) and once when the timer expires (parameter LastEach)
+//
+// From the performing Each function you can access to the associated interval with
+// `AQ.CurrentInterval` and use further runtime specific informations
+// e.g. `AQ.CurrentInterval.Progress`
 function TAQ.EachTimer(Duration: Integer; Each, LastEach: TEachFunction; ID: Integer): TAQ;
 begin
   if Duration >= MaxLifeTime then
-    raise EAQ.CreateFmt('Dauer des Timers (%d) muss kleiner als MaxLifeTime (%d) sein.',
+    raise EAQ.CreateFmt('Timers duration (%d) must be lower than MaxLifeTime (%d)',
       [Duration, MaxLifeTime])
   else if SupervisorLock(Result, aqmEachTimer) then
     Exit;
