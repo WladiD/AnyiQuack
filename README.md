@@ -20,7 +20,7 @@ procedure TForm1.Button1Click(Sender: TObject);
 begin
   // Take the form 
   Take(Form1) 
-    // Takes all childrens of Form1 recursive (=True)
+    // Takes all children of Form1 recursive (=True)
     .ChildrenChain(True) 
     // Create a chain with only containing TButton descendants
     .FilterChain(TButton) 
@@ -32,5 +32,4 @@ begin
     // Play a shake animation on all contained buttons
     .ShakeAnimation(1, 10, 0, 0, 300); 
 end;
-
 ```
