@@ -36,7 +36,7 @@ type
      * Assign a value > 0 to enable the feature or 0 to disable it.
      * The timeout is in milliseconds. The notification window is getting closed
      * automatically, after the defined timeout is expired and until the method
-     * AutoClosePossible returns TRUE.
+     * AutoClosePossible returns True.
      *}
     property CloseTimeout: Integer read FCloseTimeout write SetCloseTimeout;
   end;
@@ -91,7 +91,7 @@ end;
 
 procedure TNotificationWindow.Close;
 begin
-  FClosed := TRUE;
+  FClosed := True;
   Stack.Close(Self);
 end;
 
@@ -161,7 +161,7 @@ end;
 
 destructor TNotificationStack.Destroy;
 begin
-  CloseAll(False);
+  FList.OwnsObjects := True;
   FList.Free;
   inherited Destroy;
 end;
@@ -189,25 +189,22 @@ begin
     .Each(
       function(AQ: TAQ; O: TObject):Boolean
       var
-        TargetNotf: TNotificationWindow;
+        TargetNotf: TNotificationWindow absolute O;
+        AniPlugin: TAQPControlAnimations;
       begin
-        TargetNotf := TNotificationWindow(O);
         Dec(TopPosition, TargetNotf.Height);
 
-        with Take(O).Plugin<TAQPControlAnimations> do
-        begin
-          BoundsAnimation(
-            Screen.WorkAreaRect.Right - TargetNotf.Width,
-            TopPosition, -1, -1,
-            IfThen(WindowIndex = 0, InPositionAnimationDuration div 2,
-              InPositionAnimationDuration),
-            PositionAnimationID, TAQ.Ease(etBack, emInInverted));
-          AlphaBlendAnimation(MAXBYTE, InAlphaAnimationDuration,
-            AlphaAnimationID, TAQ.Ease(etSinus));
-        end;
+        AniPlugin := Take(O).Plugin<TAQPControlAnimations>;
+        AniPlugin.BoundsAnimation(
+          Screen.WorkAreaRect.Right - TargetNotf.Width,
+          TopPosition, -1, -1,
+          IfThen(WindowIndex = 0, InPositionAnimationDuration div 2, InPositionAnimationDuration),
+          PositionAnimationID, TAQ.Ease(etBack, emInInverted));
+        AniPlugin.AlphaBlendAnimation(MAXBYTE, InAlphaAnimationDuration,
+          AlphaAnimationID, TAQ.Ease(etSinus));
 
         Inc(WindowIndex);
-        Result := TRUE;
+        Result := True;
       end);
 end;
 
@@ -219,32 +216,30 @@ begin
   NotificationWindow.Left := Screen.WorkAreaRect.Right - NotificationWindow.Width;
   NotificationWindow.Top := Screen.PrimaryMonitor.BoundsRect.Bottom;
   ShowWindow(NotificationWindow.WindowHandle, SW_SHOWNOACTIVATE);
-  NotificationWindow.Visible := TRUE;
-  NotificationWindow.AlphaBlend := TRUE;
+  NotificationWindow.Visible := True;
+  NotificationWindow.AlphaBlend := True;
   UpdatePositions;
 end;
 
 procedure TNotificationStack.Close(NotificationWindow: TNotificationWindow);
 var
   NextFocusedWindowIndex: Integer;
+  AniPlugin: TAQPControlAnimations;
 begin
-  with Take(NotificationWindow)
+  AniPlugin := Take(NotificationWindow)
     .CancelAnimations
-    .Plugin<TAQPControlAnimations> do
-  begin
-    BoundsAnimation(Screen.WorkAreaRect.Right, NotificationWindow.Top, -1, -1,
-      OutPositionAnimationDuration, 0,
-      TAQ.Ease(etCubic, emInInverted),
-      {**
-       * Handler for the OnComplete event
-       *}
-      procedure(Sender: TObject)
-      begin
-        NotificationWindow.Release;
-      end);
-
-    AlphaBlendAnimation(0, OutAlphaAnimationDuration, 0, TAQ.Ease(etSinus));
-  end;
+    .Plugin<TAQPControlAnimations>;
+  AniPlugin.BoundsAnimation(Screen.WorkAreaRect.Right, NotificationWindow.Top, -1, -1,
+    OutPositionAnimationDuration, 0,
+    TAQ.Ease(etCubic, emInInverted),
+    {**
+     * Handler for the OnComplete event
+     *}
+    procedure(Sender: TObject)
+    begin
+      NotificationWindow.Release;
+    end);
+  AniPlugin.AlphaBlendAnimation(0, OutAlphaAnimationDuration, 0, TAQ.Ease(etSinus));
 
   NextFocusedWindowIndex := List.Remove(NotificationWindow);
 

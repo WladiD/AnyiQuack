@@ -12,7 +12,7 @@
  * The Original Code is AQPControlAnimations.pas.
  *
  * The Initial Developer of the Original Code is Waldemar Derr.
- * Portions created by Waldemar Derr are Copyright (C) 2010 Waldemar Derr.
+ * Portions created by Waldemar Derr are Copyright (C) Waldemar Derr.
  * All Rights Reserved.
  *
  * @author Waldemar Derr <furevest@gmail.com>
@@ -76,7 +76,7 @@ type
 {**
  * Animates the AlphaBlendValue on all contained TCustomForm descendants
  *
- * TCustomForm.AlphaBlend must be set to TRUE previously.
+ * TCustomForm.AlphaBlend must be set to True previously.
  *}
 function TAQPControlAnimations.AlphaBlendAnimation(ToAlphaBlendValue: Byte; Duration, ID: Integer;
   EaseFunction: TEaseFunction; OnComplete: TAnonymNotifyEvent): TAQ;
@@ -86,7 +86,7 @@ begin
     var
       StartAlphaBlendValue: Byte;
     begin
-      Result := TRUE;
+      Result := True;
 
       if not (
         (O is TCustomForm) and
@@ -107,7 +107,7 @@ begin
             if Assigned(OnComplete) and (AQ.CurrentInterval.Progress = 1) then
               OnComplete(O);
 
-            Result := TRUE;
+            Result := True;
           end);
     end);
 end;
@@ -118,7 +118,7 @@ begin
   Result := Each(
     function(AQ: TAQ; O: TObject): Boolean
     begin
-      Result := TRUE; // Komplett durchlaufen
+      Result := True; // Komplett durchlaufen
       if O is TControl then
         Take(O)
           .Plugin<TAQPControlAnimations>
@@ -126,7 +126,7 @@ begin
             function(AQ: TAQ; O: TObject; Color: TColor): Boolean
             begin
               TControl(O).BackgroundColor := Color;
-              Result := TRUE;
+              Result := True;
             end,
             EaseFunction, OnComplete);
     end);
@@ -142,26 +142,24 @@ begin
   var
     EachF: TEachFunction;
     PrevLeft, PrevTop, PrevWidth, PrevHeight: Integer;
+    OC: TControl absolute O;
   begin
-    Result := TRUE;
+    Result := True;
     if not (O is TControl) then
       Exit;
 
-    with TControl(O) do
-    begin
-      PrevLeft := Left;
-      PrevTop := Top;
-      PrevWidth := Width;
-      PrevHeight := Height;
-    end;
+    PrevLeft := OC.Left;
+    PrevTop := OC.Top;
+    PrevWidth := OC.Width;
+    PrevHeight := OC.Height;
 
     EachF := function(AQ: TAQ; O: TObject): Boolean
     var
       Progress: Real;
       AniLeft, AniTop, AniWidth, AniHeight: Integer;
-      OC: TControl absolute O;
+      OOC: TControl absolute O;
     begin
-      Result := TRUE;
+      Result := True;
       Progress := AQ.CurrentInterval.Progress;
 
       AniLeft := TAQ.EaseInteger(PrevLeft, NewLeft, Progress, EaseFunction);
@@ -169,13 +167,13 @@ begin
       if NewWidth >= 0 then
         AniWidth := TAQ.EaseInteger(PrevWidth, NewWidth, Progress, EaseFunction)
       else
-        AniWidth := OC.Width;
+        AniWidth := OOC.Width;
       if NewHeight >= 0 then
         AniHeight := TAQ.EaseInteger(PrevHeight, NewHeight, Progress, EaseFunction)
       else
-        AniHeight := OC.Height;
+        AniHeight := OOC.Height;
 
-      OC.SetBounds(AniLeft, AniTop, AniWidth, AniHeight);
+      OOC.SetBounds(AniLeft, AniTop, AniWidth, AniHeight);
 
       if Progress = 1 then
       begin
@@ -224,7 +222,7 @@ begin
   Result := Each(
     function(AQ: TAQ; O: TObject): Boolean
     begin
-      Result := TRUE; // Komplett durchlaufen
+      Result := True; // Komplett durchlaufen
       if O is TControl then
         Take(O)
           .Plugin<TAQPControlAnimations>
@@ -232,7 +230,7 @@ begin
             function(AQ: TAQ; O: TObject; Color: TColor): Boolean
             begin
               TControl(O).FontColor := Color;
-              Result := TRUE;
+              Result := True;
             end,
             EaseFunction, OnComplete);
     end);
@@ -248,7 +246,7 @@ begin
     EachF: TEachFunction;
     PrevLeft, PrevTop: Integer;
   begin
-    Result := TRUE;
+    Result := True;
     if not (O is TControl) then
       Exit;
 
@@ -263,7 +261,7 @@ begin
       Progress: Real;
       AniLeft, AniTop: Integer;
     begin
-      Result := TRUE;
+      Result := True;
       Progress := AQ.CurrentInterval.Progress;
       AniLeft := PrevLeft;
       AniTop := PrevTop;

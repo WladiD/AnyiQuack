@@ -27,62 +27,62 @@ uses
 {** TAQPStickyTools **}
 
 procedure TAQPStickyTools.Autorun;
+const
+  MessageListenID = 3;
 begin
   inherited Autorun;
 
   Each(
     function(AQ: TAQ; O: TObject): Boolean
     var
-      ToolsForm: TToolsForm;
+      ToolsForm: TToolsForm absolute O;
     begin
-      Result := TRUE;
+      Result := True;
       if not (O is TToolsForm) then
         Exit;
-      ToolsForm := TToolsForm(O);
       if not TAQPMessages
-        .ListenersExistsFor(TControl(ToolsForm.Owner), WM_WINDOWPOSCHANGED) then
+        .ListenersExistsFor(TControl(ToolsForm.Owner), WM_WINDOWPOSCHANGED, MessageListenID) then
         Take(ToolsForm.Owner)
           .Plugin<TAQPMessages>
           .EachMessage(WM_WINDOWPOSCHANGED,
             function(AQ: TAQ; O: TObject; Message: TMessage): Boolean
             begin
-              AQ
-                .ChildrenChain
-                  .Each(StickyEach)
-                  .Die
-                .EndChain;
-              Result:=FALSE;
-            end);
+              AQ.ChildrenChain //.DebugMessage('Nach ChildrenChain')
+                  .FilterChain(TToolsForm) //.DebugMessage('Nach FilterChain')
+                    .Each(StickyEach)
+                  .EndChain.Die
+                .EndChain.Die;
+
+              Result := False;
+            end, MessageListenID);
     end);
 end;
 
 function TAQPStickyTools.StickyEach(AQ: TAQ; O: TObject): Boolean;
 var
   LocalTargetPos: TPoint;
-  ToolsForm: TToolsForm;
+  ToolsForm: TToolsForm absolute O;
 begin
-  Result := TRUE;
+  Result := True;
   if not (O is TToolsForm) then
     Exit;
-  ToolsForm := TToolsForm(O);
   LocalTargetPos := ToolsForm.TargetPos;
 
   if AnimateStick then
   begin
     Take(O)
-      .CancelAnimations
+      .CancelAnimations(161) // 161 is an random number but with the purpose to associate this animation
       .Plugin<TAQPControlAnimations>
-      .BoundsAnimation(LocalTargetPos.X, LocalTargetPos.Y, -1, -1, 350, 0,
-        TAQ.Ease(etSinus, emInSnakeInverted))
+      .BoundsAnimation(LocalTargetPos.X, LocalTargetPos.Y, -1, -1, 350, 161,
+        TAQ.Ease(etElastic, emIn))
     .Die;
   end
   else
     with ToolsForm do
       SetBounds(LocalTargetPos.X, LocalTargetPos.Y, Width, Height);
-
 end;
 
 initialization
-  TAQPStickyTools.AnimateStick := TRUE;
+  TAQPStickyTools.AnimateStick := True;
 
 end.
