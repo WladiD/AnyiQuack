@@ -245,21 +245,20 @@ begin
   var
     EachF: TEachFunction;
     PrevLeft, PrevTop: Integer;
+    OC: TControl absolute O;
   begin
     Result := True;
     if not (O is TControl) then
       Exit;
 
-    with TControl(O) do
-    begin
-      PrevLeft:=Left;
-      PrevTop:=Top;
-    end;
+    PrevLeft := OC.Left;
+    PrevTop := OC.Top;
 
-    EachF:=function(AQ: TAQ; O: TObject): Boolean
+    EachF := function(AQ: TAQ; O: TObject): Boolean
     var
       Progress: Real;
       AniLeft, AniTop: Integer;
+      OC: TControl absolute O;
     begin
       Result := True;
       Progress := AQ.CurrentInterval.Progress;
@@ -274,8 +273,7 @@ begin
           AniTop := PrevTop + Swing(YTimes, YDiff, Progress);
       end;
 
-      with TControl(O) do
-        SetBounds(AniLeft, AniTop, Width, Height);
+      OC.SetBounds(AniLeft, AniTop, OC.Width, OC.Height);
 
       if Progress = 1 then
       begin

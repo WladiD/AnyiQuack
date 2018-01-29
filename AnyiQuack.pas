@@ -997,13 +997,13 @@ begin
   Perform := function(AQ: TAQ; O: TObject): Boolean
   var
     cc: Integer;
-    TempAQ: TAQ;
+    TempAQ: TAQ absolute O;
     CI: TInterval; // Shortcut for CurrentInterval
   begin
     Result := True; // Performed Each should go through completely
     if not (O is TAQ) then
       Exit;
-    TempAQ := TAQ(O);
+
     if not Assigned(TempAQ.FIntervals) then
       Exit;
 
@@ -1030,12 +1030,12 @@ begin
     .Each(
       function(GC: TAQ; Target: TObject): Boolean
       var
-        TargetAQ: TAQ;
+        TargetAQ: TAQ absolute Target;
       begin
         Result := True; // Full Each scan
         if Target = FGC then
           Exit;
-        TargetAQ := TAQ(Target);
+
         Each(
           {**
            * @param AQ Enthält Self aus dem selben Kontext, wie die CustomCancel-Methode

@@ -3,10 +3,21 @@ unit Main;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls,
+  Winapi.Windows,
+  System.SysUtils,
+  System.Variants,
+  System.Classes,
+  System.UITypes,
+  Vcl.Controls,
+  Vcl.Forms,
+  Vcl.Dialogs,
+  Vcl.StdCtrls,
+  Vcl.ExtCtrls,
+  Vcl.Graphics,
+
   AnyiQuack,
-  AQPControlAnimations; // AnyiQuack-Plugin
+  AQPControlAnimations,
+  AQPSystemTypesAnimations;
 
 type
   TForm1 = class(TForm)
@@ -26,6 +37,7 @@ var
   NewColor: TColor;
   NewAlphaBlend: Byte;
   AniPlugin: TAQPControlAnimations;
+  AQ: TAQ;
 begin
   NewWidth := Screen.WorkAreaWidth div 2;
   if Left <> 0 then
@@ -41,13 +53,26 @@ begin
     NewAlphaBlend := MAXBYTE;
   end;
 
-  AniPlugin := Take(Sender)
+  AQ := Take(Sender);
+
+  AniPlugin := AQ
     .FinishAnimations
     .Plugin<TAQPControlAnimations>;
   AniPlugin.BoundsAnimation(NewLeft, 0, NewWidth, Screen.WorkAreaHeight,
       500, 0, TAQ.Ease(etBack, emInSnake));
-  AniPlugin.BackgroundColorAnimation(NewColor, 1000, 0, TAQ.Ease(etCubic));
   AniPlugin.AlphaBlendAnimation(NewAlphaBlend, 2000, 0, TAQ.Ease(etCircle, emInInverted));
+
+  AQ.Plugin<TAQPSystemTypesAnimations>
+    .ColorAnimation(NewColor,
+    function(RefObject: TObject): TColor
+    begin
+      Result := TForm(RefObject).Color;
+    end,
+    procedure(RefObject: TObject; const NewColor: TColor)
+    begin
+      TForm(RefObject).Color := NewColor;
+    end,
+    1000, 0, TAQ.Ease(etCubic));
 end;
 
 end.
