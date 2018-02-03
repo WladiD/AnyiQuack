@@ -23,7 +23,16 @@ unit AQPControlAnimations;
 interface
 
 uses
-  Windows, Controls, Forms, Math, Graphics, AnyiQuack;
+  Winapi.Windows,
+  System.Math,
+  System.SysUtils,
+  Vcl.Controls,
+  Vcl.Forms,
+  Vcl.Graphics,
+
+  AnyiQuack;
+
+{$INCLUDE Compile.inc}
 
 type
   TAQPControlAnimations = class(TAQPlugin)
@@ -70,8 +79,7 @@ type
     property AlphaBlendValue: Byte read GetAlphaBlendValue write SetAlphaBlendValue;
   end;
 
-
-{** TAQPControlAnimations **}
+{ TAQPControlAnimations }
 
 {**
  * Animates the AlphaBlendValue on all contained TCustomForm descendants

@@ -3,8 +3,8 @@ program SlidingForm;
 uses
   Forms,
   Main in 'Main.pas' {Form1},
-  AQPControlAnimations in '..\..\AQPControlAnimations.pas',
-  AnyiQuack in '..\..\AnyiQuack.pas';
+  AnyiQuack in '..\..\AnyiQuack.pas',
+  AQPSystemTypesAnimations in '..\..\AQPSystemTypesAnimations.pas';
 
 {$R *.res}
 

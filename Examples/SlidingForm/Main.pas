@@ -16,7 +16,6 @@ uses
   Vcl.Graphics,
 
   AnyiQuack,
-  AQPControlAnimations,
   AQPSystemTypesAnimations;
 
 type
@@ -36,8 +35,7 @@ var
   NewLeft, NewWidth: Integer;
   NewColor: TColor;
   NewAlphaBlend: Byte;
-  AniPlugin: TAQPControlAnimations;
-  AQ: TAQ;
+  TypesAniPlugin: TAQPSystemTypesAnimations;
 begin
   NewWidth := Screen.WorkAreaWidth div 2;
   if Left <> 0 then
@@ -53,16 +51,25 @@ begin
     NewAlphaBlend := MAXBYTE;
   end;
 
-  AQ := Take(Sender);
-
-  AniPlugin := AQ
+  TypesAniPlugin := Take(Sender)
     .FinishAnimations
-    .Plugin<TAQPControlAnimations>;
-  AniPlugin.BoundsAnimation(NewLeft, 0, NewWidth, Screen.WorkAreaHeight,
-      500, 0, TAQ.Ease(etBack, emInSnake));
-  AniPlugin.AlphaBlendAnimation(NewAlphaBlend, 2000, 0, TAQ.Ease(etCircle, emInInverted));
+    .Plugin<TAQPSystemTypesAnimations>;
 
-  AQ.Plugin<TAQPSystemTypesAnimations>
+  // Animate the BoundsRect (position and size) of the form
+  TypesAniPlugin
+    .RectAnimation(Rect(NewLeft, 0, NewLeft + NewWidth, Screen.WorkAreaHeight),
+      function(RefObject: TObject): TRect
+      begin
+        Result := TForm(RefObject).BoundsRect;
+      end,
+      procedure(RefObject: TObject; const NewRect: TRect)
+      begin
+        TForm(RefObject).BoundsRect := NewRect;
+      end,
+      500, 0, TAQ.Ease(etBack, emInSnake));
+
+  // Animate the background color
+  TypesAniPlugin
     .ColorAnimation(NewColor,
     function(RefObject: TObject): TColor
     begin
@@ -73,6 +80,18 @@ begin
       TForm(RefObject).Color := NewColor;
     end,
     1000, 0, TAQ.Ease(etCubic));
+
+  // Animate the AlphaBlendValue
+  TypesAniPlugin.IntegerAnimation(NewAlphaBlend,
+    function(RefObject: TObject): Integer
+    begin
+      Result := TForm(RefObject).AlphaBlendValue;
+    end,
+    procedure(RefObject: TObject; const NewValue: Integer)
+    begin
+      TForm(RefObject).AlphaBlendValue := Byte(NewValue);
+    end,
+    2000, 0, TAQ.Ease(etCircle, emInInverted));
 end;
 
 end.
