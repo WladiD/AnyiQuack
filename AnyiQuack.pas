@@ -29,7 +29,7 @@ uses
 {$INCLUDE Compile.inc}
 
 const
-  Version = '1.0.3';
+  Version = '1.0.4';
 
 type
   EAQ = class(Exception);
@@ -1144,24 +1144,6 @@ begin
   Result := CustomActors(arDelay, ID, IncludeOrphans);
 end;
 
-function TAQ.DemultiplexChain: TAQ;
-var
-  SimpleAQ: TAQ;
-begin
-  if SupervisorLock(Result, aqmDemultiplexChain) then
-    Exit;
-  SimpleAQ := NewChain;
-  Result := SimpleAQ;
-  Each(
-    function(AQ: TAQ; O: TObject): Boolean
-    begin
-      Result := True;
-      if O is TAQ then
-        Exit;
-      SimpleAQ.Add(O);
-    end);
-end;
-
 destructor TAQ.Destroy;
 begin
   Clean;
@@ -1731,6 +1713,12 @@ begin
   Result := NewAQ;
 end;
 
+// Finishes all or specific animations
+//
+// This affects all currently running animations and not only for the contained objects, if you
+// pass 0 (default) for the ID parameter.
+// But you can finish specific animations, if you previously has defined an ID for the desired
+// animation and now pass it for the ID parameter.
 function TAQ.FinishAnimations(ID: Integer): TAQ;
 begin
   if SupervisorLock(Result, aqmFinishAnimations) then
@@ -1738,6 +1726,12 @@ begin
   CustomCancel(arAnimation, ID, True);
 end;
 
+// Finishes all or specific timers
+//
+// This affects all currently running timers and not only for the contained objects, if you
+// pass 0 (default) for the ID parameter.
+// But you can finish specific timers, if you previously has defined an ID for the desired
+// timer and now pass it for the ID parameter.
 function TAQ.FinishTimers(ID: Integer): TAQ;
 begin
   if SupervisorLock(Result, aqmFinishTimers) then
@@ -2179,6 +2173,8 @@ begin
 {$ENDIF}
 end;
 
+// Creates a new chained TAQ instance, where each currently contained object resist in
+// it's own TAQ instance
 function TAQ.MultiplexChain: TAQ;
 var
   MultiAQ: TAQ;
@@ -2191,9 +2187,29 @@ begin
     function(AQ: TAQ; O: TObject): Boolean
     begin
       Result := True;
-      if O is TAQ then
-        Exit;
-      MultiAQ.AppendAQ(TAQ.Take(O));
+      if not (O is TAQ) then
+        MultiAQ.AppendAQ(TAQ.Take(O));
+    end);
+end;
+
+// Creates a new chained TAQ instance, where all (possibly recursive) contained objects are
+// flattened to the returned one
+//
+// For better understanding: This method makes the opposite of TAQ.MultiplexChain.
+function TAQ.DemultiplexChain: TAQ;
+var
+  SimpleAQ: TAQ;
+begin
+  if SupervisorLock(Result, aqmDemultiplexChain) then
+    Exit;
+  SimpleAQ := NewChain;
+  Result := SimpleAQ;
+  Each(
+    function(AQ: TAQ; O: TObject): Boolean
+    begin
+      Result := True;
+      if not(O is TAQ) then
+        SimpleAQ.Add(O);
     end);
 end;
 
