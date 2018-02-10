@@ -174,6 +174,7 @@ type
     FStopWatch: TStopWatch;
     FTick: Int64;
     FComponentsNotifier: TComponentList;
+    FIDGenerator: Integer;
 
     class procedure Initialize;
     class procedure Finalize;
@@ -245,6 +246,8 @@ type
     class function Take(const Objects: TObjectArray): TAQ; overload;
     class function Take(Objects: TObjectList): TAQ; overload;
     class function Take<T: class>(Objects: TObjectList<T>): TAQ; overload;
+
+    class function GetUniqueID: Integer;
 
     class function Ease(EaseType: TEaseType;
       EaseModifier: TEaseModifier = emIn): TEaseFunction; overload;
@@ -941,7 +944,6 @@ begin
   Recurse := True;
 end;
 
-
 function TAQ.CustomActors(ActorRole: TActorRole; ID: Integer; IncludeOrphans: Boolean): TAQ;
 var
   Actors: TAQ;
@@ -1347,6 +1349,11 @@ begin
     begin
       Result := Objects.IndexOf(O) >= 0;
     end);
+end;
+
+class function TAQ.GetUniqueID: Integer;
+begin
+  Result := AtomicIncrement(FIDGenerator);
 end;
 
 class function TAQ.EaseIntegrated(EaseType: TEaseType): TEaseFunction;
