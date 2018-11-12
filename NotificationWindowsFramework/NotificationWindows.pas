@@ -231,7 +231,8 @@ begin
     .Plugin<TAQPControlAnimations>;
   AniPlugin.BoundsAnimation(Screen.WorkAreaRect.Right, NotificationWindow.Top, -1, -1,
     OutPositionAnimationDuration, 0,
-    TAQ.Ease(etCubic, emInInverted),
+    TAQ.Ease(etCubic, emInInverted));
+  AniPlugin.AlphaBlendAnimation(0, OutAlphaAnimationDuration, 0, TAQ.Ease(etSinus),
     {**
      * Handler for the OnComplete event
      *}
@@ -239,7 +240,6 @@ begin
     begin
       NotificationWindow.Release;
     end);
-  AniPlugin.AlphaBlendAnimation(0, OutAlphaAnimationDuration, 0, TAQ.Ease(etSinus));
 
   NextFocusedWindowIndex := List.Remove(NotificationWindow);
 
