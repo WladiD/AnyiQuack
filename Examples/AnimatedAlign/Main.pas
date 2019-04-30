@@ -23,6 +23,7 @@ type
     AnimationDurationTrackBar: TTrackBar;
     HoverColorBox: TColorBox;
     Label6: TLabel;
+    HoverShakeCheckBox: TCheckBox;
     procedure AddPanelButtonClick(Sender: TObject);
     procedure FormResize(Sender: TObject);
     procedure PanelSizeTrackBarChange(Sender: TObject);
@@ -49,6 +50,7 @@ implementation
 const
   BoundsAnimationID = 1;
   HoverAnimationID = 2;
+  HoverShakeAnimationID = 3;
 
 procedure TMainForm.AddPanelButtonClick(Sender: TObject);
 var
@@ -118,16 +120,27 @@ procedure TMainForm.PanelHoverHandler(Sender: TObject; MouseOver: Boolean);
 var
   AQ: TAQ;
   AQAniPlugin: TAQPControlAnimations;
+  ShakeIt: Boolean;
 begin
   AQ := Take(Sender);
 
   if MouseOver then
   begin
-    AQAniPlugin := AQ.CancelAnimations(HoverAnimationID).Plugin<TAQPControlAnimations>;
+    ShakeIt := HoverShakeCheckBox.Checked and
+      not TAQ.HasActiveActors([arAnimation], Sender, BoundsAnimationID);
+
+    AQAniPlugin := AQ
+      .CancelAnimations(HoverAnimationID)
+      .Plugin<TAQPControlAnimations>;
     AQAniPlugin.FontColorAnimation(ColorToRGB(HoverColorBox.Selected) xor $FFFFFF, 600,
       HoverAnimationID, TAQ.Ease(etCubic));
     AQAniPlugin.BackgroundColorAnimation(HoverColorBox.Selected, 300, HoverAnimationID,
       TAQ.Ease(etSinus));
+
+    if ShakeIt then
+      AQAniPlugin.ShakeAnimation(3, Floor(PanelSizeTrackBar.Position * 0.1), 2,
+        Floor(PanelSizeTrackBar.Position * 0.05), 1000 + AnimationDurationTrackBar.Position,
+        BoundsAnimationID);
   end
   else
   begin

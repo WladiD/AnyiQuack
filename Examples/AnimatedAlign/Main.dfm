@@ -3,7 +3,7 @@ object MainForm: TMainForm
   Top = 0
   Caption = 'Animated Align with AnyiQuack'
   ClientHeight = 337
-  ClientWidth = 635
+  ClientWidth = 624
   Color = clAppWorkSpace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -13,15 +13,15 @@ object MainForm: TMainForm
   OldCreateOrder = False
   OnResize = FormResize
   DesignSize = (
-    635
+    624
     337)
   PixelsPerInch = 96
   TextHeight = 13
   object Label3: TLabel
-    Left = 384
+    Left = 373
     Top = 256
-    Width = 248
-    Height = 38
+    Width = 240
+    Height = 39
     Anchors = [akRight, akBottom]
     Caption = 
       'Add a couple of panels and play with the size of form or panels.' +
@@ -30,12 +30,13 @@ object MainForm: TMainForm
     ParentColor = False
     Transparent = True
     WordWrap = True
+    ExplicitLeft = 384
   end
   object TopPanel: TPanel
     Tag = 1
     Left = 0
     Top = 0
-    Width = 635
+    Width = 624
     Height = 44
     Align = alTop
     BevelEdges = [beBottom]
@@ -43,6 +44,7 @@ object MainForm: TMainForm
     BevelOuter = bvNone
     ParentBackground = False
     TabOrder = 0
+    ExplicitWidth = 635
     object Label1: TLabel
       Left = 164
       Top = 1
@@ -116,12 +118,22 @@ object MainForm: TMainForm
       Height = 22
       TabOrder = 3
     end
+    object HoverShakeCheckBox: TCheckBox
+      Left = 625
+      Top = 19
+      Width = 97
+      Height = 17
+      Caption = 'Shake on hover'
+      Checked = True
+      State = cbChecked
+      TabOrder = 4
+    end
   end
   object BottomPanel: TPanel
     Tag = 1
     Left = 0
     Top = 304
-    Width = 635
+    Width = 624
     Height = 33
     Align = alBottom
     BevelEdges = [beTop]
@@ -129,9 +141,10 @@ object MainForm: TMainForm
     BevelOuter = bvNone
     ParentBackground = False
     TabOrder = 1
+    ExplicitWidth = 635
     object AddPanelButton: TButton
       AlignWithMargins = True
-      Left = 557
+      Left = 546
       Top = 3
       Width = 75
       Height = 25
@@ -139,10 +152,11 @@ object MainForm: TMainForm
       Caption = '&Add Panel'
       TabOrder = 0
       OnClick = AddPanelButtonClick
+      ExplicitLeft = 557
     end
     object RemovePanelButton: TButton
       AlignWithMargins = True
-      Left = 469
+      Left = 458
       Top = 3
       Width = 82
       Height = 25
@@ -151,6 +165,7 @@ object MainForm: TMainForm
       Enabled = False
       TabOrder = 1
       OnClick = RemovePanelButtonClick
+      ExplicitLeft = 469
     end
   end
 end

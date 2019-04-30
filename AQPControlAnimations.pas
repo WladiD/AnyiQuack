@@ -153,7 +153,9 @@ begin
     OC: TControl absolute O;
   begin
     Result := True;
-    if not (O is TControl) then
+    if not ((O is TControl) and
+      ((NewLeft <> OC.Left) or (NewTop <> OC.Top) or
+      (NewWidth <> OC.Width) or (NewHeight <> OC.Height))) then
       Exit;
 
     PrevLeft := OC.Left;

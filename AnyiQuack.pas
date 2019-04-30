@@ -48,6 +48,7 @@ type
     emInOut, emInOutMirrored, emInOutCombined,
     emOutIn, emOutInMirrored, emOutInCombined);
   TActorRole = (arTimer, arInterval, arDelay, arAnimation);
+  TActorRoles = set of TActorRole;
 
   TObjectArray = TArray<TObject>;
   TEaseArray = array of TEaseType;
@@ -246,6 +247,8 @@ type
     class function Take(const Objects: TObjectArray): TAQ; overload;
     class function Take(Objects: TObjectList): TAQ; overload;
     class function Take<T: class>(Objects: TObjectList<T>): TAQ; overload;
+
+    class function HasActiveActors(CheckActors: TActorRoles; AObject: TObject; ID: Integer = 0): Boolean;
 
     class function GetUniqueID: Integer;
 
@@ -2547,6 +2550,31 @@ begin
 {$ENDIF}
   for cc := 0 to Objects.Count - 1 do
     Result.Add(Objects[cc]);
+end;
+
+// Determines, whether there are active actors (running animation, delay...) for AObject in general
+// or optional for the actor with the specified ID
+class function TAQ.HasActiveActors(CheckActors: TActorRoles; AObject: TObject; ID: Integer): Boolean;
+var
+  Found: Boolean;
+begin
+  Found := False;
+  FActiveIntervalAQs.Each(
+    function(AQ: TAQ; O: TObject): Boolean
+    var
+      OAQ: TAQ absolute O;
+      CheckActor: TActorRole;
+    begin
+      for CheckActor in CheckActors do
+      begin
+        Found := OAQ.Contains(AObject) and OAQ.HasActors(CheckActor, ID);
+        if Found then
+          Break;
+      end;
+
+      Result := not Found;
+    end);
+  Result := Found;
 end;
 
 function TAQ.TimerActorsChain(ID: Integer; IncludeOrphans: Boolean): TAQ;
