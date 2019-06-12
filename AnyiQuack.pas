@@ -478,10 +478,12 @@ type
 
   function MatchID(CompareID, CurrentID: Integer): Boolean;
 
+const
+  MaxAnimationLifeTime = 10000;
+
 implementation
 
 const
-  MaxLifeTime = 10000;
 {$IFDEF UseThreadTimer}
   IntervalResolution = 15;
 {$ELSE}
@@ -1204,9 +1206,9 @@ end;
 
 function TAQ.EachAnimation(Duration: Integer; Each, LastEach: TEachFunction; ID: Integer): TAQ;
 begin
-  if Duration >= MaxLifeTime then
-    raise EAQ.CreateFmt('Duration of the animation (%d) should be lower than MaxLifeTime (%d)',
-      [Duration, MaxLifeTime])
+  if Duration >= MaxAnimationLifeTime then
+    raise EAQ.CreateFmt('Duration of the animation (%d) should be lower than MaxAnimationLifeTime (%d)',
+      [Duration, MaxAnimationLifeTime])
   else if SupervisorLock(Result, aqmEachAnimation) then
     Exit;
   AddInterval(TInterval.Finite(Duration, Each, LastEach, arAnimation, ID));
@@ -1214,9 +1216,9 @@ end;
 
 function TAQ.EachDelay(Delay: Integer; Each: TEachFunction; ID: Integer): TAQ;
 begin
-  if Delay >= MaxLifeTime then
-    raise EAQ.CreateFmt('Delay (%d) must bew lower than MaxLifeTime (%d)',
-      [Delay, MaxLifeTime])
+  if Delay >= MaxAnimationLifeTime then
+    raise EAQ.CreateFmt('Delay (%d) must be lower than MaxAnimationLifeTime (%d)',
+      [Delay, MaxAnimationLifeTime])
   else if SupervisorLock(Result, aqmEachDelay) then
      Exit;
   AddInterval(TInterval.Finite(Delay, nil, Each, arDelay, ID));
@@ -1229,9 +1231,9 @@ end;
 // objects, you should define an ID, so you'll be able to cancel only the specific intervaled Each.
 function TAQ.EachInterval(Interval: Integer; Each: TEachFunction; ID: Integer): TAQ;
 begin
-  if Interval >= MaxLifeTime then
-    raise EAQ.CreateFmt('Interval (%d) must be lower than MaxLifeTime (%d)',
-      [Interval, MaxLifeTime])
+  if Interval >= MaxAnimationLifeTime then
+    raise EAQ.CreateFmt('Interval (%d) must be lower than MaxAnimationLifeTime (%d)',
+      [Interval, MaxAnimationLifeTime])
   else if SupervisorLock(Result, aqmEachInterval) then
     Exit;
   AddInterval(TInterval.Infinite(Interval, Each, arInterval, ID));
@@ -1256,9 +1258,9 @@ end;
 // e.g. `AQ.CurrentInterval.Progress`
 function TAQ.EachTimer(Duration: Integer; Each, LastEach: TEachFunction; ID: Integer): TAQ;
 begin
-  if Duration >= MaxLifeTime then
-    raise EAQ.CreateFmt('Timers duration (%d) must be lower than MaxLifeTime (%d)',
-      [Duration, MaxLifeTime])
+  if Duration >= MaxAnimationLifeTime then
+    raise EAQ.CreateFmt('Timers duration (%d) must be lower than MaxAnimationLifeTime (%d)',
+      [Duration, MaxAnimationLifeTime])
   else if SupervisorLock(Result, aqmEachTimer) then
     Exit;
   AddInterval(TInterval.Finite(Duration, Each, LastEach, arTimer, ID));
@@ -2124,7 +2126,7 @@ end;
 
 function TAQ.IsAlive: Boolean;
 begin
-  Result := ((FLifeTick + MaxLifeTime) >= TAQ.Tick) or Immortally;
+  Result := ((FLifeTick + MaxAnimationLifeTime) >= TAQ.Tick) or Immortally;
 end;
 
 procedure TAQ.LocalIntervalTimerEvent;
