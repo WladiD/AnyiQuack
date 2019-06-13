@@ -3,8 +3,21 @@ unit NotificationWindows;
 interface
 
 uses
-  Windows, Messages, SysUtils, Contnrs, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, Generics.Collections, Math, AnyiQuack, AQPControlAnimations;
+  Winapi.Windows,
+  Winapi.Messages,
+  System.SysUtils,
+  System.Contnrs,
+  System.Variants,
+  System.Classes,
+  System.Math,
+  Vcl.Graphics,
+  Vcl.Controls,
+  Vcl.Forms,
+  Vcl.Dialogs,
+  Generics.Collections,
+
+  AnyiQuack,
+  AQPControlAnimations;
 
 type
   TNotificationStack = class;
@@ -201,7 +214,19 @@ begin
           IfThen(WindowIndex = 0, InPositionAnimationDuration div 2, InPositionAnimationDuration),
           PositionAnimationID, TAQ.Ease(etBack, emInInverted));
         AniPlugin.AlphaBlendAnimation(MAXBYTE, InAlphaAnimationDuration,
-          AlphaAnimationID, TAQ.Ease(etSinus));
+          AlphaAnimationID, TAQ.Ease(etSinus),
+          procedure(Sender: TObject)
+          var
+            NWindow: TNotificationWindow absolute Sender;
+          begin
+            // Win 10 bugfix: TWinControl descendants are sometimes not rendered, but
+            // the switch AlphaBlend off and on again solve the issue.
+            if Assigned(Sender) and (Sender is TNotificationWindow) then
+            begin
+              NWindow.AlphaBlend := False;
+              NWindow.AlphaBlend := True;
+            end;
+          end);
 
         Inc(WindowIndex);
         Result := True;
