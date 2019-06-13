@@ -489,10 +489,12 @@ type
 
   function MatchID(CompareID, CurrentID: Integer): Boolean;
 
+const
+  MaxLifeTime = 10000;
+
 implementation
 
 const
-  MaxLifeTime = 10000;
 {$IFDEF UseThreadTimer}
   IntervalResolution = 15;
 {$ELSE}
@@ -1226,7 +1228,7 @@ end;
 function TAQ.EachDelay(Delay: Integer; Each: TEachFunction; ID: Integer): TAQ;
 begin
   if Delay >= MaxLifeTime then
-    raise EAQ.CreateFmt('Delay (%d) must bew lower than MaxLifeTime (%d)',
+    raise EAQ.CreateFmt('Delay (%d) must be lower than MaxLifeTime (%d)',
       [Delay, MaxLifeTime])
   else if SupervisorLock(Result, aqmEachDelay) then
      Exit;
