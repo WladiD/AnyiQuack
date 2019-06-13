@@ -23,8 +23,19 @@ unit AnyiQuack;
 interface
 
 uses
-  SysUtils, Types, Classes, Controls, ExtCtrls, Contnrs, Windows, Messages, Math, Graphics, Forms,
-  Character, SyncObjs, Diagnostics, Generics.Collections;
+  Winapi.Windows,
+  Winapi.Messages,
+  System.SysUtils,
+  System.Types,
+  System.Classes,
+  System.Contnrs,
+  System.Character,
+  System.Math,
+  System.Diagnostics,
+  System.SyncObjs,
+  System.UITypes,
+  Generics.Collections,
+  Vcl.Forms;
 
 {$INCLUDE Compile.inc}
 
@@ -1556,43 +1567,19 @@ end;
 class function TAQ.EaseColor(StartColor, EndColor: TColor; Progress: Real;
   EaseFunction: TEaseFunction): TColor;
 var
-  StartR, StartG, StartB,
-  EndR, EndG, EndB: Byte;
-
-  function R(Color: TColor): Byte;
-  begin
-    Result := Color and $FF;
-  end;
-
-  function G(Color: TColor): Byte;
-  begin
-    Result := (Color and $FF00) shr 8;
-  end;
-
-  function B(Color: TColor): Byte;
-  begin
-    Result := (Color and $FF0000) shr 16;
-  end;
+  StartCR, EndCR: TColorRec;
 begin
   if StartColor = EndColor then
     Exit(StartColor);
 
-  StartColor := ColorToRGB(StartColor);
-  StartR := R(StartColor);
-  StartG := G(StartColor);
-  StartB := B(StartColor);
-
-  EndColor := ColorToRGB(EndColor);
-  EndR := R(EndColor);
-  EndG := G(EndColor);
-  EndB := B(EndColor);
-
+  StartCR.Color := TColorRec.ColorToRGB(StartColor);
+  EndCR.Color := TColorRec.ColorToRGB(EndColor);
   Progress := EaseFunction(Progress);
 
   Result := RGB(
-    Min(255, Max(0, EaseInteger(StartR, EndR, Progress, nil))),
-    Min(255, Max(0, EaseInteger(StartG, EndG, Progress, nil))),
-    Min(255, Max(0, EaseInteger(StartB, EndB, Progress, nil))));
+    Min(255, Max(0, EaseInteger(StartCR.R, EndCR.R, Progress, nil))),
+    Min(255, Max(0, EaseInteger(StartCR.G, EndCR.G, Progress, nil))),
+    Min(255, Max(0, EaseInteger(StartCR.B, EndCR.B, Progress, nil))));
 end;
 
 class function TAQ.EaseInteger(StartValue, EndValue: Integer; Progress: Real;
