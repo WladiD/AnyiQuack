@@ -40,6 +40,8 @@ type
   protected
     function AutoClosePossible: Boolean; virtual;
   public
+    constructor Create(AOwner: TComponent); override;
+
     procedure Close; reintroduce;
 
     property Stack: TNotificationStack read FStack;
@@ -96,6 +98,16 @@ implementation
 {$R *.dfm}
 
 {** TNotificationWindow **}
+
+constructor TNotificationWindow.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+
+  // Win 10 bugfix: TWinControl descendants are sometimes not rendered, but
+  // the switch AlphaBlend off and on again solve the issue.
+  AlphaBlend := False;
+  AlphaBlend := True;
+end;
 
 function TNotificationWindow.AutoClosePossible: Boolean;
 begin
@@ -214,19 +226,7 @@ begin
           IfThen(WindowIndex = 0, InPositionAnimationDuration div 2, InPositionAnimationDuration),
           PositionAnimationID, TAQ.Ease(etBack, emInInverted));
         AniPlugin.AlphaBlendAnimation(MAXBYTE, InAlphaAnimationDuration,
-          AlphaAnimationID, TAQ.Ease(etSinus),
-          procedure(Sender: TObject)
-          var
-            NWindow: TNotificationWindow absolute Sender;
-          begin
-            // Win 10 bugfix: TWinControl descendants are sometimes not rendered, but
-            // the switch AlphaBlend off and on again solve the issue.
-            if Assigned(Sender) and (Sender is TNotificationWindow) then
-            begin
-              NWindow.AlphaBlend := False;
-              NWindow.AlphaBlend := True;
-            end;
-          end);
+          AlphaAnimationID, TAQ.Ease(etSinus));
 
         Inc(WindowIndex);
         Result := True;
