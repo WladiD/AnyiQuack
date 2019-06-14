@@ -34,8 +34,7 @@ uses
   System.Diagnostics,
   System.SyncObjs,
   System.UITypes,
-  Generics.Collections,
-  Vcl.Forms;
+  Generics.Collections;
 
 {$INCLUDE Compile.inc}
 
@@ -2810,10 +2809,10 @@ begin
       try
         FTimerProc;
       except
-        Application.HandleException(Self);
+        System.Classes.ApplicationHandleException(Self);
       end
-      else
-        Result := DefWindowProc(FWindowHandle, Msg, wParam, lParam);
+    else
+      Result := DefWindowProc(FWindowHandle, Msg, wParam, lParam);
 end;
 
 procedure TTimerThread.Execute;

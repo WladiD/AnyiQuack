@@ -43,6 +43,11 @@ type
       const Setter: TRefSystemTypeSetterProcedure<Integer>; Duration: Integer; ID: Integer = 0;
       const EaseFunction: TEaseFunction = nil; const OnComplete: TAnonymNotifyEvent = nil): TAQ;
 
+    function SingleAnimation(TargetValue: Single;
+      const Getter: TRefSystemTypeGetterFunction<Single>;
+      const Setter: TRefSystemTypeSetterProcedure<Single>; Duration: Integer; ID: Integer = 0;
+      const EaseFunction: TEaseFunction = nil; const OnComplete: TAnonymNotifyEvent = nil): TAQ;
+
     function ColorAnimation(const TargetColor: TColor;
       const Getter: TRefSystemTypeGetterFunction<TColor>;
       const Setter: TRefSystemTypeSetterProcedure<TColor>; Duration: Integer; ID: Integer = 0;
@@ -94,6 +99,37 @@ begin
           Result := True;
           Progress := AQ.CurrentInterval.Progress;
           AniValue := TAQ.EaseInteger(FromValue, TargetValue, Progress, EaseFunction);
+
+          Setter(O, AniValue);
+
+          if Progress = 1 then
+            FireCompleteEvent(O, OnComplete{$IFDEF OutputDebugAnimation}, 'IntegerAnimation'{$ENDIF});
+        end, nil, ID);
+    end);
+end;
+
+function TAQPSystemTypesAnimations.SingleAnimation(TargetValue: Single;
+  const Getter: TRefSystemTypeGetterFunction<Single>;
+  const Setter: TRefSystemTypeSetterProcedure<Single>; Duration: Integer; ID: Integer = 0;
+  const EaseFunction: TEaseFunction = nil; const OnComplete: TAnonymNotifyEvent = nil): TAQ;
+begin
+  Result := Each(
+    function(AQ: TAQ; O: TObject): Boolean
+    var
+      FromValue: Single;
+    begin
+      Result := True;
+
+      FromValue := Getter(O);
+
+      Take(O).EachAnimation(Duration,
+        function(AQ: TAQ; O: TObject): Boolean
+        var
+          Progress, AniValue: Real;
+        begin
+          Result := True;
+          Progress := AQ.CurrentInterval.Progress;
+          AniValue := TAQ.EaseReal(FromValue, TargetValue, Progress, EaseFunction);
 
           Setter(O, AniValue);
 
