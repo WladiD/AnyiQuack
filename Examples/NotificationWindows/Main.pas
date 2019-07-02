@@ -12,15 +12,18 @@ type
     AutoCloseCheckBox: TCheckBox;
     AutoCreateCheckBox: TCheckBox;
     Timer1: TTimer;
-    CloseButton: TButton;
+    CloseAllButton: TButton;
+    CloseLastButton: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure AddButtonClick(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
     procedure AutoCreateCheckBoxClick(Sender: TObject);
-    procedure CloseButtonClick(Sender: TObject);
+    procedure CloseAllButtonClick(Sender: TObject);
+    procedure CloseLastButtonClick(Sender: TObject);
   private
     FStack: TNotificationStack;
+    FLastNotificationWindow: TNotificationWindow;
   end;
 
 var
@@ -37,12 +40,24 @@ begin
   MNW := TMyNotificationWindow.Create(nil);
   if AutoCloseCheckBox.Checked then
     MNW.CloseTimeout := 5000;
+  FLastNotificationWindow := MNW;
   FStack.Add(MNW);
 end;
 
-procedure TMainForm.CloseButtonClick(Sender: TObject);
+procedure TMainForm.CloseAllButtonClick(Sender: TObject);
 begin
   FStack.CloseAll;
+end;
+
+procedure TMainForm.CloseLastButtonClick(Sender: TObject);
+var
+  Target: TNotificationWindow;
+begin
+  Target := FLastNotificationWindow;
+  if (FStack.List.Count > 0) and not FStack.List.Contains(Target) then
+    Target := FStack.List.Last;
+
+  FStack.Close(Target);
 end;
 
 procedure TMainForm.AutoCreateCheckBoxClick(Sender: TObject);

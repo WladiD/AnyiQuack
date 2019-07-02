@@ -72,16 +72,17 @@ type
     FOutPositionAnimationDuration: Integer;
     FOutAlphaAnimationDuration: Integer;
 
-    procedure Close(NotificationWindow: TNotificationWindow);
     procedure UpdatePositions;
 
-    property List: TNotificationList read FList;
   public
     constructor Create;
     destructor Destroy; override;
 
     procedure Add(NotificationWindow: TNotificationWindow);
+    procedure Close(NotificationWindow: TNotificationWindow);
     procedure CloseAll(Animate: Boolean = True);
+
+    property List: TNotificationList read FList;
 
     property InPositionAnimationDuration: Integer read FInPositionAnimationDuration
       write FInPositionAnimationDuration;
@@ -251,6 +252,9 @@ var
   NextFocusedWindowIndex: Integer;
   AniPlugin: TAQPControlAnimations;
 begin
+  if not List.Contains(NotificationWindow) then
+    Exit;
+
   AniPlugin := Take(NotificationWindow)
     .CancelAnimations
     .Plugin<TAQPControlAnimations>;
