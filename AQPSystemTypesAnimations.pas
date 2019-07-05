@@ -134,7 +134,7 @@ begin
           Setter(O, AniValue);
 
           if Progress = 1 then
-            FireCompleteEvent(O, OnComplete{$IFDEF OutputDebugAnimation}, 'IntegerAnimation'{$ENDIF});
+            FireCompleteEvent(O, OnComplete{$IFDEF OutputDebugAnimation}, 'SingleAnimation'{$ENDIF});
         end, nil, ID);
     end);
 end;
