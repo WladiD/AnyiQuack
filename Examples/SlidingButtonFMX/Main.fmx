@@ -1,7 +1,7 @@
 object MainForm: TMainForm
   Left = 0
   Top = 0
-  ActiveControl = Button1
+  ActiveControl = ElasticSlideButton
   Caption = 'Click to slide the button'
   ClientHeight = 480
   ClientWidth = 640
@@ -21,7 +21,6 @@ object MainForm: TMainForm
     Text = 
       'The X and Y properties of the Position are animated independentl' +
       'y. '#13#10'Try to hit the space key rapidly.'
-    TabOrder = 2
   end
   object XTrackBar: TTrackBar
     Anchors = [akRight, akBottom]
@@ -32,10 +31,11 @@ object MainForm: TMainForm
     Position.X = 352.000000000000000000
     Position.Y = 368.000000000000000000
     Size.Width = 281.000000000000000000
-    Size.Height = 19.000000000000000000
+    Size.Height = 20.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 5
+    TabOrder = 16
     Value = 500.000000000000000000
+    OnDblClick = TrackBarDblClick
   end
   object YTrackBar: TTrackBar
     Anchors = [akRight, akBottom]
@@ -46,10 +46,11 @@ object MainForm: TMainForm
     Position.X = 351.000000000000000000
     Position.Y = 400.000000000000000000
     Size.Width = 281.000000000000000000
-    Size.Height = 19.000000000000000000
+    Size.Height = 20.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 4
+    TabOrder = 15
     Value = 750.000000000000000000
+    OnDblClick = TrackBarDblClick
   end
   object Label2: TLabel
     Anchors = [akRight, akBottom]
@@ -57,7 +58,6 @@ object MainForm: TMainForm
     Position.Y = 368.000000000000000000
     TextSettings.HorzAlign = Trailing
     Text = 'X duration'
-    TabOrder = 7
   end
   object Label3: TLabel
     Anchors = [akRight, akBottom]
@@ -65,16 +65,136 @@ object MainForm: TMainForm
     Position.Y = 400.000000000000000000
     TextSettings.HorzAlign = Trailing
     Text = 'Y duration'
-    TabOrder = 6
   end
-  object Button1: TButton
-    Position.X = 240.000000000000000000
-    Position.Y = 200.000000000000000000
+  object QuintSlideButton: TButton
+    Tag = 4
+    Position.X = 248.000000000000000000
+    Position.Y = 118.000000000000000000
+    Size.Width = 137.000000000000000000
+    Size.Height = 73.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 11
+    Text = 'Slide Quint'
+    OnClick = QuintSlideButtonClick
+  end
+  object LinearSlideButton: TButton
+    Position.X = 16.000000000000000000
+    Position.Y = 35.000000000000000000
+    Size.Width = 137.000000000000000000
+    Size.Height = 73.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 8
+    Text = 'Slide Linear'
+    OnClick = QuintSlideButtonClick
+  end
+  object CubicSlideButton: TButton
+    Tag = 2
+    Position.X = 480.000000000000000000
+    Position.Y = 35.000000000000000000
+    Size.Width = 137.000000000000000000
+    Size.Height = 73.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 7
+    Text = 'Slide Cubic'
+    OnClick = QuintSlideButtonClick
+  end
+  object QuartSlideButton: TButton
+    Tag = 3
+    Position.X = 16.000000000000000000
+    Position.Y = 118.000000000000000000
+    Size.Width = 137.000000000000000000
+    Size.Height = 73.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 6
+    Text = 'Slide Quart'
+    OnClick = QuintSlideButtonClick
+  end
+  object SextSlideButton: TButton
+    Tag = 5
+    Position.X = 480.000000000000000000
+    Position.Y = 118.000000000000000000
+    Size.Width = 137.000000000000000000
+    Size.Height = 73.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    Text = 'Slide Sext'
+    OnClick = QuintSlideButtonClick
+  end
+  object QuadSlideButton: TButton
+    Tag = 1
+    Position.X = 248.000000000000000000
+    Position.Y = 35.000000000000000000
     Size.Width = 137.000000000000000000
     Size.Height = 73.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
-    Text = 'Slide'
-    OnClick = Button1Click
+    Text = 'Slide Quad'
+    OnClick = QuintSlideButtonClick
+  end
+  object ElasticSlideButton: TButton
+    Tag = 7
+    Position.X = 248.000000000000000000
+    Position.Y = 203.000000000000000000
+    Size.Width = 137.000000000000000000
+    Size.Height = 73.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 10
+    Text = 'Slide Elastic'
+    OnClick = QuintSlideButtonClick
+  end
+  object SinusSlideButton: TButton
+    Tag = 6
+    Position.X = 16.000000000000000000
+    Position.Y = 203.000000000000000000
+    Size.Width = 137.000000000000000000
+    Size.Height = 73.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 5
+    Text = 'Slide Sinus'
+    OnClick = QuintSlideButtonClick
+  end
+  object BackSlideButton: TButton
+    Tag = 8
+    Position.X = 480.000000000000000000
+    Position.Y = 203.000000000000000000
+    Size.Width = 137.000000000000000000
+    Size.Height = 73.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    Text = 'Slide Back'
+    OnClick = QuintSlideButtonClick
+  end
+  object MiddleWaveSlideButton: TButton
+    Tag = 10
+    Position.X = 248.000000000000000000
+    Position.Y = 291.000000000000000000
+    Size.Width = 137.000000000000000000
+    Size.Height = 73.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 9
+    Text = 'Slide MiddleWave'
+    OnClick = QuintSlideButtonClick
+  end
+  object LowWaveSlideButton: TButton
+    Tag = 9
+    Position.X = 16.000000000000000000
+    Position.Y = 291.000000000000000000
+    Size.Width = 137.000000000000000000
+    Size.Height = 73.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 4
+    Text = 'Slide LowWave'
+    OnClick = QuintSlideButtonClick
+  end
+  object HighWaveButton: TButton
+    Tag = 11
+    Position.X = 480.000000000000000000
+    Position.Y = 291.000000000000000000
+    Size.Width = 137.000000000000000000
+    Size.Height = 73.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    Text = 'Slide HighWave'
+    OnClick = QuintSlideButtonClick
   end
 end
