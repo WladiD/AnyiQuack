@@ -866,13 +866,12 @@ end;
 function TAQ.ChildrenFiller(AQ: TAQ; O: TObject): Boolean;
 var
   cc: Integer;
+  OC: TComponent absolute O;
 begin
   Result := True;
-  if not (O is TComponent) then
-    Exit;
-  with TComponent(O) do
-    for cc := 0 to ComponentCount - 1 do
-      AQ.Add(Components[cc]);
+  if O is TComponent then
+    for cc := 0 to OC.ComponentCount - 1 do
+      AQ.Add(OC.Components[cc]);
 end;
 
 procedure TAQ.Clean;
