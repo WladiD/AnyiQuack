@@ -38,7 +38,9 @@ type
     MiddleWaveSlideButton: TButton;
     LowWaveSlideButton: TButton;
     HighWaveButton: TButton;
-    procedure QuintSlideButtonClick(Sender: TObject);
+    SlideCircleButton: TButton;
+    SlideBounceButton: TButton;
+    procedure SlideButtonClick(Sender: TObject);
     procedure TrackBarDblClick(Sender: TObject);
   end;
 
@@ -49,7 +51,7 @@ implementation
 
 {$R *.fmx}
 
-procedure TMainForm.QuintSlideButtonClick(Sender: TObject);
+procedure TMainForm.SlideButtonClick(Sender: TObject);
 var
   ButtonSender: TButton absolute Sender;
 begin

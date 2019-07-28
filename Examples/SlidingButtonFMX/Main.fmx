@@ -3,7 +3,7 @@ object MainForm: TMainForm
   Top = 0
   ActiveControl = ElasticSlideButton
   Caption = 'Click to slide the button'
-  ClientHeight = 480
+  ClientHeight = 596
   ClientWidth = 640
   Position = ScreenCenter
   FormFactor.Width = 320
@@ -13,7 +13,7 @@ object MainForm: TMainForm
   object Label1: TLabel
     Anchors = [akRight, akBottom]
     Position.X = 232.000000000000000000
-    Position.Y = 416.000000000000000000
+    Position.Y = 532.000000000000000000
     Size.Width = 401.000000000000000000
     Size.Height = 65.000000000000000000
     Size.PlatformDefault = False
@@ -29,11 +29,11 @@ object MainForm: TMainForm
     Min = 100.000000000000000000
     Orientation = Horizontal
     Position.X = 352.000000000000000000
-    Position.Y = 368.000000000000000000
+    Position.Y = 484.000000000000000000
     Size.Width = 281.000000000000000000
-    Size.Height = 20.000000000000000000
+    Size.Height = 19.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 16
+    TabOrder = 18
     Value = 500.000000000000000000
     OnDblClick = TrackBarDblClick
   end
@@ -44,25 +44,25 @@ object MainForm: TMainForm
     Min = 100.000000000000000000
     Orientation = Horizontal
     Position.X = 351.000000000000000000
-    Position.Y = 400.000000000000000000
+    Position.Y = 516.000000000000000000
     Size.Width = 281.000000000000000000
-    Size.Height = 20.000000000000000000
+    Size.Height = 19.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 15
+    TabOrder = 17
     Value = 750.000000000000000000
     OnDblClick = TrackBarDblClick
   end
   object Label2: TLabel
     Anchors = [akRight, akBottom]
     Position.X = 224.000000000000000000
-    Position.Y = 368.000000000000000000
+    Position.Y = 484.000000000000000000
     TextSettings.HorzAlign = Trailing
     Text = 'X duration'
   end
   object Label3: TLabel
     Anchors = [akRight, akBottom]
     Position.X = 224.000000000000000000
-    Position.Y = 400.000000000000000000
+    Position.Y = 516.000000000000000000
     TextSettings.HorzAlign = Trailing
     Text = 'Y duration'
   end
@@ -73,9 +73,9 @@ object MainForm: TMainForm
     Size.Width = 137.000000000000000000
     Size.Height = 73.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 11
+    TabOrder = 13
     Text = 'Slide Quint'
-    OnClick = QuintSlideButtonClick
+    OnClick = SlideButtonClick
   end
   object LinearSlideButton: TButton
     Position.X = 16.000000000000000000
@@ -83,9 +83,9 @@ object MainForm: TMainForm
     Size.Width = 137.000000000000000000
     Size.Height = 73.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 8
+    TabOrder = 9
     Text = 'Slide Linear'
-    OnClick = QuintSlideButtonClick
+    OnClick = SlideButtonClick
   end
   object CubicSlideButton: TButton
     Tag = 2
@@ -94,9 +94,9 @@ object MainForm: TMainForm
     Size.Width = 137.000000000000000000
     Size.Height = 73.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 7
+    TabOrder = 8
     Text = 'Slide Cubic'
-    OnClick = QuintSlideButtonClick
+    OnClick = SlideButtonClick
   end
   object QuartSlideButton: TButton
     Tag = 3
@@ -105,9 +105,9 @@ object MainForm: TMainForm
     Size.Width = 137.000000000000000000
     Size.Height = 73.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 6
+    TabOrder = 7
     Text = 'Slide Quart'
-    OnClick = QuintSlideButtonClick
+    OnClick = SlideButtonClick
   end
   object SextSlideButton: TButton
     Tag = 5
@@ -118,7 +118,7 @@ object MainForm: TMainForm
     Size.PlatformDefault = False
     TabOrder = 3
     Text = 'Slide Sext'
-    OnClick = QuintSlideButtonClick
+    OnClick = SlideButtonClick
   end
   object QuadSlideButton: TButton
     Tag = 1
@@ -129,7 +129,7 @@ object MainForm: TMainForm
     Size.PlatformDefault = False
     TabOrder = 0
     Text = 'Slide Quad'
-    OnClick = QuintSlideButtonClick
+    OnClick = SlideButtonClick
   end
   object ElasticSlideButton: TButton
     Tag = 7
@@ -138,9 +138,9 @@ object MainForm: TMainForm
     Size.Width = 137.000000000000000000
     Size.Height = 73.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 10
+    TabOrder = 12
     Text = 'Slide Elastic'
-    OnClick = QuintSlideButtonClick
+    OnClick = SlideButtonClick
   end
   object SinusSlideButton: TButton
     Tag = 6
@@ -149,9 +149,9 @@ object MainForm: TMainForm
     Size.Width = 137.000000000000000000
     Size.Height = 73.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 5
+    TabOrder = 6
     Text = 'Slide Sinus'
-    OnClick = QuintSlideButtonClick
+    OnClick = SlideButtonClick
   end
   object BackSlideButton: TButton
     Tag = 8
@@ -162,7 +162,7 @@ object MainForm: TMainForm
     Size.PlatformDefault = False
     TabOrder = 2
     Text = 'Slide Back'
-    OnClick = QuintSlideButtonClick
+    OnClick = SlideButtonClick
   end
   object MiddleWaveSlideButton: TButton
     Tag = 10
@@ -171,9 +171,9 @@ object MainForm: TMainForm
     Size.Width = 137.000000000000000000
     Size.Height = 73.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 9
+    TabOrder = 11
     Text = 'Slide MiddleWave'
-    OnClick = QuintSlideButtonClick
+    OnClick = SlideButtonClick
   end
   object LowWaveSlideButton: TButton
     Tag = 9
@@ -182,9 +182,9 @@ object MainForm: TMainForm
     Size.Width = 137.000000000000000000
     Size.Height = 73.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 4
+    TabOrder = 5
     Text = 'Slide LowWave'
-    OnClick = QuintSlideButtonClick
+    OnClick = SlideButtonClick
   end
   object HighWaveButton: TButton
     Tag = 11
@@ -195,6 +195,28 @@ object MainForm: TMainForm
     Size.PlatformDefault = False
     TabOrder = 1
     Text = 'Slide HighWave'
-    OnClick = QuintSlideButtonClick
+    OnClick = SlideButtonClick
+  end
+  object SlideCircleButton: TButton
+    Tag = 13
+    Position.X = 248.000000000000000000
+    Position.Y = 383.000000000000000000
+    Size.Width = 137.000000000000000000
+    Size.Height = 73.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 10
+    Text = 'Slide Circle'
+    OnClick = SlideButtonClick
+  end
+  object SlideBounceButton: TButton
+    Tag = 12
+    Position.X = 16.000000000000000000
+    Position.Y = 383.000000000000000000
+    Size.Width = 137.000000000000000000
+    Size.Height = 73.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 4
+    Text = 'Slide Bounce'
+    OnClick = SlideButtonClick
   end
 end
