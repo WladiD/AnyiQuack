@@ -312,40 +312,6 @@ type
       ID: Integer = 0): TAQ;
     function EachDelay(Delay: Integer; Each: TEachFunction; ID: Integer = 0): TAQ;
     function EachRepeat(Times: Integer; EachFunction: TEachFunction): TAQ;
-    {**
-     * !Ist erstmal nur ein Entwurf!
-     *
-     * Verarbeitet die Objekte in mehreren Threads
-     *
-     * Der Einsatz dieser Methode soll gut überlegt und vorallem gründlich getestet werden. Sie
-     * lohnt sich nur bei rechenintensiven Verarbeitungsschritten.
-     * Die Each-Methoden sollten nicht die an sie übergebene TAQ-Instanz manipulieren
-     * (Add, Remove etc.): Dies würde zu zufälligen Zugriffsverletzungen führen.
-     *
-     * @param MainEach Wird im Kontext des Threads für jedes Objekt ausgeführt
-     * @param ConcurrentThreads Optional. Standard ist 1. Anzahl von gleichzeitigen Threads.
-     *        Die Werte 0 und 1 haben eine spezielle Bedeutung:
-     *        = 0 Für jedes Objekt wird sofort ein Thread erstellt
-     *        = 1 Es werden maximal soviele Threads erstellt, wieviele die CPU ausführen kann,
-     *            jedoch mindestens 2 (bei einem i7-920 wären es z.B. 8)
-     *        > 1 Es werden maximal soviele Threads erstellt
-     * @param Synchronize Sagt aus, ob die Methode die Beendigung aller Threads abwarten soll.
-     *        - Bei True läuft die Verarbeitung der Objekte zwar über mehrere Threads ab,
-     *          jedoch wird der Haupt-Thread (Anwendung) blockiert, bis die Verarbeitung
-     *          abgeschlossen wurde. Dies ermöglicht den Einsatz von nahezu allen Objekten, auch
-     *          wenn Teile davon nicht Thread-Safe sind.
-     *        - Bei False wird die Anwendung nicht blockiert und die Threads werden parallel
-     *          gestartet. Setzt Kenntniss über die Funktionsweise der zu verarbeiteten Objekte
-     *          voraus.
-     * @param TerminateEach Optional. Standard ist nil. Wird im Kontext des Haupt-Threads
-     *        ausgeführt, wenn ein Thread die Verarbeitung beendet hat.
-     * @param FinalizeEach Optional. Standard ist nil. Wird ebenfalls im Kontext des
-     *        Haupt-Threads für jedes gehaltene Objekt ausgeführt, wenn die Verarbeitung aller
-     *        Objekte beendet ist, also wenn alle Threads fertig sind.
-     *}
-//		function EachThread(MainEach: TEachFunction; ConcurrentThreads: Byte = 1;
-//			Synchronize: Boolean = False;
-//			TerminateEach: TEachFunction = nil; FinalizeEach: TEachFunction = nil): TAQ;
 
     function NewChain: TAQ;
     function EndChain: TAQ;
@@ -608,7 +574,7 @@ begin
   end
   else
   begin
-    Progress := Progress - (2.625/2.75);
+    Progress := Progress - (2.625 / 2.75);
     Result := (Base * Progress) * Progress + 0.984375;
   end;
 end;
@@ -672,16 +638,13 @@ begin
     Result[cc] := Objects[cc];
 end;
 
-{**
- * Sagt aus, ob CompareID die CurrentID greift
- *
- * Folgende Regeln werden angewendet:
- * - ist CompareID = 0,  so wird CurrentID nicht verglichen
- *                       und es wird True geliefert
- * - ist CompareID > 0,  so muss CurrentID gleich sein
- * - ist CompareID = -1, so muss CurrentID = 0 sein
- * - ist CompareID = -2, so muss CurrentID > 0 sein
- *}
+// ID comparer
+//
+// Following rules will be applied
+// - when CompareID =  0, CurrentID will not be compared and the result is always True
+// - when CompareID >  0, CurrentID must be equal
+// - when CompareID = -1, CurrentID must be 0
+// - when CompareID = -2, CurrentID must be greater than 0
 function MatchID(CompareID, CurrentID: Integer): Boolean;
 begin
   Result := (CompareID = 0) or
@@ -703,14 +666,14 @@ begin
   Result := (Container and BitMask) <> 0;
 end;
 
-{** TAQBase **}
+{ TAQBase }
 
 constructor TAQBase.Create;
 begin
   inherited Create(False);
 end;
 
-{** TAQ **}
+{ TAQ }
 
 // Appends all in the TObjectArray contained objects to the current TAQ instance
 function TAQ.Append(Objects: TObjectArray): TAQ;
@@ -731,9 +694,7 @@ var
 begin
   if SupervisorLock(Result, aqmAppend) then
     Exit;
-  {**
-   * Overflows vermeiden
-   *}
+  // Avoid overflows
   if Objects = Self then
     Exit;
   for cc := 0 to Objects.Count - 1 do
@@ -767,11 +728,10 @@ end;
 
 procedure TAQ.AddInterval(Interval: TInterval);
 begin
-  {**
-   * Das Intervall wird nicht angenommen, wenn keine Objekte vorhanden sind
-   *
-   * Eine Ausnahme besteht für den Garbage-Collector
-   *}
+  // The interval will not be taken and will be freed, when the current TAQ instance
+  // do not contains any objects.
+  //
+  // One exception is for the garbage collector.
   if (Count = 0) and (Self <> FGC) then
   begin
     Interval.Free;
@@ -878,24 +838,17 @@ procedure TAQ.Clean;
 begin
   if not Finalized then
   begin
-    {**
-     * Globale Auswirkungen
-     *}
+    // Global effects
     GarbageCollector.Each(
       function(GC: TAQ; O: TObject): Boolean
       begin
-        {**
-         * Sollte ein Plugin für diese Instanz existieren, so muss es freigegeben werden
-         *}
+        // When any plugin is connected with this instance, so it must be freed
         if (O is TAQPlugin) and (TAQPlugin(O).WorkAQ = Self) then
           GC.Remove(O)
-        {**
-         * Sollte diese Instanz mit einer anderen zuvor verkettet worden sein, so muss diese
-         * Verbindung aufgehoben werden
-         *}
+        // If this instance is chained with an other, so it must be "unchained"
         else if (O is TAQ) and (TAQ(O).FChainedTo = Self) then
           TAQ(O).FChainedTo := nil;
-        Result := True; // Kompletter Scan
+        Result := True; // Full scan
       end);
   end;
 
@@ -924,9 +877,7 @@ end;
 class procedure TAQ.ComponentsNotification(AComponent: TComponent; Operation: TOperation);
 begin
   if (Operation = opRemove) and not Finalized then
-    {**
-     * Die Verbindung zu einer Komponente in allen lebenden TAQ-Instanzen aufheben
-     *}
+    // The removed component must be removed from all living TAQ instances
     GarbageCollector.Each(
       function(GC: TAQ; O: TObject): Boolean
       begin
