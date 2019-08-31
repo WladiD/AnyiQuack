@@ -2073,7 +2073,8 @@ begin
     Exit;
 
   for cc := FIntervals.Count - 1 downto 0 do
-    ProcessInterval(TInterval(FIntervals[cc]));
+    if cc < FIntervals.Count then
+      ProcessInterval(TInterval(FIntervals[cc]));
 
   HeartBeat;
 end;
@@ -2554,7 +2555,7 @@ begin
   WorkAQ.Immortally := Value;
 end;
 
-{** TInterval **}
+{ TInterval }
 
 constructor TInterval.Finite(Duration: Integer; Each, LastEach: TEachFunction; ActorRole: TActorRole;
   ID: Integer);
