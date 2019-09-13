@@ -23,7 +23,6 @@ unit AQPSystemTypesAnimations;
 interface
 
 uses
-  Winapi.Windows,
   System.SysUtils,
   System.Types,
   System.UITypes,
