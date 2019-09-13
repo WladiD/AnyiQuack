@@ -28,7 +28,6 @@ uses
   System.SysUtils,
   System.Types,
   System.Classes,
-  System.Contnrs,
   System.Character,
   System.Math,
   System.Diagnostics,
@@ -49,9 +48,9 @@ type
   TInterval = class;
   TTimerThread = class;
 
-  TEaseType = (etLinear, etQuad, etCubic, etQuart, etQuint, etSext, etSinus, etElastic, etBack,
-    etLowWave, etMiddleWave, etHighWave, etBounce, etCircle, etSwing10, etSwing50, etSwing100,
-    etSwing200);
+  TEaseType = (etLinear, etQuad, etCubic, etQuart, etQuint, etSext, etSinus,
+    etElastic, etBack, etLowWave, etMiddleWave, etHighWave, etBounce,
+    etCircle, etSwing10, etSwing50, etSwing100, etSwing200);
   TEaseModifier = (
     emIn, emInInverted, emInSnake, emInSnakeInverted,
     emOut, emOutInverted, emOutSnake, emOutSnakeInverted,
@@ -68,7 +67,7 @@ type
   TAnonymNotifyEvent = reference to procedure(Sender: TObject);
   TEaseFunction = reference to function(Progress: Real): Real;
 
-  TAQBase = class(TObjectList)
+  TAQBase = class(TObjectList<TObject>)
   protected
     function Each(EachFunction: TEachFunction): TAQ; virtual; abstract;
   public
@@ -91,6 +90,8 @@ type
   public
     property WorkAQ: TAQ read FWorkAQ;
   end;
+
+  TComponentList = class(TObjectList<TComponent>);
 
   TAQ = class sealed (TAQBase)
   // Private section for local types and constants
@@ -154,24 +155,27 @@ type
     TAQMethods = set of TAQMethod;
 
     const
-    AQEachMethods: TAQMethods = [aqmEach, aqmEachAnimation, aqmEachDelay, aqmEachInterval,
-      aqmEachRepeat, aqmEachTimer];
+    AQEachMethods: TAQMethods = [aqmEach, aqmEachAnimation, aqmEachDelay,
+                                 aqmEachInterval, aqmEachRepeat, aqmEachTimer];
 
-    AQAppendMethods: TAQMethods = [aqmAppend, aqmAppendAQ, aqmChildrenAppend, aqmParentsAppend];
+    AQAppendMethods: TAQMethods = [aqmAppend, aqmAppendAQ,
+                                   aqmChildrenAppend, aqmParentsAppend];
 
     AQFinishMethods: TAQMethods = [aqmFinishAnimations, aqmFinishTimers];
 
-    AQCancelMethods: TAQMethods = [aqmCancelAnimations, aqmCancelDelays, aqmCancelIntervals,
-      aqmCancelTimers];
+    AQCancelMethods: TAQMethods = [aqmCancelAnimations, aqmCancelDelays,
+                                   aqmCancelIntervals, aqmCancelTimers];
 
-    AQChainMethods: TAQMethods = [aqmNewChain, aqmExcludeChain, aqmFilterChain, aqmChildrenChain,
-      aqmIntervalActorsChain, aqmAnimationActorsChain, aqmDelayActorsChain,
-      aqmDemultiplexChain, aqmTimerActorsChain, aqmMultiplexChain, aqmParentsChain,
-      aqmSliceChain, aqmEndChain];
+    AQChainMethods: TAQMethods = [aqmNewChain, aqmExcludeChain, aqmFilterChain,
+                                  aqmChildrenChain, aqmIntervalActorsChain,
+                                  aqmAnimationActorsChain, aqmDelayActorsChain,
+                                  aqmDemultiplexChain, aqmTimerActorsChain,
+                                  aqmMultiplexChain, aqmParentsChain,
+                                  aqmSliceChain, aqmEndChain];
 
-    AQConditionMethods: TAQMethods = [aqmIfThen, aqmIfAll, aqmIfAny, aqmIfContainsAll,
-      aqmIfContainsAny, aqmIfContains, aqmIfElse, aqmIfEnd];
-
+    AQConditionMethods: TAQMethods = [aqmIfThen, aqmIfAll, aqmIfAny,
+                                      aqmIfContainsAll, aqmIfContainsAny,
+                                      aqmIfContains, aqmIfElse, aqmIfEnd];
   // Private class related stuff
   private
     class var
@@ -200,7 +204,7 @@ type
   // Private instance related stuff
   private
     FLifeTick: Int64;
-    FIntervals: TObjectList;
+    FIntervals: TObjectList<TObject>;
     FCurrentInterval: TInterval;
     FChainedTo: TAQ;
     FConditionCount: Byte;
@@ -210,7 +214,7 @@ type
 
     procedure LocalIntervalTimerEvent;
 
-    function GetIntervals: TObjectList;
+    function GetIntervals: TObjectList<TObject>;
     procedure ClearIntervals;
     procedure AddInterval(Interval: TInterval);
     procedure ProcessInterval(Interval: TInterval);
@@ -222,7 +226,7 @@ type
 
     function IfContainsEach(ByClass: TClass): TEachFunction; overload;
     function IfContainsEach(Objects: TObjectArray): TEachFunction; overload;
-    function IfContainsEach(Objects: TObjectList): TEachFunction; overload;
+    function IfContainsEach(Objects: TObjectList<TObject>): TEachFunction; overload;
     function IfContainsEach(AQ: TAQ): TEachFunction; overload;
 
     function ChildrenFiller(AQ: TAQ; O: TObject): Boolean;
@@ -246,7 +250,7 @@ type
 
   // Because TAQ is sealed, no new methods are introduced as protected, but some must be overriden
   protected
-    procedure Notify(Ptr: Pointer; Action: TListNotification); override;
+    procedure Notify(const Item: TObject; Action: TCollectionNotification); override;
 
   // Public class related stuff
   public
@@ -255,7 +259,7 @@ type
 
     class function Take(AObject: TObject): TAQ; overload;
     class function Take(const Objects: TObjectArray): TAQ; overload;
-    class function Take(Objects: TObjectList): TAQ; overload;
+    class function Take(Objects: TObjectList<TObject>): TAQ; overload;
     class function Take<T: class>(Objects: TObjectList<T>): TAQ; overload;
 
     class function HasActiveActors(CheckActors: TActorRoles; AObject: TObject; ID: Integer = 0): Boolean;
@@ -320,7 +324,7 @@ type
 
     function Append(AObject: TObject): TAQ; overload;
     function Append(Objects: TObjectArray): TAQ; overload;
-    function Append(Objects: TObjectList): TAQ; overload;
+    function Append(Objects: TObjectList<TObject>): TAQ; overload;
     function AppendAQ(AQ: TAQ): TAQ;
 
     function ChildrenAppend(Recurse: Boolean = False; ChildrenFiller: TEachFunction = nil): TAQ;
@@ -349,7 +353,7 @@ type
     function ExcludeChain(ByClass: TClass): TAQ; overload;
     function ExcludeChain(AObject: TObject): TAQ; overload;
     function ExcludeChain(Objects: TObjectArray): TAQ; overload;
-    function ExcludeChain(Objects: TObjectList): TAQ; overload;
+    function ExcludeChain(Objects: TObjectList<TObject>): TAQ; overload;
     function ExcludeChain(AQ: TAQ): TAQ; overload;
     function ExcludeChain(ExcludeEach: TEachFunction): TAQ; overload;
 
@@ -364,12 +368,12 @@ type
 
     function IfContainsAny(ByClass: TClass): TAQ; overload;
     function IfContainsAny(Objects: TObjectArray): TAQ; overload;
-    function IfContainsAny(Objects: TObjectList): TAQ; overload;
+    function IfContainsAny(Objects: TObjectList<TObject>): TAQ; overload;
     function IfContainsAny(AQ: TAQ): TAQ; overload;
 
     function IfContainsAll(ByClass: TClass): TAQ; overload;
     function IfContainsAll(Objects: TObjectArray): TAQ; overload;
-    function IfContainsAll(Objects: TObjectList): TAQ; overload;
+    function IfContainsAll(Objects: TObjectList<TObject>): TAQ; overload;
     function IfContainsAll(AQ: TAQ): TAQ; overload;
 
     function SliceChain(StartIndex: Integer; Count: Integer = 0): TAQ;
@@ -447,7 +451,7 @@ type
   // Shortcuts to appropriate `TAQ.Take` methods
   function Take(AObject: TObject): TAQ; overload;
   function Take(Objects: TObjectArray): TAQ; overload;
-  function Take(Objects: TObjectList): TAQ; overload;
+  function Take(Objects: TObjectList<TObject>): TAQ; overload;
   function Take(Enumerator: TEnumerable<TObject>): TAQ; overload;
 
   function OA(Objects: array of TObject): TObjectArray;
@@ -480,7 +484,7 @@ var
 type
   TComponentsNotifier = class(TComponentList)
   protected
-    procedure Notify(Ptr: Pointer; Action: TListNotification); override;
+    procedure Notify(const Value: TComponent; Action: TCollectionNotification); override;
   end;
 
 {$IF RTLVersion < 22}
@@ -619,7 +623,7 @@ begin
   Result := TAQ.Take(Objects);
 end;
 
-function Take(Objects: TObjectList): TAQ;
+function Take(Objects: TObjectList<TObject>): TAQ;
 begin
   Result := TAQ.Take(Objects);
 end;
@@ -688,7 +692,7 @@ end;
 
 // Appends all in Objects contained objects, but not the TObjectList by itself,
 // to the current TAQ instance
-function TAQ.Append(Objects: TObjectList): TAQ;
+function TAQ.Append(Objects: TObjectList<TObject>): TAQ;
 var
   cc: Integer;
 begin
@@ -790,15 +794,15 @@ begin
   Result.FChainedTo := Self;
 end;
 
-procedure TAQ.Notify(Ptr: Pointer; Action: TListNotification);
+procedure TAQ.Notify(const Item: TObject; Action: TCollectionNotification);
 begin
-  if (Action = lnAdded) and (TObject(Ptr) is TComponent) and
-    (FComponentsNotifier.IndexOf(TComponent(Ptr)) < 0) then
-    FComponentsNotifier.Add(TComponent(Ptr));
+  if (Action = cnAdded) and (Item is TComponent) and
+    (FComponentsNotifier.IndexOf(Item as TComponent) < 0) then
+    FComponentsNotifier.Add(Item as TComponent);
 
-  inherited Notify(Ptr, Action);
+  inherited Notify(Item, Action);
 
-  if (Action in [lnExtracted, lnDeleted]) and (Count = 0) then
+  if (Action in [cnExtracted, cnRemoved]) and (Count = 0) then
   begin
     Clean;
     Die;
@@ -907,6 +911,9 @@ begin
   FConditionCount := 0;
   FBools := 0;
   Recurse := True;
+{$IFNDEF MSWINDOWS}
+  FComponentsNotifier:=TComponentList.Create;
+{$ENDIF}
 end;
 
 function TAQ.CustomActors(ActorRole: TActorRole; ID: Integer; IncludeOrphans: Boolean): TAQ;
@@ -1114,6 +1121,9 @@ end;
 destructor TAQ.Destroy;
 begin
   Clean;
+{$IFNDEF MSWINDOWS}
+  FComponentsNotifier.Free;
+{$ENDIF}
   inherited Destroy;
 end;
 
@@ -1305,7 +1315,7 @@ begin
     end);
 end;
 
-function TAQ.ExcludeChain(Objects: TObjectList): TAQ;
+function TAQ.ExcludeChain(Objects: TObjectList<TObject>): TAQ;
 begin
   if SupervisorLock(Result, aqmExcludeChain) then
     Exit;
@@ -1697,10 +1707,10 @@ begin
   Result := GetBit(FBools, ImmortallyBitMask);
 end;
 
-function TAQ.GetIntervals: TObjectList;
+function TAQ.GetIntervals: TObjectList<TObject>;
 begin
   if not Assigned(FIntervals) then
-    FIntervals := TObjectList.Create(True);
+    FIntervals := TObjectList<TObject>.Create(True);
   Result := FIntervals;
 end;
 
@@ -1782,7 +1792,7 @@ begin
   Result := IfThen(Condition);
 end;
 
-function TAQ.IfContainsAll(Objects: TObjectList): TAQ;
+function TAQ.IfContainsAll(Objects: TObjectList<TObject>): TAQ;
 begin
   if SupervisorLock(Result, aqmIfContainsAll) then
     Exit;
@@ -1810,7 +1820,7 @@ begin
   Result := IfAll(IfContainsEach(ByClass));
 end;
 
-function TAQ.IfContainsAny(Objects: TObjectList): TAQ;
+function TAQ.IfContainsAny(Objects: TObjectList<TObject>): TAQ;
 begin
   if SupervisorLock(Result, aqmIfContainsAny) then
     Exit;
@@ -1887,7 +1897,7 @@ begin
   end;
 end;
 
-function TAQ.IfContainsEach(Objects: TObjectList): TEachFunction;
+function TAQ.IfContainsEach(Objects: TObjectList<TObject>): TEachFunction;
 begin
   Result := function(AQ: TAQ; O: TObject): Boolean
   begin
@@ -2389,7 +2399,7 @@ begin
 {$ENDIF}
 end;
 
-class function TAQ.Take(Objects: TObjectList): TAQ;
+class function TAQ.Take(Objects: TObjectList<TObject>): TAQ;
 {$IFDEF RetakeFromGC}
 var
   AQMatch: TAQ;
@@ -2665,11 +2675,12 @@ end;
 
 { TComponentsNotifier }
 
-procedure TComponentsNotifier.Notify(Ptr: Pointer; Action: TListNotification);
+procedure TComponentsNotifier.Notify(const Value: TComponent; Action:
+    TCollectionNotification);
 begin
-  if Action in [lnExtracted, lnDeleted] then
-    TAQ.ComponentsNotification(TComponent(Ptr), opRemove);
-  inherited Notify(Ptr, Action);
+  if Action in [cnExtracted, cnRemoved] then
+    TAQ.ComponentsNotification(Value, opRemove);
+  inherited Notify(Value, Action);
 end;
 
 { TSpinWait }
