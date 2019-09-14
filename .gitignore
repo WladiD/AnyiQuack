@@ -7,3 +7,5 @@ __history/
 Examples/*/*.exe
 Examples/EasingSuite/EasingSuite.dres
 Examples/EasingSuite/EasingSuiteResource.rc
+Examples/SlidingButtonsFMX/Android/
+*.res
