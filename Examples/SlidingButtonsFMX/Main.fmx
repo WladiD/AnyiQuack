@@ -1,0 +1,228 @@
+object Form2: TForm2
+  Left = 0
+  Top = 0
+  Caption = 'Form2'
+  ClientHeight = 475
+  ClientWidth = 282
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  DesignerMasterStyle = 0
+  object LinearSlideButton: TButton
+    Position.X = 16.000000000000000000
+    Position.Y = 19.000000000000000000
+    Size.Width = 80.000000000000000000
+    Size.Height = 30.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 11
+    Text = 'Slide Linear'
+    OnClick = SlideButtonClick
+  end
+  object SlideBounceButton: TButton
+    Tag = 12
+    Position.X = 16.000000000000000000
+    Position.Y = 199.000000000000000000
+    Size.Width = 80.000000000000000000
+    Size.Height = 30.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 4
+    Text = 'Slide Bounce'
+    OnClick = SlideButtonClick
+  end
+  object SlideCircleButton: TButton
+    Tag = 13
+    Position.X = 104.000000000000000000
+    Position.Y = 199.000000000000000000
+    Size.Width = 80.000000000000000000
+    Size.Height = 30.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 13
+    Text = 'Slide Circle'
+    OnClick = SlideButtonClick
+  end
+  object HighWaveButton: TButton
+    Tag = 11
+    Position.X = 192.000000000000000000
+    Position.Y = 155.000000000000000000
+    Size.Width = 80.000000000000000000
+    Size.Height = 30.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    Text = 'Slide HighWave'
+    OnClick = SlideButtonClick
+  end
+  object LowWaveSlideButton: TButton
+    Tag = 9
+    Position.X = 16.000000000000000000
+    Position.Y = 155.000000000000000000
+    Size.Width = 80.000000000000000000
+    Size.Height = 30.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 5
+    Text = 'Slide LowWave'
+    OnClick = SlideButtonClick
+  end
+  object MiddleWaveSlideButton: TButton
+    Tag = 10
+    Position.X = 104.000000000000000000
+    Position.Y = 155.000000000000000000
+    Size.Width = 80.000000000000000000
+    Size.Height = 30.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 14
+    Text = 'Slide MiddleWave'
+    OnClick = SlideButtonClick
+  end
+  object BackSlideButton: TButton
+    Tag = 8
+    Position.X = 192.000000000000000000
+    Position.Y = 107.000000000000000000
+    Size.Width = 80.000000000000000000
+    Size.Height = 30.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    Text = 'Slide Back'
+    OnClick = SlideButtonClick
+  end
+  object SinusSlideButton: TButton
+    Tag = 6
+    Position.X = 16.000000000000000000
+    Position.Y = 107.000000000000000000
+    Size.Width = 80.000000000000000000
+    Size.Height = 30.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 8
+    Text = 'Slide Sinus'
+    OnClick = SlideButtonClick
+  end
+  object ElasticSlideButton: TButton
+    Tag = 7
+    Position.X = 104.000000000000000000
+    Position.Y = 107.000000000000000000
+    Size.Width = 80.000000000000000000
+    Size.Height = 30.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 15
+    Text = 'Slide Elastic'
+    OnClick = SlideButtonClick
+  end
+  object QuadSlideButton: TButton
+    Tag = 1
+    Position.X = 104.000000000000000000
+    Position.Y = 19.000000000000000000
+    Size.Width = 80.000000000000000000
+    Size.Height = 30.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    Text = 'Slide Quad'
+    OnClick = SlideButtonClick
+  end
+  object SextSlideButton: TButton
+    Tag = 5
+    Position.X = 192.000000000000000000
+    Position.Y = 62.000000000000000000
+    Size.Width = 80.000000000000000000
+    Size.Height = 30.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    Text = 'Slide Sext'
+    OnClick = SlideButtonClick
+  end
+  object QuartSlideButton: TButton
+    Tag = 3
+    Position.X = 16.000000000000000000
+    Position.Y = 62.000000000000000000
+    Size.Width = 80.000000000000000000
+    Size.Height = 30.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 6
+    Text = 'Slide Quart'
+    OnClick = SlideButtonClick
+  end
+  object CubicSlideButton: TButton
+    Tag = 2
+    Position.X = 192.000000000000000000
+    Position.Y = 19.000000000000000000
+    Size.Width = 80.000000000000000000
+    Size.Height = 30.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 7
+    Text = 'Slide Cubic'
+    OnClick = SlideButtonClick
+  end
+  object QuintSlideButton: TButton
+    Tag = 4
+    Position.X = 104.000000000000000000
+    Position.Y = 62.000000000000000000
+    Size.Width = 80.000000000000000000
+    Size.Height = 30.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 12
+    Text = 'Slide Quint'
+    OnClick = SlideButtonClick
+  end
+  object Label3: TLabel
+    Anchors = [akRight, akBottom]
+    Position.X = 16.341539382934570000
+    Position.Y = 370.132202148437500000
+    Size.Width = 94.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.HorzAlign = Trailing
+    Text = 'Y duration'
+    TabOrder = 18
+  end
+  object Label2: TLabel
+    Anchors = [akRight, akBottom]
+    Position.X = 15.000000000000000000
+    Position.Y = 338.000000000000000000
+    Size.Width = 98.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.HorzAlign = Trailing
+    Text = 'X duration'
+    TabOrder = 19
+  end
+  object YTrackBar: TTrackBar
+    Anchors = [akRight, akBottom]
+    CanParentFocus = True
+    Max = 2000.000000000000000000
+    Min = 100.000000000000000000
+    Orientation = Horizontal
+    Position.X = 132.132873535156300000
+    Position.Y = 370.375640869140600000
+    Size.Width = 140.000000000000000000
+    Size.Height = 19.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 16
+    Value = 750.000000000000000000
+  end
+  object XTrackBar: TTrackBar
+    Anchors = [akRight, akBottom]
+    CanParentFocus = True
+    Max = 2000.000000000000000000
+    Min = 100.000000000000000000
+    Orientation = Horizontal
+    Position.X = 131.000000000000000000
+    Position.Y = 337.000000000000000000
+    Size.Width = 142.000000000000000000
+    Size.Height = 19.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 17
+    Value = 500.000000000000000000
+    OnChange = XTrackBarChange
+  end
+  object Label1: TLabel
+    Anchors = [akRight, akBottom]
+    Position.X = 16.000000000000000000
+    Position.Y = 396.000000000000000000
+    Size.Width = 257.000000000000000000
+    Size.Height = 75.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.HorzAlign = Trailing
+    Text = 
+      'The X and Y properties of the Position are animated independentl' +
+      'y. '#13#10'Try to hit the space key rapidly.'
+    TabOrder = 20
+  end
+end
