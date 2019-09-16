@@ -79,3 +79,9 @@
     {.$DEFINE OutputDebugGCFree}
   {$ENDIF}
 {$ENDIF}
+
+{**
+ * If you want to use AnyiQuark in FireMonkey applications
+ * (including for Windows), enable this definition
+ *}
+{$DEFINE FMX}
