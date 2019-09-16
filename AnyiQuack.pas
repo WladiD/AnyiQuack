@@ -22,9 +22,13 @@ unit AnyiQuack;
 
 interface
 
+{$INCLUDE Compile.inc}
+
 uses
+{$IFDEF MSWINDOWS}
   Winapi.Windows,
   Winapi.Messages,
+{$ENDIF}
   System.SysUtils,
   System.Types,
   System.Classes,
@@ -33,9 +37,8 @@ uses
   System.Diagnostics,
   System.SyncObjs,
   System.UITypes,
+  System.UIConsts,
   Generics.Collections;
-
-{$INCLUDE Compile.inc}
 
 const
   Version = '1.0.4';
@@ -283,10 +286,12 @@ type
     class function EaseInteger(StartValue, EndValue: Integer; Progress: Real;
       EaseFunction: TEaseFunction): Integer; overload;
 
-    class function EaseColor(StartColor, EndColor: TColor; Progress: Real; EaseType: TEaseType;
-      EaseModifier: TEaseModifier = emIn): TColor; overload;
-    class function EaseColor(StartColor, EndColor: TColor; Progress: Real;
-      EaseFunction: TEaseFunction): TColor; overload;
+    class function EaseColor(
+      StartColor, EndColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; Progress: Real; EaseType: TEaseType;
+      EaseModifier: TEaseModifier = emIn): {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; overload;
+    class function EaseColor(
+      StartColor, EndColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; Progress: Real;
+      EaseFunction: TEaseFunction): {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; overload;
 
     class function EasePoint(StartPoint, EndPoint: TPoint; Progress: Real; EaseType: TEaseType;
       EaseModifier: TEaseModifier = emIn): TPoint; overload;
@@ -426,9 +431,13 @@ type
     FTimerProc: TThreadProcedure;
     FMainSignal: TEvent;
     FEnabled: Boolean;
+
+    {$IFDEF MSWINDOWS}
     FWindowHandle: HWND;
 
     procedure WndProc(var Msg: TMessage);
+    {$ENDIF}
+
     procedure SetInterval(NewInterval: Integer);
   protected
     procedure Execute; override;
@@ -911,9 +920,6 @@ begin
   FConditionCount := 0;
   FBools := 0;
   Recurse := True;
-{$IFNDEF MSWINDOWS}
-  FComponentsNotifier:=TComponentList.Create;
-{$ENDIF}
 end;
 
 function TAQ.CustomActors(ActorRole: TActorRole; ID: Integer; IncludeOrphans: Boolean): TAQ;
@@ -1082,6 +1088,7 @@ begin
   {$IFNDEF DEBUG}
   Exit(Self);
   {$ELSE}
+  {$IFDEF MSWINDOWS}
   if SupervisorLock(Result, aqmDebugMessage) then
     Exit;
   ChainPath := TStringList.Create;
@@ -1107,6 +1114,7 @@ begin
       WholeMessage;
   MessageBox(0, PWideChar(WholeMessage), PWideChar(Caption), MB_OK or MB_ICONINFORMATION);
 //	OutputDebugString(PWideChar(WholeMessage)); // Wer keine Boxen mag, kann die Console für die Ausgabe nutzen
+  {$ENDIF}
   Result := Self; // Wichtig, da der richtige Result in der oberen Schleife überschrieben wird
   {$ENDIF}
 end;
@@ -1121,9 +1129,6 @@ end;
 destructor TAQ.Destroy;
 begin
   Clean;
-{$IFNDEF MSWINDOWS}
-  FComponentsNotifier.Free;
-{$ENDIF}
   inherited Destroy;
 end;
 
@@ -1519,26 +1524,28 @@ begin
   end;
 end;
 
-class function TAQ.EaseColor(StartColor, EndColor: TColor; Progress: Real; EaseType: TEaseType;
-  EaseModifier: TEaseModifier): TColor;
+class function TAQ.EaseColor(
+  StartColor, EndColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; Progress: Real; EaseType: TEaseType;
+  EaseModifier: TEaseModifier): {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
 begin
   Result := EaseColor(StartColor, EndColor, Progress, Ease(EaseType, EaseModifier));
 end;
 
-class function TAQ.EaseColor(StartColor, EndColor: TColor; Progress: Real;
-  EaseFunction: TEaseFunction): TColor;
+class function TAQ.EaseColor(
+  StartColor, EndColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; Progress: Real;
+  EaseFunction: TEaseFunction): {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
 var
-  StartCR, EndCR: TColorRec;
+  StartCR, EndCR: {$IFDEF FMX}TAlphaColorRec{$ELSE}TColorRec{$ENDIF};
 begin
   if StartColor = EndColor then
     Exit(StartColor);
 
-  StartCR.Color := TColorRec.ColorToRGB(StartColor);
-  EndCR.Color := TColorRec.ColorToRGB(EndColor);
+  StartCR.Color := {$IFDEF FMX}TAlphaColorRec{$ELSE}TColorRec{$ENDIF}.ColorToRGB(StartColor);
+  EndCR.Color := {$IFDEF FMX}TAlphaColorRec{$ELSE}TColorRec{$ENDIF}.ColorToRGB(EndColor);
   Progress := EaseFunction(Progress);
 
-  Result := RGB(
-    Min(255, Max(0, EaseInteger(StartCR.R, EndCR.R, Progress, nil))),
+  Result := {$IFDEF FMX}MakeColor{$ELSE}RGB{$ENDIF}
+    (Min(255, Max(0, EaseInteger(StartCR.R, EndCR.R, Progress, nil))),
     Min(255, Max(0, EaseInteger(StartCR.G, EndCR.G, Progress, nil))),
     Min(255, Max(0, EaseInteger(StartCR.B, EndCR.B, Progress, nil))));
 end;
@@ -2319,8 +2326,10 @@ end;
 
 procedure RetakeDebugMessage(RetakenAQ: TAQ);
 begin
+{$IFDEF MSWINDOWS}
   OutputDebugString(PWideChar(Format('TAQ %p at index #%d of GC retaken.',
     [@RetakenAQ, TAQ.GarbageCollector.IndexOf(RetakenAQ)])));
+{$ENDIF}
 end;
 
 class function TAQ.Take(const Objects: TObjectArray): TAQ;
@@ -2708,8 +2717,9 @@ begin
   FInterval := Interval;
   FTimerProc := TimerProc;
   FMainSignal := TEvent.Create(nil, False, False, '');
+  {$IFDEF MSWINDOWS}
   FWindowHandle := AllocateHWnd(WndProc);
-
+  {$ENDIF}
   inherited Create(False);
 end;
 
@@ -2725,11 +2735,13 @@ begin
     CheckSynchronize;
   FMainSignal.Free;
 
+  {$IFDEF MSWINDOWS}
   if FWindowHandle <> 0 then
   begin
     DeallocateHWnd(FWindowHandle);
     FWindowHandle := 0;
   end;
+  {$ENDIF}
 
   inherited Destroy;
 end;
@@ -2764,6 +2776,7 @@ begin
   FMainSignal.SetEvent;
 end;
 
+{$IFDEF MSWINDOWS}
 procedure TTimerThread.WndProc(var Msg: TMessage);
 begin
   with Msg do
@@ -2776,6 +2789,9 @@ begin
     else
       Result := DefWindowProc(FWindowHandle, Msg, wParam, lParam);
 end;
+{$ELSE}
+
+{$ENDIF}
 
 procedure TTimerThread.Execute;
 var
@@ -2789,8 +2805,15 @@ var
     MessageResult: Cardinal;
 {$IFEND}
   begin
-    SendMessageTimeout(FWindowHandle, WM_TIMER, 0, 0, SMTO_ABORTIFHUNG, LocalInterval,
-      @MessageResult);
+    {$IFDEF MSWINDOWS}
+      SendMessageTimeout(FWindowHandle, WM_TIMER, 0, 0, SMTO_ABORTIFHUNG, LocalInterval,
+        @MessageResult);
+    {$ELSE}
+      Queue(nil, procedure
+                       begin
+                         FTimerProc;
+                       end);
+    {$ENDIF}
     {**
      * Old solution
      *}
