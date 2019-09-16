@@ -30,7 +30,7 @@
         <Projects Include="NotificationWindows\NotificationExample.dproj">
             <Dependencies/>
         </Projects>
-        <Projects Include="..\..\..\..\..\..\Delphi Misc\Wladi\AnyiQuack\Examples\SlidingButtonFMX\SlidingButton.dproj">
+        <Projects Include="SlidingButtonsFMX\SlidingButtonsFMX.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -122,23 +122,23 @@
     <Target Name="NotificationExample:Make">
         <MSBuild Projects="NotificationWindows\NotificationExample.dproj" Targets="Make"/>
     </Target>
-    <Target Name="SlidingButton">
-        <MSBuild Projects="..\..\..\..\..\..\Delphi Misc\Wladi\AnyiQuack\Examples\SlidingButtonFMX\SlidingButton.dproj"/>
+    <Target Name="SlidingButtonsFMX">
+        <MSBuild Projects="SlidingButtonsFMX\SlidingButtonsFMX.dproj"/>
     </Target>
-    <Target Name="SlidingButton:Clean">
-        <MSBuild Projects="..\..\..\..\..\..\Delphi Misc\Wladi\AnyiQuack\Examples\SlidingButtonFMX\SlidingButton.dproj" Targets="Clean"/>
+    <Target Name="SlidingButtonsFMX:Clean">
+        <MSBuild Projects="SlidingButtonsFMX\SlidingButtonsFMX.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="SlidingButton:Make">
-        <MSBuild Projects="..\..\..\..\..\..\Delphi Misc\Wladi\AnyiQuack\Examples\SlidingButtonFMX\SlidingButton.dproj" Targets="Make"/>
+    <Target Name="SlidingButtonsFMX:Make">
+        <MSBuild Projects="SlidingButtonsFMX\SlidingButtonsFMX.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign;SlidingForm;MethodTests;CustomPlugin;StickyTools;EasingSuite;NotificationExample;SlidingButton"/>
+        <CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign;SlidingForm;MethodTests;CustomPlugin;StickyTools;EasingSuite;NotificationExample;SlidingButtonsFMX"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean;CustomPlugin:Clean;StickyTools:Clean;EasingSuite:Clean;NotificationExample:Clean;SlidingButton:Clean"/>
+        <CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean;CustomPlugin:Clean;StickyTools:Clean;EasingSuite:Clean;NotificationExample:Clean;SlidingButtonsFMX:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make;CustomPlugin:Make;StickyTools:Make;EasingSuite:Make;NotificationExample:Make;SlidingButton:Make"/>
+        <CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make;CustomPlugin:Make;StickyTools:Make;EasingSuite:Make;NotificationExample:Make;SlidingButtonsFMX:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>
