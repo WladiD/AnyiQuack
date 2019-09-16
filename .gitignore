@@ -9,3 +9,4 @@ Examples/EasingSuite/EasingSuite.dres
 Examples/EasingSuite/EasingSuiteResource.rc
 Examples/SlidingButtonsFMX/Android/
 *.res
+Examples/SlidingButtonsFMX/OSX32/
