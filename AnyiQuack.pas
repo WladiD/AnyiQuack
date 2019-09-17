@@ -16,6 +16,9 @@
  * All Rights Reserved.
  *
  * @author Waldemar Derr <furevest@gmail.com>
+ *
+ * Contributors:
+ * - John Kouraklis <https://github.com/jkour>
  *}
 
 unit AnyiQuack;
