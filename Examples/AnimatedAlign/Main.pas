@@ -51,6 +51,8 @@ const
   BoundsAnimationID = 1;
   HoverAnimationID = 2;
   HoverShakeAnimationID = 3;
+  ActivePanelTag = 69;
+  InactivePanelTag = 70;
 
 procedure TMainForm.AddPanelButtonClick(Sender: TObject);
 var
@@ -59,7 +61,7 @@ begin
   Inc(FPanelCounter);
   P := TPanel.Create(Self);
   P.Parent := Self;
-  P.SetBounds(-100, -100, 100, 100);
+  P.SetBounds(-100, -100, 10, 10);
   P.ParentBackground := FALSE;
   P.Color := clBtnFace;
   P.Caption := Format('Panel #%d', [FPanelCounter]);
@@ -67,6 +69,7 @@ begin
   P.OnMouseLeave := PanelMouseLeave;
   P.DoubleBuffered := True;
   P.BringToFront;
+  P.Tag := ActivePanelTag;
   TopPanel.BringToFront;
   BottomPanel.BringToFront;
   UpdateAlign;
@@ -84,7 +87,7 @@ begin
     .FilterChain(
       function(AQ: TAQ; O: TObject): Boolean
       begin
-        Result := (O is TPanel) and (TControl(O).Tag = 0);
+        Result := (O is TPanel) and (TControl(O).Tag = ActivePanelTag);
       end);
 end;
 
@@ -96,13 +99,13 @@ end;
 procedure TMainForm.RemovePanelButtonClick(Sender: TObject);
 begin
   GetPanelsAQ
-    .SliceChain(-1)
+    .SliceChain(-1) // Reduce to the last panel
     .Each(
       function(AQ: TAQ; O: TObject): Boolean
       begin
         Result := TRUE;
         Dec(FPanelCounter);
-        TControl(O).Tag := 1; // Dadurch wird es für GetPanelsAQ nicht greifbar
+        TControl(O).Tag := InactivePanelTag; // This excludes the panel from being taken by GetPanelsAQ
         AQ
           .CancelAnimations
           .Plugin<TAQPControlAnimations>
@@ -110,6 +113,10 @@ begin
             AnimationDurationTrackBar.Position, 0, TAQ.Ease(etQuad),
             procedure(Sender: TObject)
             begin
+              // Under certain conditions there can be running animations left, because of
+              // overlapping calls of the following UpdateAlign and timer synchronization and we get
+              // then an AV. So we avoid that by cancel the animations again.
+              Take(Sender).CancelAnimations;
               Sender.Free;
             end);
       end);
@@ -192,9 +199,8 @@ begin
         XTile, YTile, Dummy: Word;
       begin
         Result := True;
-        {**
-         * Anstehende Animationen beenden oder abbrechen
-         *}
+
+        // Finish or cancel the running animations
         if PIndex = 0 then
         begin
           if DisturbedComboBox.ItemIndex = 0 then

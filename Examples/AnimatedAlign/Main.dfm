@@ -33,7 +33,6 @@ object MainForm: TMainForm
     ExplicitLeft = 384
   end
   object TopPanel: TPanel
-    Tag = 1
     Left = 0
     Top = 0
     Width = 777
@@ -78,7 +77,9 @@ object MainForm: TMainForm
       Width = 145
       Height = 21
       Style = csDropDownList
+      ItemIndex = 0
       TabOrder = 0
+      Text = 'Cancel'
       Items.Strings = (
         'Cancel'
         'Finish')
@@ -127,7 +128,6 @@ object MainForm: TMainForm
     end
   end
   object BottomPanel: TPanel
-    Tag = 1
     Left = 0
     Top = 304
     Width = 777
