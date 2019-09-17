@@ -33,6 +33,7 @@ type
     HoverShakeCheckBox: TCheckBox;
     procedure AddPanelButtonClick(Sender: TObject);
     procedure RemovePanelButtonClick(Sender: TObject);
+    procedure UpdateAlignEventHandler(Sender: TObject);
   private
     FPanelCounter: Integer;
   public
@@ -61,6 +62,10 @@ const
   BoundsAnimationID = 1;
   HoverAnimationID = 2;
   HoverShakeAnimationID = 3;
+  ActivePanelTag = 69;
+  InactivePanelTag = 70;
+
+{ TMainForm }
 
 procedure TMainForm.AddPanelButtonClick(Sender: TObject);
 var
@@ -71,23 +76,24 @@ begin
   Inc(FPanelCounter);
   P := TPanel.Create(Self);
   P.Parent := Self;
-  P.SetBounds(-100, -100, 100, 100);
-  P.HitTest:=True;
+  P.SetBounds(-100, -100, 10, 10);
+  P.HitTest := True;
+  P.Tag := ActivePanelTag;
 
-  R:=TRectangle.Create(P);
-  R.Parent:=P;
-  R.Align:=TAlignLayout.Client;
-  R.Fill.Kind:=TBrushKind.Solid;
-  R.Fill.Color:=TAlphaColorRec.Whitesmoke;
-  R.HitTest:=False;
+  R := TRectangle.Create(P);
+  R.Parent := P;
+  R.Align := TAlignLayout.Client;
+  R.Fill.Kind := TBrushKind.Solid;
+  R.Fill.Color := TAlphaColorRec.Whitesmoke;
+  R.HitTest := False;
 
-  L:=TLabel.Create(R);
-  L.Parent:=R;
-  L.Align:=TAlignLayout.Client;
-  L.TextSettings.HorzAlign:=TTextAlign.Center;
-  L.TextSettings.VertAlign:=TTextAlign.Center;
-  L.Text:= Format('Panel #%d', [FPanelCounter]);
-  L.HitTest:=False;
+  L := TLabel.Create(R);
+  L.Parent := R;
+  L.Align := TAlignLayout.Client;
+  L.TextSettings.HorzAlign := TTextAlign.Center;
+  L.TextSettings.VertAlign := TTextAlign.Center;
+  L.Text := Format('Panel #%d', [FPanelCounter]);
+  L.HitTest := False;
 
   P.OnMouseEnter := PanelMouseEnter;
   P.OnMouseLeave := PanelMouseLeave;
@@ -99,40 +105,43 @@ begin
   UpdateAlign;
 end;
 
-{ TForm3 }
+procedure TMainForm.UpdateAlignEventHandler(Sender: TObject);
+begin
+  UpdateAlign;
+end;
 
 function TMainForm.GetPanelsAQ: TAQ;
 begin
-  Result:=Take(MainForm)
+  Result := Take(MainForm)
     .ChildrenChain
     .FilterChain(
       function(AQ: TAQ; O: TObject): Boolean
       begin
-        Result := (O is TPanel) and (TControl(O).Tag = 0);
+        Result := (O is TPanel) and (TControl(O).Tag = ActivePanelTag);
       end);
 end;
 
 procedure TMainForm.PanelHoverHandler(Sender: TObject; MouseOver: Boolean);
 var
+  SenderPanel: TPanel absolute Sender;
   AQ: TAQ;
   AQAniPlugin: TAQPControlAnimations;
   ShakeIt: Boolean;
-  rect: TRectangle;
-  lbl: TLabel;
-  control: TControl;
-  num: integer;
+  Rect: TRectangle;
+  LabelControl: TLabel;
+  Control: TControl;
 begin
-  lbl:=nil;
-  rect:=nil;
+  LabelControl := nil;
+  Rect := nil;
 
   AQ := Take(Sender);
 
-  for control in (Sender as TControl).Controls do
+  for Control in (Sender as TControl).Controls do
   begin
-    if control is TRectangle then
-      rect:=control as TRectangle;
-    if control is TLabel then
-      lbl:=control as TLabel;
+    if Control is TRectangle then
+      Rect := Control as TRectangle
+    else if Control is TLabel then
+      LabelControl := Control as TLabel;
   end;
 
   if MouseOver then
@@ -144,13 +153,13 @@ begin
       .CancelAnimations(HoverAnimationID)
       .Plugin<TAQPControlAnimations>;
 
-    if Assigned(lbl) then
-      AQAniPlugin.FontColorAnimation<TLabel>(lbl, lbl.FontColor, HoverColorBox.Color xor $FFFFFF, 600,
-      HoverAnimationID, TAQ.Ease(etCubic));
+    if Assigned(LabelControl) then
+      AQAniPlugin.FontColorAnimation<TLabel>(LabelControl, LabelControl.FontColor,
+        HoverColorBox.Color xor $FFFFFF, 600, HoverAnimationID, TAQ.Ease(etCubic));
 
     if Assigned(Rect) then
       AQAniPlugin.BackgroundColorAnimation<TRectangle>
-          (rect, rect.Fill.Color, HoverColorBox.Color, 300, HoverAnimationID,
+          (Rect, Rect.Fill.Color, HoverColorBox.Color, 300, HoverAnimationID,
             TAQ.Ease(etSinus));
 
     if ShakeIt then
@@ -162,13 +171,13 @@ begin
   begin
     AQAniPlugin := AQ.FinishAnimations(HoverAnimationID).Plugin<TAQPControlAnimations>;
 
-    if Assigned(lbl) then
-      AQAniPlugin.FontColorAnimation<TLabel>(lbl, lbl.FontColor,
+    if Assigned(LabelControl) then
+      AQAniPlugin.FontColorAnimation<TLabel>(LabelControl, LabelControl.FontColor,
             TAlphaColorRec.Black, 750, HoverAnimationID, TAQ.Ease(etCubic));
 
     if Assigned(Rect) then
       AQAniPlugin.BackgroundColorAnimation<TRectangle>
-          (rect, TAlphaColorRec.White, 1500, HoverColorBox.Color, HoverAnimationID,
+          (Rect, TAlphaColorRec.White, 1500, HoverColorBox.Color, HoverAnimationID,
             TAQ.Ease(etSinus));
   end;
 end;
@@ -186,23 +195,30 @@ end;
 procedure TMainForm.RemovePanelButtonClick(Sender: TObject);
 begin
   GetPanelsAQ
-    .SliceChain(-1)
+    .SliceChain(-1) // Reduce to the last panel
     .Each(
       function(AQ: TAQ; O: TObject): Boolean
+      var
+        OControl: TControl absolute O;
       begin
-        Result := TRUE;
+        Result := True;
         Dec(FPanelCounter);
-        TControl(O).Tag := 1; // Dadurch wird es für GetPanelsAQ nicht greifbar
+        OControl.Tag := InactivePanelTag; // This excludes the panel from being taken by GetPanelsAQ
         AQ
           .CancelAnimations
           .Plugin<TAQPControlAnimations>
-          .BoundsAnimation(Round(TControl(O).Position.X), Height, -1, -1,
+          .BoundsAnimation(Round(OControl.Position.X), Height, -1, -1,
             Round(AnimationDurationTrackBar.Value), 0, TAQ.Ease(etQuad),
             procedure(Sender: TObject)
             begin
+              // Under certain conditions there can be running animations left, because of
+              // overlapping calls of the following UpdateAlign and timer synchronization and we get
+              // then an AV. So we avoid that by cancel the animations again.
+              Take(Sender).CancelAnimations;
               Sender.Free;
             end);
       end);
+
   UpdateAlign;
 end;
 
@@ -237,9 +253,8 @@ begin
         XTile, YTile, Dummy: Word;
       begin
         Result := True;
-        {**
-         * Anstehende Animationen beenden oder abbrechen
-         *}
+
+        // Finish or cancel the running animations
         if PIndex = 0 then
         begin
           if DisturbedComboBox.ItemIndex = 0 then

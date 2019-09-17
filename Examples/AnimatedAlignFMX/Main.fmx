@@ -9,6 +9,7 @@ object MainForm: TMainForm
   FormFactor.Width = 320
   FormFactor.Height = 480
   FormFactor.Devices = [Desktop]
+  OnResize = UpdateAlignEventHandler
   DesignerMasterStyle = 0
   object TopPanel: TPanel
     Tag = 1
@@ -28,10 +29,9 @@ object MainForm: TMainForm
       object Label1: TLabel
         Align = Client
         Size.Width = 145.000000000000000000
-        Size.Height = 26.000000000000000000
+        Size.Height = 25.000000000000000000
         Size.PlatformDefault = False
         Text = 'Panel Size'
-        TabOrder = 0
       end
       object PanelSizeTrackBar: TTrackBar
         Align = Bottom
@@ -40,12 +40,13 @@ object MainForm: TMainForm
         Min = 55.000000000000000000
         Orientation = Horizontal
         Margins.Bottom = 10.000000000000000000
-        Position.Y = 26.000000000000000000
+        Position.Y = 25.000000000000000000
         Size.Width = 145.000000000000000000
-        Size.Height = 19.000000000000000000
+        Size.Height = 20.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 1
         Value = 100.000000000000000000
+        OnChange = UpdateAlignEventHandler
       end
     end
     object Layout2: TLayout
@@ -62,7 +63,6 @@ object MainForm: TMainForm
         Size.Height = 23.000000000000000000
         Size.PlatformDefault = False
         Text = 'Disturbed Animations'
-        TabOrder = 0
       end
       object DisturbedComboBox: TPopupBox
         Align = Bottom
@@ -89,10 +89,9 @@ object MainForm: TMainForm
       object Label3: TLabel
         Align = Client
         Size.Width = 145.000000000000000000
-        Size.Height = 26.000000000000000000
+        Size.Height = 25.000000000000000000
         Size.PlatformDefault = False
         Text = 'Animation Duration (msec)'
-        TabOrder = 0
       end
       object AnimationDurationTrackBar: TTrackBar
         Align = Bottom
@@ -101,9 +100,9 @@ object MainForm: TMainForm
         Min = 100.000000000000000000
         Orientation = Horizontal
         Margins.Bottom = 10.000000000000000000
-        Position.Y = 26.000000000000000000
+        Position.Y = 25.000000000000000000
         Size.Width = 145.000000000000000000
-        Size.Height = 19.000000000000000000
+        Size.Height = 20.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 1
         Value = 500.000000000000000000
@@ -123,7 +122,6 @@ object MainForm: TMainForm
         Size.Height = 23.000000000000000000
         Size.PlatformDefault = False
         Text = 'Hover Color'
-        TabOrder = 0
       end
       object HoverColorBox: TColorComboBox
         DropDownKind = Custom
@@ -180,7 +178,7 @@ object MainForm: TMainForm
       Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 1
-      Text = 'Add Panel'
+      Text = '&Add Panel'
       OnClick = AddPanelButtonClick
     end
     object RemovePanelButton: TButton
@@ -195,7 +193,7 @@ object MainForm: TMainForm
       Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 0
-      Text = 'Remove Panel'
+      Text = '&Remove Panel'
       OnClick = RemovePanelButtonClick
     end
   end
@@ -217,7 +215,6 @@ object MainForm: TMainForm
       Text = 
         'Add a couple of panels and play with the size of form or panels.' +
         ' Also try the different handling for disturbed animations.'
-      TabOrder = 0
     end
   end
 end
