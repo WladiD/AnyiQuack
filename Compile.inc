@@ -81,7 +81,9 @@
 {$ENDIF}
 
 {**
- * If you want to use AnyiQuark in FireMonkey applications
- * (including for Windows), enable this definition
+ * If you want to use AnyiQuark __only__ in FireMonkey applications,
+ * enable this definition.
+ *
+ * Otherwise add the FMX conditional to your Firemonkey project.
  *}
-{$DEFINE FMX}
+{.$DEFINE FMX}

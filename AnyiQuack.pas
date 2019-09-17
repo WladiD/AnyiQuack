@@ -194,7 +194,6 @@ type
     FActiveIntervalAQs: TAQ;
     FStopWatch: TStopWatch;
     FTick: Int64;
-    FComponentsNotifier: TComponentList;
     FIDGenerator: Integer;
 
     class procedure Initialize;
@@ -811,10 +810,6 @@ end;
 
 procedure TAQ.Notify(const Item: TObject; Action: TCollectionNotification);
 begin
-  if (Action = cnAdded) and (Item is TComponent) and
-    (FComponentsNotifier.IndexOf(Item as TComponent) < 0) then
-    FComponentsNotifier.Add(Item as TComponent);
-
   inherited Notify(Item, Action);
 
   if (Action in [cnExtracted, cnRemoved]) and (Count = 0) then
@@ -1971,9 +1966,6 @@ begin
   FGC := TAQ.Create;
   FGC.OwnsObjects := True;
   FGC.Recurse := False;
-
-  FComponentsNotifier := TComponentsNotifier.Create;
-  FComponentsNotifier.OwnsObjects := False;
 end;
 
 // Free all class related stuff which is initialized in `TAQ.Initialize`
@@ -1992,7 +1984,6 @@ begin
     FTimerHandler := 0;
 {$ENDIF}
 
-  FreeAndNil(FComponentsNotifier);
   FreeAndNil(FGC); // Release the garbage collector with all the managed instances
   FreeAndNil(FActiveIntervalAQs);
 end;
@@ -2790,7 +2781,7 @@ begin
   InterlockedExchange(FInterval, NewInterval);
 {$ELSE}
   TInterlocked.Exchange(FInterval, NewInterval);
-{$IFEND}
+{$ENDIF}
   FMainSignal.SetEvent;
 end;
 
@@ -2823,19 +2814,16 @@ var
     MessageResult: Cardinal;
 {$IFEND}
   begin
-    {$IFDEF MSWINDOWS}
-      SendMessageTimeout(FWindowHandle, WM_TIMER, 0, 0, SMTO_ABORTIFHUNG, LocalInterval,
-        @MessageResult);
-    {$ELSE}
-      Queue(nil, procedure
-                       begin
-                         FTimerProc;
-                       end);
-    {$ENDIF}
-    {**
-     * Old solution
-     *}
-    // Synchronize(FTimerProc);
+{$IFDEF MSWINDOWS}
+    SendMessageTimeout(FWindowHandle, WM_TIMER, 0, 0, SMTO_ABORTIFHUNG, LocalInterval,
+      @MessageResult);
+{$ELSE}
+    Synchronize(nil,
+      procedure
+      begin
+        FTimerProc;
+      end);
+{$ENDIF}
   end;
 begin
   while not Terminated do
