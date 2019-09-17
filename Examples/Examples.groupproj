@@ -9,6 +9,9 @@
         <Projects Include="SyncScroll\SyncScroll.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="AnimatedAlignFMX\AnimatedAlignFMX.dproj">
+            <Dependencies/>
+        </Projects>
         <Projects Include="AnimatedAlign\AnimatedAlign.dproj">
             <Dependencies/>
         </Projects>
@@ -58,6 +61,15 @@
     </Target>
     <Target Name="SyncScroll:Make">
         <MSBuild Projects="SyncScroll\SyncScroll.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="AnimatedAlignFMX">
+        <MSBuild Projects="AnimatedAlignFMX\AnimatedAlignFMX.dproj"/>
+    </Target>
+    <Target Name="AnimatedAlignFMX:Clean">
+        <MSBuild Projects="AnimatedAlignFMX\AnimatedAlignFMX.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="AnimatedAlignFMX:Make">
+        <MSBuild Projects="AnimatedAlignFMX\AnimatedAlignFMX.dproj" Targets="Make"/>
     </Target>
     <Target Name="AnimatedAlign">
         <MSBuild Projects="AnimatedAlign\AnimatedAlign.dproj"/>
@@ -132,13 +144,13 @@
         <MSBuild Projects="SlidingButtonsFMX\SlidingButtonsFMX.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlign;SlidingForm;MethodTests;CustomPlugin;StickyTools;EasingSuite;NotificationExample;SlidingButtonsFMX"/>
+        <CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlignFMX;AnimatedAlign;SlidingForm;MethodTests;CustomPlugin;StickyTools;EasingSuite;NotificationExample;SlidingButtonsFMX"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean;CustomPlugin:Clean;StickyTools:Clean;EasingSuite:Clean;NotificationExample:Clean;SlidingButtonsFMX:Clean"/>
+        <CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlignFMX:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean;CustomPlugin:Clean;StickyTools:Clean;EasingSuite:Clean;NotificationExample:Clean;SlidingButtonsFMX:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make;CustomPlugin:Make;StickyTools:Make;EasingSuite:Make;NotificationExample:Make;SlidingButtonsFMX:Make"/>
+        <CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlignFMX:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make;CustomPlugin:Make;StickyTools:Make;EasingSuite:Make;NotificationExample:Make;SlidingButtonsFMX:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>
