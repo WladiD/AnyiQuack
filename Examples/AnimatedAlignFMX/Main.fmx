@@ -1,0 +1,223 @@
+object MainForm: TMainForm
+  Left = 0
+  Top = 0
+  Caption = 'Animated Align with AnyiQuack'
+  ClientHeight = 400
+  ClientWidth = 793
+  Fill.Color = claLightslategray
+  Fill.Kind = Solid
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  DesignerMasterStyle = 0
+  object TopPanel: TPanel
+    Tag = 1
+    Align = Top
+    Size.Width = 793.000000000000000000
+    Size.Height = 55.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    object Layout1: TLayout
+      Align = Left
+      Margins.Left = 10.000000000000000000
+      Position.X = 10.000000000000000000
+      Size.Width = 145.000000000000000000
+      Size.Height = 55.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 4
+      object Label1: TLabel
+        Align = Client
+        Size.Width = 145.000000000000000000
+        Size.Height = 26.000000000000000000
+        Size.PlatformDefault = False
+        Text = 'Panel Size'
+        TabOrder = 0
+      end
+      object PanelSizeTrackBar: TTrackBar
+        Align = Bottom
+        CanParentFocus = True
+        Max = 200.000000000000000000
+        Min = 55.000000000000000000
+        Orientation = Horizontal
+        Margins.Bottom = 10.000000000000000000
+        Position.Y = 26.000000000000000000
+        Size.Width = 145.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        Value = 100.000000000000000000
+      end
+    end
+    object Layout2: TLayout
+      Align = Left
+      Margins.Left = 10.000000000000000000
+      Position.X = 165.000000000000000000
+      Size.Width = 145.000000000000000000
+      Size.Height = 55.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 3
+      object Label2: TLabel
+        Align = Client
+        Size.Width = 145.000000000000000000
+        Size.Height = 23.000000000000000000
+        Size.PlatformDefault = False
+        Text = 'Disturbed Animations'
+        TabOrder = 0
+      end
+      object DisturbedComboBox: TPopupBox
+        Align = Bottom
+        Items.Strings = (
+          'Cancel'
+          'Finish')
+        ItemIndex = 0
+        Margins.Bottom = 10.000000000000000000
+        Position.Y = 23.000000000000000000
+        Size.Width = 145.000000000000000000
+        Size.Height = 22.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+      end
+    end
+    object Layout3: TLayout
+      Align = Left
+      Margins.Left = 10.000000000000000000
+      Position.X = 320.000000000000000000
+      Size.Width = 145.000000000000000000
+      Size.Height = 55.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 2
+      object Label3: TLabel
+        Align = Client
+        Size.Width = 145.000000000000000000
+        Size.Height = 26.000000000000000000
+        Size.PlatformDefault = False
+        Text = 'Animation Duration (msec)'
+        TabOrder = 0
+      end
+      object AnimationDurationTrackBar: TTrackBar
+        Align = Bottom
+        CanParentFocus = True
+        Max = 2000.000000000000000000
+        Min = 100.000000000000000000
+        Orientation = Horizontal
+        Margins.Bottom = 10.000000000000000000
+        Position.Y = 26.000000000000000000
+        Size.Width = 145.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        Value = 500.000000000000000000
+      end
+    end
+    object Layout4: TLayout
+      Align = Left
+      Margins.Left = 10.000000000000000000
+      Position.X = 475.000000000000000000
+      Size.Width = 145.000000000000000000
+      Size.Height = 55.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      object Label4: TLabel
+        Align = Client
+        Size.Width = 145.000000000000000000
+        Size.Height = 23.000000000000000000
+        Size.PlatformDefault = False
+        Text = 'Hover Color'
+        TabOrder = 0
+      end
+      object HoverColorBox: TColorComboBox
+        DropDownKind = Custom
+        Color = claBlack
+        Align = Bottom
+        DisableFocusEffect = False
+        ItemIndex = 7
+        Margins.Bottom = 10.000000000000000000
+        Position.Y = 23.000000000000000000
+        Size.Width = 145.000000000000000000
+        Size.Height = 22.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+      end
+    end
+    object Layout6: TLayout
+      Align = Left
+      Margins.Left = 10.000000000000000000
+      Position.X = 630.000000000000000000
+      Size.Width = 145.000000000000000000
+      Size.Height = 55.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      object HoverShakeCheckBox: TCheckBox
+        Align = Client
+        IsChecked = True
+        Margins.Top = 20.000000000000000000
+        Margins.Bottom = 10.000000000000000000
+        Size.Width = 145.000000000000000000
+        Size.Height = 25.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        Text = 'Shake on Hover'
+      end
+    end
+  end
+  object BottomPanel: TPanel
+    Tag = 1
+    Align = Bottom
+    Position.Y = 345.000000000000000000
+    Size.Width = 793.000000000000000000
+    Size.Height = 55.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    object AddPanelButton: TButton
+      Align = Right
+      Margins.Left = 20.000000000000000000
+      Margins.Top = 15.000000000000000000
+      Margins.Right = 10.000000000000000000
+      Margins.Bottom = 15.000000000000000000
+      Position.X = 703.000000000000000000
+      Position.Y = 15.000000000000000000
+      Size.Width = 80.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      Text = 'Add Panel'
+      OnClick = AddPanelButtonClick
+    end
+    object RemovePanelButton: TButton
+      Align = Right
+      Enabled = False
+      Margins.Left = 20.000000000000000000
+      Margins.Top = 15.000000000000000000
+      Margins.Bottom = 15.000000000000000000
+      Position.X = 576.000000000000000000
+      Position.Y = 15.000000000000000000
+      Size.Width = 107.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = 'Remove Panel'
+      OnClick = RemovePanelButtonClick
+    end
+  end
+  object Layout5: TLayout
+    Align = Bottom
+    Position.Y = 272.000000000000000000
+    Size.Width = 793.000000000000000000
+    Size.Height = 73.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    object Label5: TLabel
+      Align = Right
+      Margins.Right = 10.000000000000000000
+      Position.X = 495.000000000000000000
+      Size.Width = 288.000000000000000000
+      Size.Height = 73.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.HorzAlign = Trailing
+      Text = 
+        'Add a couple of panels and play with the size of form or panels.' +
+        ' Also try the different handling for disturbed animations.'
+      TabOrder = 0
+    end
+  end
+end

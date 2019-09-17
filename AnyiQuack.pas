@@ -22,24 +22,26 @@ unit AnyiQuack;
 
 interface
 
+{$INCLUDE Compile.inc}
+
 uses
+{$IFDEF MSWINDOWS}
   Winapi.Windows,
   Winapi.Messages,
+{$ENDIF}
   System.SysUtils,
   System.Types,
   System.Classes,
-  System.Contnrs,
   System.Character,
-  System.Math,
+
   System.Diagnostics,
   System.SyncObjs,
   System.UITypes,
+  System.UIConsts,
   Generics.Collections;
 
-{$INCLUDE Compile.inc}
-
 const
-  Version = '1.0.4';
+  Version = '1.1.0';
 
 type
   EAQ = class(Exception);
@@ -49,9 +51,9 @@ type
   TInterval = class;
   TTimerThread = class;
 
-  TEaseType = (etLinear, etQuad, etCubic, etQuart, etQuint, etSext, etSinus, etElastic, etBack,
-    etLowWave, etMiddleWave, etHighWave, etBounce, etCircle, etSwing10, etSwing50, etSwing100,
-    etSwing200);
+  TEaseType = (etLinear, etQuad, etCubic, etQuart, etQuint, etSext, etSinus,
+    etElastic, etBack, etLowWave, etMiddleWave, etHighWave, etBounce,
+    etCircle, etSwing10, etSwing50, etSwing100, etSwing200);
   TEaseModifier = (
     emIn, emInInverted, emInSnake, emInSnakeInverted,
     emOut, emOutInverted, emOutSnake, emOutSnakeInverted,
@@ -68,7 +70,7 @@ type
   TAnonymNotifyEvent = reference to procedure(Sender: TObject);
   TEaseFunction = reference to function(Progress: Real): Real;
 
-  TAQBase = class(TObjectList)
+  TAQBase = class(TObjectList<TObject>)
   protected
     function Each(EachFunction: TEachFunction): TAQ; virtual; abstract;
   public
@@ -91,6 +93,8 @@ type
   public
     property WorkAQ: TAQ read FWorkAQ;
   end;
+
+  TComponentList = class(TObjectList<TComponent>);
 
   TAQ = class sealed (TAQBase)
   // Private section for local types and constants
@@ -154,24 +158,27 @@ type
     TAQMethods = set of TAQMethod;
 
     const
-    AQEachMethods: TAQMethods = [aqmEach, aqmEachAnimation, aqmEachDelay, aqmEachInterval,
-      aqmEachRepeat, aqmEachTimer];
+    AQEachMethods: TAQMethods = [aqmEach, aqmEachAnimation, aqmEachDelay,
+                                 aqmEachInterval, aqmEachRepeat, aqmEachTimer];
 
-    AQAppendMethods: TAQMethods = [aqmAppend, aqmAppendAQ, aqmChildrenAppend, aqmParentsAppend];
+    AQAppendMethods: TAQMethods = [aqmAppend, aqmAppendAQ,
+                                   aqmChildrenAppend, aqmParentsAppend];
 
     AQFinishMethods: TAQMethods = [aqmFinishAnimations, aqmFinishTimers];
 
-    AQCancelMethods: TAQMethods = [aqmCancelAnimations, aqmCancelDelays, aqmCancelIntervals,
-      aqmCancelTimers];
+    AQCancelMethods: TAQMethods = [aqmCancelAnimations, aqmCancelDelays,
+                                   aqmCancelIntervals, aqmCancelTimers];
 
-    AQChainMethods: TAQMethods = [aqmNewChain, aqmExcludeChain, aqmFilterChain, aqmChildrenChain,
-      aqmIntervalActorsChain, aqmAnimationActorsChain, aqmDelayActorsChain,
-      aqmDemultiplexChain, aqmTimerActorsChain, aqmMultiplexChain, aqmParentsChain,
-      aqmSliceChain, aqmEndChain];
+    AQChainMethods: TAQMethods = [aqmNewChain, aqmExcludeChain, aqmFilterChain,
+                                  aqmChildrenChain, aqmIntervalActorsChain,
+                                  aqmAnimationActorsChain, aqmDelayActorsChain,
+                                  aqmDemultiplexChain, aqmTimerActorsChain,
+                                  aqmMultiplexChain, aqmParentsChain,
+                                  aqmSliceChain, aqmEndChain];
 
-    AQConditionMethods: TAQMethods = [aqmIfThen, aqmIfAll, aqmIfAny, aqmIfContainsAll,
-      aqmIfContainsAny, aqmIfContains, aqmIfElse, aqmIfEnd];
-
+    AQConditionMethods: TAQMethods = [aqmIfThen, aqmIfAll, aqmIfAny,
+                                      aqmIfContainsAll, aqmIfContainsAny,
+                                      aqmIfContains, aqmIfElse, aqmIfEnd];
   // Private class related stuff
   private
     class var
@@ -200,7 +207,7 @@ type
   // Private instance related stuff
   private
     FLifeTick: Int64;
-    FIntervals: TObjectList;
+    FIntervals: TObjectList<TObject>;
     FCurrentInterval: TInterval;
     FChainedTo: TAQ;
     FConditionCount: Byte;
@@ -210,7 +217,7 @@ type
 
     procedure LocalIntervalTimerEvent;
 
-    function GetIntervals: TObjectList;
+    function GetIntervals: TObjectList<TObject>;
     procedure ClearIntervals;
     procedure AddInterval(Interval: TInterval);
     procedure ProcessInterval(Interval: TInterval);
@@ -221,8 +228,8 @@ type
     function CustomActors(ActorRole: TActorRole; ID: Integer; IncludeOrphans: Boolean): TAQ;
 
     function IfContainsEach(ByClass: TClass): TEachFunction; overload;
-    function IfContainsEach(Objects: TObjectArray): TEachFunction; overload;
-    function IfContainsEach(Objects: TObjectList): TEachFunction; overload;
+    function IfContainsEach(const Objects: TObjectArray): TEachFunction; overload;
+    function IfContainsEach(Objects: TObjectList<TObject>): TEachFunction; overload;
     function IfContainsEach(AQ: TAQ): TEachFunction; overload;
 
     function ChildrenFiller(AQ: TAQ; O: TObject): Boolean;
@@ -246,7 +253,7 @@ type
 
   // Because TAQ is sealed, no new methods are introduced as protected, but some must be overriden
   protected
-    procedure Notify(Ptr: Pointer; Action: TListNotification); override;
+    procedure Notify(const Item: TObject; Action: TCollectionNotification); override;
 
   // Public class related stuff
   public
@@ -255,7 +262,7 @@ type
 
     class function Take(AObject: TObject): TAQ; overload;
     class function Take(const Objects: TObjectArray): TAQ; overload;
-    class function Take(Objects: TObjectList): TAQ; overload;
+    class function Take(Objects: TObjectList<TObject>): TAQ; overload;
     class function Take<T: class>(Objects: TObjectList<T>): TAQ; overload;
 
     class function HasActiveActors(CheckActors: TActorRoles; AObject: TObject; ID: Integer = 0): Boolean;
@@ -279,10 +286,12 @@ type
     class function EaseInteger(StartValue, EndValue: Integer; Progress: Real;
       EaseFunction: TEaseFunction): Integer; overload;
 
-    class function EaseColor(StartColor, EndColor: TColor; Progress: Real; EaseType: TEaseType;
-      EaseModifier: TEaseModifier = emIn): TColor; overload;
-    class function EaseColor(StartColor, EndColor: TColor; Progress: Real;
-      EaseFunction: TEaseFunction): TColor; overload;
+    class function EaseColor(
+      StartColor, EndColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; Progress: Real; EaseType: TEaseType;
+      EaseModifier: TEaseModifier = emIn): {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; overload;
+    class function EaseColor(
+      StartColor, EndColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; Progress: Real;
+      EaseFunction: TEaseFunction): {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; overload;
 
     class function EasePoint(StartPoint, EndPoint: TPoint; Progress: Real; EaseType: TEaseType;
       EaseModifier: TEaseModifier = emIn): TPoint; overload;
@@ -294,9 +303,9 @@ type
     class function EaseRect(StartRect, EndRect: TRect; Progress: Real;
       EaseFunction: TEaseFunction): TRect; overload;
 
-    class function EaseString(StartString, EndString: String; Progress: Real; EaseType: TEaseType;
+    class function EaseString(const StartString, EndString: String; Progress: Real; EaseType: TEaseType;
       EaseModifier: TEaseModifier = emIn): String; overload;
-    class function EaseString(StartString, EndString: String; Progress: Real;
+    class function EaseString(const StartString, EndString: String; Progress: Real;
       EaseFunction: TEaseFunction): String; overload;
 
   // Public instance related stuff
@@ -319,8 +328,8 @@ type
     function Die: TAQ;
 
     function Append(AObject: TObject): TAQ; overload;
-    function Append(Objects: TObjectArray): TAQ; overload;
-    function Append(Objects: TObjectList): TAQ; overload;
+    function Append(const Objects: TObjectArray): TAQ; overload;
+    function Append(Objects: TObjectList<TObject>): TAQ; overload;
     function AppendAQ(AQ: TAQ): TAQ;
 
     function ChildrenAppend(Recurse: Boolean = False; ChildrenFiller: TEachFunction = nil): TAQ;
@@ -348,8 +357,8 @@ type
 
     function ExcludeChain(ByClass: TClass): TAQ; overload;
     function ExcludeChain(AObject: TObject): TAQ; overload;
-    function ExcludeChain(Objects: TObjectArray): TAQ; overload;
-    function ExcludeChain(Objects: TObjectList): TAQ; overload;
+    function ExcludeChain(const Objects: TObjectArray): TAQ; overload;
+    function ExcludeChain(Objects: TObjectList<TObject>): TAQ; overload;
     function ExcludeChain(AQ: TAQ): TAQ; overload;
     function ExcludeChain(ExcludeEach: TEachFunction): TAQ; overload;
 
@@ -363,13 +372,13 @@ type
     function IfContains(AObject: TObject): TAQ;
 
     function IfContainsAny(ByClass: TClass): TAQ; overload;
-    function IfContainsAny(Objects: TObjectArray): TAQ; overload;
-    function IfContainsAny(Objects: TObjectList): TAQ; overload;
+    function IfContainsAny(const Objects: TObjectArray): TAQ; overload;
+    function IfContainsAny(Objects: TObjectList<TObject>): TAQ; overload;
     function IfContainsAny(AQ: TAQ): TAQ; overload;
 
     function IfContainsAll(ByClass: TClass): TAQ; overload;
-    function IfContainsAll(Objects: TObjectArray): TAQ; overload;
-    function IfContainsAll(Objects: TObjectList): TAQ; overload;
+    function IfContainsAll(const Objects: TObjectArray): TAQ; overload;
+    function IfContainsAll(Objects: TObjectList<TObject>): TAQ; overload;
     function IfContainsAll(AQ: TAQ): TAQ; overload;
 
     function SliceChain(StartIndex: Integer; Count: Integer = 0): TAQ;
@@ -422,9 +431,13 @@ type
     FTimerProc: TThreadProcedure;
     FMainSignal: TEvent;
     FEnabled: Boolean;
+
+    {$IFDEF MSWINDOWS}
     FWindowHandle: HWND;
 
     procedure WndProc(var Msg: TMessage);
+    {$ENDIF}
+
     procedure SetInterval(NewInterval: Integer);
   protected
     procedure Execute; override;
@@ -446,11 +459,11 @@ type
 
   // Shortcuts to appropriate `TAQ.Take` methods
   function Take(AObject: TObject): TAQ; overload;
-  function Take(Objects: TObjectArray): TAQ; overload;
-  function Take(Objects: TObjectList): TAQ; overload;
+  function Take(const Objects: TObjectArray): TAQ; overload;
+  function Take(Objects: TObjectList<TObject>): TAQ; overload;
   function Take(Enumerator: TEnumerable<TObject>): TAQ; overload;
 
-  function OA(Objects: array of TObject): TObjectArray;
+  function OA(const Objects: array of TObject): TObjectArray;
 
   function MatchID(CompareID, CurrentID: Integer): Boolean;
 
@@ -458,6 +471,9 @@ const
   MaxLifeTime = 10000;
 
 implementation
+
+uses
+  System.Math;
 
 const
 {$IFDEF UseThreadTimer}
@@ -480,7 +496,7 @@ var
 type
   TComponentsNotifier = class(TComponentList)
   protected
-    procedure Notify(Ptr: Pointer; Action: TListNotification); override;
+    procedure Notify(const Value: TComponent; Action: TCollectionNotification); override;
   end;
 
 {$IF RTLVersion < 22}
@@ -614,12 +630,12 @@ begin
   Result := TAQ.Take(AObject);
 end;
 
-function Take(Objects: TObjectArray): TAQ;
+function Take(const Objects: TObjectArray): TAQ;
 begin
   Result := TAQ.Take(Objects);
 end;
 
-function Take(Objects: TObjectList): TAQ;
+function Take(Objects: TObjectList<TObject>): TAQ;
 begin
   Result := TAQ.Take(Objects);
 end;
@@ -629,7 +645,7 @@ begin
   Result := TAQ.Take(Enumerator);
 end;
 
-function OA(Objects: array of TObject): TObjectArray;
+function OA(const Objects: array of TObject): TObjectArray;
 var
   cc: Integer;
 begin
@@ -676,7 +692,7 @@ end;
 { TAQ }
 
 // Appends all in the TObjectArray contained objects to the current TAQ instance
-function TAQ.Append(Objects: TObjectArray): TAQ;
+function TAQ.Append(const Objects: TObjectArray): TAQ;
 var
   cc: Integer;
 begin
@@ -688,7 +704,7 @@ end;
 
 // Appends all in Objects contained objects, but not the TObjectList by itself,
 // to the current TAQ instance
-function TAQ.Append(Objects: TObjectList): TAQ;
+function TAQ.Append(Objects: TObjectList<TObject>): TAQ;
 var
   cc: Integer;
 begin
@@ -790,15 +806,15 @@ begin
   Result.FChainedTo := Self;
 end;
 
-procedure TAQ.Notify(Ptr: Pointer; Action: TListNotification);
+procedure TAQ.Notify(const Item: TObject; Action: TCollectionNotification);
 begin
-  if (Action = lnAdded) and (TObject(Ptr) is TComponent) and
-    (FComponentsNotifier.IndexOf(TComponent(Ptr)) < 0) then
-    FComponentsNotifier.Add(TComponent(Ptr));
+  if (Action = cnAdded) and (Item is TComponent) and
+    (FComponentsNotifier.IndexOf(Item as TComponent) < 0) then
+    FComponentsNotifier.Add(Item as TComponent);
 
-  inherited Notify(Ptr, Action);
+  inherited Notify(Item, Action);
 
-  if (Action in [lnExtracted, lnDeleted]) and (Count = 0) then
+  if (Action in [cnExtracted, cnRemoved]) and (Count = 0) then
   begin
     Clean;
     Die;
@@ -1075,6 +1091,7 @@ begin
   {$IFNDEF DEBUG}
   Exit(Self);
   {$ELSE}
+  {$IFDEF MSWINDOWS}
   if SupervisorLock(Result, aqmDebugMessage) then
     Exit;
   ChainPath := TStringList.Create;
@@ -1100,6 +1117,7 @@ begin
       WholeMessage;
   MessageBox(0, PWideChar(WholeMessage), PWideChar(Caption), MB_OK or MB_ICONINFORMATION);
 //	OutputDebugString(PWideChar(WholeMessage)); // Wer keine Boxen mag, kann die Console für die Ausgabe nutzen
+  {$ENDIF}
   Result := Self; // Wichtig, da der richtige Result in der oberen Schleife überschrieben wird
   {$ENDIF}
 end;
@@ -1239,7 +1257,7 @@ begin
   end;
 end;
 
-function TAQ.ExcludeChain(Objects: TObjectArray): TAQ;
+function TAQ.ExcludeChain(const Objects: TObjectArray): TAQ;
 begin
   if SupervisorLock(Result, aqmExcludeChain) then
     Exit;
@@ -1305,7 +1323,7 @@ begin
     end);
 end;
 
-function TAQ.ExcludeChain(Objects: TObjectList): TAQ;
+function TAQ.ExcludeChain(Objects: TObjectList<TObject>): TAQ;
 begin
   if SupervisorLock(Result, aqmExcludeChain) then
     Exit;
@@ -1396,6 +1414,8 @@ begin
 end;
 
 class function TAQ.Ease(EaseFunction: TEaseFunction; EaseModifier: TEaseModifier): TEaseFunction;
+const
+  EPSILON = 0.0000001;
 begin
   if not Assigned(EaseFunction) then
     EaseFunction := LinearEase;
@@ -1411,7 +1431,8 @@ begin
     emInOut:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Progress := Progress / 0.5
         else
           Progress := 1 - ((Progress - 0.5) / 0.5);
@@ -1430,7 +1451,8 @@ begin
     emOutIn:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Progress := Progress / 0.5
         else
           Progress := 1 - ((Progress - 0.5) / 0.5);
@@ -1439,7 +1461,8 @@ begin
     emInOutMirrored:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Progress := Progress / 0.5
         else
           Progress := 1 - ((Progress - 0.5) / 0.5);
@@ -1448,7 +1471,8 @@ begin
     emOutInMirrored:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Progress := Progress / 0.5
         else
           Progress := 1 - ((Progress - 0.5) / 0.5);
@@ -1457,7 +1481,8 @@ begin
     emInOutCombined:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Result := EaseFunction(Progress / 0.5)
         else
           Result := 1 - EaseFunction((Progress - 0.5) / 0.5);
@@ -1465,7 +1490,8 @@ begin
     emOutInCombined:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Result := EaseFunction(1 - (Progress / 0.5))
         else
           Result := 1 - EaseFunction(1 - ((Progress - 0.5) / 0.5));
@@ -1473,7 +1499,8 @@ begin
     emInSnake:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Result := EaseFunction(Progress / 0.5)
         else
           Result := EaseFunction(1) + (1 - EaseFunction(1 - ((Progress - 0.5) / 0.5)));
@@ -1482,7 +1509,8 @@ begin
     emOutSnake:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Result := 1 + (1 - EaseFunction(Progress / 0.5))
         else
           Result := EaseFunction(1 - ((Progress - 0.5) / 0.5));
@@ -1491,7 +1519,8 @@ begin
     emInSnakeInverted:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+           (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Result := 1 - EaseFunction(1 - (Progress / 0.5))
         else
           Result := EaseFunction(1) + EaseFunction((Progress - 0.5) / 0.5);
@@ -1500,7 +1529,8 @@ begin
     emOutSnakeInverted:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Result := 1 + EaseFunction(1 - Progress / 0.5)
         else
           Result := 1 - EaseFunction((Progress - 0.5) / 0.5);
@@ -1509,26 +1539,28 @@ begin
   end;
 end;
 
-class function TAQ.EaseColor(StartColor, EndColor: TColor; Progress: Real; EaseType: TEaseType;
-  EaseModifier: TEaseModifier): TColor;
+class function TAQ.EaseColor(
+  StartColor, EndColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; Progress: Real; EaseType: TEaseType;
+  EaseModifier: TEaseModifier): {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
 begin
   Result := EaseColor(StartColor, EndColor, Progress, Ease(EaseType, EaseModifier));
 end;
 
-class function TAQ.EaseColor(StartColor, EndColor: TColor; Progress: Real;
-  EaseFunction: TEaseFunction): TColor;
+class function TAQ.EaseColor(
+  StartColor, EndColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; Progress: Real;
+  EaseFunction: TEaseFunction): {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
 var
-  StartCR, EndCR: TColorRec;
+  StartCR, EndCR: {$IFDEF FMX}TAlphaColorRec{$ELSE}TColorRec{$ENDIF};
 begin
   if StartColor = EndColor then
     Exit(StartColor);
 
-  StartCR.Color := TColorRec.ColorToRGB(StartColor);
-  EndCR.Color := TColorRec.ColorToRGB(EndColor);
+  StartCR.Color := {$IFDEF FMX}TAlphaColorRec{$ELSE}TColorRec{$ENDIF}.ColorToRGB(StartColor);
+  EndCR.Color := {$IFDEF FMX}TAlphaColorRec{$ELSE}TColorRec{$ENDIF}.ColorToRGB(EndColor);
   Progress := EaseFunction(Progress);
 
-  Result := RGB(
-    Min(255, Max(0, EaseInteger(StartCR.R, EndCR.R, Progress, nil))),
+  Result := {$IFDEF FMX}MakeColor{$ELSE}RGB{$ENDIF}
+    (Min(255, Max(0, EaseInteger(StartCR.R, EndCR.R, Progress, nil))),
     Min(255, Max(0, EaseInteger(StartCR.G, EndCR.G, Progress, nil))),
     Min(255, Max(0, EaseInteger(StartCR.B, EndCR.B, Progress, nil))));
 end;
@@ -1580,14 +1612,14 @@ begin
     EasePoint(StartRect.BottomRight, EndRect.BottomRight, Progress, nil));
 end;
 
-class function TAQ.EaseString(StartString, EndString: String; Progress: Real; EaseType: TEaseType;
-  EaseModifier: TEaseModifier): String;
+class function TAQ.EaseString(const StartString, EndString: String; Progress:
+    Real; EaseType: TEaseType; EaseModifier: TEaseModifier = emIn): String;
 begin
   Result := EaseString(StartString, EndString, Progress, Ease(EaseType, EaseModifier));
 end;
 
-class function TAQ.EaseString(StartString, EndString: String; Progress: Real;
-  EaseFunction: TEaseFunction): String;
+class function TAQ.EaseString(const StartString, EndString: String; Progress:
+    Real; EaseFunction: TEaseFunction): String;
 var
   StartStringLength, EndStringLength, EasedStringLength: Integer;
   StartChar, EndChar, EasedChar: Char;
@@ -1697,10 +1729,10 @@ begin
   Result := GetBit(FBools, ImmortallyBitMask);
 end;
 
-function TAQ.GetIntervals: TObjectList;
+function TAQ.GetIntervals: TObjectList<TObject>;
 begin
   if not Assigned(FIntervals) then
-    FIntervals := TObjectList.Create(True);
+    FIntervals := TObjectList<TObject>.Create(True);
   Result := FIntervals;
 end;
 
@@ -1782,7 +1814,7 @@ begin
   Result := IfThen(Condition);
 end;
 
-function TAQ.IfContainsAll(Objects: TObjectList): TAQ;
+function TAQ.IfContainsAll(Objects: TObjectList<TObject>): TAQ;
 begin
   if SupervisorLock(Result, aqmIfContainsAll) then
     Exit;
@@ -1796,7 +1828,7 @@ begin
   Result := IfAll(IfContainsEach(AQ));
 end;
 
-function TAQ.IfContainsAll(Objects: TObjectArray): TAQ;
+function TAQ.IfContainsAll(const Objects: TObjectArray): TAQ;
 begin
   if SupervisorLock(Result, aqmIfContainsAll) then
     Exit;
@@ -1810,7 +1842,7 @@ begin
   Result := IfAll(IfContainsEach(ByClass));
 end;
 
-function TAQ.IfContainsAny(Objects: TObjectList): TAQ;
+function TAQ.IfContainsAny(Objects: TObjectList<TObject>): TAQ;
 begin
   if SupervisorLock(Result, aqmIfContainsAny) then
     Exit;
@@ -1824,7 +1856,7 @@ begin
   Result := IfAny(IfContainsEach(AQ));
 end;
 
-function TAQ.IfContainsAny(Objects: TObjectArray): TAQ;
+function TAQ.IfContainsAny(const Objects: TObjectArray): TAQ;
 begin
   if SupervisorLock(Result, aqmIfContainsAny) then
     Exit;
@@ -1853,7 +1885,7 @@ begin
   end;
 end;
 
-function TAQ.IfContainsEach(Objects: TObjectArray): TEachFunction;
+function TAQ.IfContainsEach(const Objects: TObjectArray): TEachFunction;
 begin
   Result := function(AQ: TAQ; O: TObject): Boolean
   var
@@ -1887,7 +1919,7 @@ begin
   end;
 end;
 
-function TAQ.IfContainsEach(Objects: TObjectList): TEachFunction;
+function TAQ.IfContainsEach(Objects: TObjectList<TObject>): TEachFunction;
 begin
   Result := function(AQ: TAQ; O: TObject): Boolean
   begin
@@ -2309,8 +2341,10 @@ end;
 
 procedure RetakeDebugMessage(RetakenAQ: TAQ);
 begin
+{$IFDEF MSWINDOWS}
   OutputDebugString(PWideChar(Format('TAQ %p at index #%d of GC retaken.',
     [@RetakenAQ, TAQ.GarbageCollector.IndexOf(RetakenAQ)])));
+{$ENDIF}
 end;
 
 class function TAQ.Take(const Objects: TObjectArray): TAQ;
@@ -2389,7 +2423,7 @@ begin
 {$ENDIF}
 end;
 
-class function TAQ.Take(Objects: TObjectList): TAQ;
+class function TAQ.Take(Objects: TObjectList<TObject>): TAQ;
 {$IFDEF RetakeFromGC}
 var
   AQMatch: TAQ;
@@ -2476,9 +2510,9 @@ begin
   begin
     AQMatch.HeartBeat;
     Result := AQMatch;
-//{$IFDEF OutputDebugGCRetake}
-//		RetakeDebugMessage(Result);
-//{$ENDIF}
+{$IFDEF OutputDebugGCRetake}
+		RetakeDebugMessage(Result);
+{$ENDIF}
     Exit;
   end
   else
@@ -2665,11 +2699,12 @@ end;
 
 { TComponentsNotifier }
 
-procedure TComponentsNotifier.Notify(Ptr: Pointer; Action: TListNotification);
+procedure TComponentsNotifier.Notify(const Value: TComponent; Action:
+    TCollectionNotification);
 begin
-  if Action in [lnExtracted, lnDeleted] then
-    TAQ.ComponentsNotification(TComponent(Ptr), opRemove);
-  inherited Notify(Ptr, Action);
+  if Action in [cnExtracted, cnRemoved] then
+    TAQ.ComponentsNotification(Value, opRemove);
+  inherited Notify(Value, Action);
 end;
 
 { TSpinWait }
@@ -2697,8 +2732,9 @@ begin
   FInterval := Interval;
   FTimerProc := TimerProc;
   FMainSignal := TEvent.Create(nil, False, False, '');
+  {$IFDEF MSWINDOWS}
   FWindowHandle := AllocateHWnd(WndProc);
-
+  {$ENDIF}
   inherited Create(False);
 end;
 
@@ -2714,11 +2750,13 @@ begin
     CheckSynchronize;
   FMainSignal.Free;
 
+  {$IFDEF MSWINDOWS}
   if FWindowHandle <> 0 then
   begin
     DeallocateHWnd(FWindowHandle);
     FWindowHandle := 0;
   end;
+  {$ENDIF}
 
   inherited Destroy;
 end;
@@ -2753,6 +2791,7 @@ begin
   FMainSignal.SetEvent;
 end;
 
+{$IFDEF MSWINDOWS}
 procedure TTimerThread.WndProc(var Msg: TMessage);
 begin
   with Msg do
@@ -2765,6 +2804,9 @@ begin
     else
       Result := DefWindowProc(FWindowHandle, Msg, wParam, lParam);
 end;
+{$ELSE}
+
+{$ENDIF}
 
 procedure TTimerThread.Execute;
 var
@@ -2778,8 +2820,15 @@ var
     MessageResult: Cardinal;
 {$IFEND}
   begin
-    SendMessageTimeout(FWindowHandle, WM_TIMER, 0, 0, SMTO_ABORTIFHUNG, LocalInterval,
-      @MessageResult);
+    {$IFDEF MSWINDOWS}
+      SendMessageTimeout(FWindowHandle, WM_TIMER, 0, 0, SMTO_ABORTIFHUNG, LocalInterval,
+        @MessageResult);
+    {$ELSE}
+      Queue(nil, procedure
+                       begin
+                         FTimerProc;
+                       end);
+    {$ENDIF}
     {**
      * Old solution
      *}
