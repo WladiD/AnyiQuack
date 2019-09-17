@@ -113,10 +113,6 @@ begin
             AnimationDurationTrackBar.Position, 0, TAQ.Ease(etQuad),
             procedure(Sender: TObject)
             begin
-              // Under certain conditions there can be running animations left, because of
-              // overlapping calls of the following UpdateAlign and timer synchronization and we get
-              // then an AV. So we avoid that by cancel the animations again.
-              Take(Sender).CancelAnimations;
               Sender.Free;
             end);
       end);

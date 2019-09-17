@@ -36,11 +36,13 @@ uses
   System.Types,
   System.Classes,
   System.Character,
+  System.Math,
 
   System.Diagnostics,
   System.SyncObjs,
   System.UITypes,
   System.UIConsts,
+  System.Contnrs,
   Generics.Collections;
 
 const
@@ -96,8 +98,6 @@ type
   public
     property WorkAQ: TAQ read FWorkAQ;
   end;
-
-  TComponentList = class(TObjectList<TComponent>);
 
   TAQ = class sealed (TAQBase)
   // Private section for local types and constants
@@ -194,6 +194,7 @@ type
     FActiveIntervalAQs: TAQ;
     FStopWatch: TStopWatch;
     FTick: Int64;
+    FComponentsNotifier: TComponentList;
     FIDGenerator: Integer;
 
     class procedure Initialize;
@@ -474,9 +475,6 @@ const
 
 implementation
 
-uses
-  System.Math;
-
 const
 {$IFDEF UseThreadTimer}
   IntervalResolution = 15;
@@ -498,7 +496,7 @@ var
 type
   TComponentsNotifier = class(TComponentList)
   protected
-    procedure Notify(const Value: TComponent; Action: TCollectionNotification); override;
+    procedure Notify(Ptr: Pointer; Action: TListNotification); override;
   end;
 
 {$IF RTLVersion < 22}
@@ -810,6 +808,10 @@ end;
 
 procedure TAQ.Notify(const Item: TObject; Action: TCollectionNotification);
 begin
+  if (Action = cnAdded) and (Item is TComponent) and
+    (FComponentsNotifier.IndexOf(Item as TComponent) < 0) then
+    FComponentsNotifier.Add(Item as TComponent);
+
   inherited Notify(Item, Action);
 
   if (Action in [cnExtracted, cnRemoved]) and (Count = 0) then
@@ -1429,8 +1431,7 @@ begin
     emInOut:
       Result := function(Progress: Real): Real
       begin
-        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
-          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
+        if CompareValue(Progress, 0.5, EPSILON) < GreaterThanValue then
           Progress := Progress / 0.5
         else
           Progress := 1 - ((Progress - 0.5) / 0.5);
@@ -1449,8 +1450,7 @@ begin
     emOutIn:
       Result := function(Progress: Real): Real
       begin
-        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
-          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
+        if CompareValue(Progress, 0.5, EPSILON) < GreaterThanValue then
           Progress := Progress / 0.5
         else
           Progress := 1 - ((Progress - 0.5) / 0.5);
@@ -1459,8 +1459,7 @@ begin
     emInOutMirrored:
       Result := function(Progress: Real): Real
       begin
-        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
-          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
+        if CompareValue(Progress, 0.5, EPSILON) < GreaterThanValue then
           Progress := Progress / 0.5
         else
           Progress := 1 - ((Progress - 0.5) / 0.5);
@@ -1469,8 +1468,7 @@ begin
     emOutInMirrored:
       Result := function(Progress: Real): Real
       begin
-        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
-          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
+        if CompareValue(Progress, 0.5, EPSILON) < GreaterThanValue then
           Progress := Progress / 0.5
         else
           Progress := 1 - ((Progress - 0.5) / 0.5);
@@ -1479,8 +1477,7 @@ begin
     emInOutCombined:
       Result := function(Progress: Real): Real
       begin
-        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
-          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
+        if CompareValue(Progress, 0.5, EPSILON) < GreaterThanValue then
           Result := EaseFunction(Progress / 0.5)
         else
           Result := 1 - EaseFunction((Progress - 0.5) / 0.5);
@@ -1488,8 +1485,7 @@ begin
     emOutInCombined:
       Result := function(Progress: Real): Real
       begin
-        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
-          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
+        if CompareValue(Progress, 0.5, EPSILON) < GreaterThanValue then
           Result := EaseFunction(1 - (Progress / 0.5))
         else
           Result := 1 - EaseFunction(1 - ((Progress - 0.5) / 0.5));
@@ -1497,8 +1493,7 @@ begin
     emInSnake:
       Result := function(Progress: Real): Real
       begin
-        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
-          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
+        if CompareValue(Progress, 0.5, EPSILON) < GreaterThanValue then
           Result := EaseFunction(Progress / 0.5)
         else
           Result := EaseFunction(1) + (1 - EaseFunction(1 - ((Progress - 0.5) / 0.5)));
@@ -1507,8 +1502,7 @@ begin
     emOutSnake:
       Result := function(Progress: Real): Real
       begin
-        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
-          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
+        if CompareValue(Progress, 0.5, EPSILON) < GreaterThanValue then
           Result := 1 + (1 - EaseFunction(Progress / 0.5))
         else
           Result := EaseFunction(1 - ((Progress - 0.5) / 0.5));
@@ -1517,8 +1511,7 @@ begin
     emInSnakeInverted:
       Result := function(Progress: Real): Real
       begin
-        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
-           (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
+        if CompareValue(Progress, 0.5, EPSILON) < GreaterThanValue then
           Result := 1 - EaseFunction(1 - (Progress / 0.5))
         else
           Result := EaseFunction(1) + EaseFunction((Progress - 0.5) / 0.5);
@@ -1527,8 +1520,7 @@ begin
     emOutSnakeInverted:
       Result := function(Progress: Real): Real
       begin
-        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
-          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
+        if CompareValue(Progress, 0.5, EPSILON) < GreaterThanValue then
           Result := 1 + EaseFunction(1 - Progress / 0.5)
         else
           Result := 1 - EaseFunction((Progress - 0.5) / 0.5);
@@ -1966,6 +1958,9 @@ begin
   FGC := TAQ.Create;
   FGC.OwnsObjects := True;
   FGC.Recurse := False;
+
+  FComponentsNotifier := TComponentsNotifier.Create;
+  FComponentsNotifier.OwnsObjects := False;
 end;
 
 // Free all class related stuff which is initialized in `TAQ.Initialize`
@@ -1984,6 +1979,7 @@ begin
     FTimerHandler := 0;
 {$ENDIF}
 
+  FreeAndNil(FComponentsNotifier);
   FreeAndNil(FGC); // Release the garbage collector with all the managed instances
   FreeAndNil(FActiveIntervalAQs);
 end;
@@ -2505,7 +2501,7 @@ begin
     AQMatch.HeartBeat;
     Result := AQMatch;
 {$IFDEF OutputDebugGCRetake}
-		RetakeDebugMessage(Result);
+    RetakeDebugMessage(Result);
 {$ENDIF}
     Exit;
   end
@@ -2693,12 +2689,11 @@ end;
 
 { TComponentsNotifier }
 
-procedure TComponentsNotifier.Notify(const Value: TComponent; Action:
-    TCollectionNotification);
+procedure TComponentsNotifier.Notify(Ptr: Pointer; Action: TListNotification);
 begin
-  if Action in [cnExtracted, cnRemoved] then
-    TAQ.ComponentsNotification(Value, opRemove);
-  inherited Notify(Value, Action);
+  if Action in [lnExtracted, lnDeleted] then
+    TAQ.ComponentsNotification(TComponent(Ptr), opRemove);
+  inherited Notify(Ptr, Action);
 end;
 
 { TSpinWait }
@@ -2726,9 +2721,9 @@ begin
   FInterval := Interval;
   FTimerProc := TimerProc;
   FMainSignal := TEvent.Create(nil, False, False, '');
-  {$IFDEF MSWINDOWS}
+{$IFDEF MSWINDOWS}
   FWindowHandle := AllocateHWnd(WndProc);
-  {$ENDIF}
+{$ENDIF}
   inherited Create(False);
 end;
 
@@ -2744,13 +2739,13 @@ begin
     CheckSynchronize;
   FMainSignal.Free;
 
-  {$IFDEF MSWINDOWS}
+{$IFDEF MSWINDOWS}
   if FWindowHandle <> 0 then
   begin
     DeallocateHWnd(FWindowHandle);
     FWindowHandle := 0;
   end;
-  {$ENDIF}
+{$ENDIF}
 
   inherited Destroy;
 end;
@@ -2798,8 +2793,6 @@ begin
     else
       Result := DefWindowProc(FWindowHandle, Msg, wParam, lParam);
 end;
-{$ELSE}
-
 {$ENDIF}
 
 procedure TTimerThread.Execute;
