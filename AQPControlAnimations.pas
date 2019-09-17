@@ -22,24 +22,33 @@ unit AQPControlAnimations;
 
 interface
 
+{$INCLUDE Compile.inc}
+
 uses
-  Winapi.Windows,
   System.Math,
   System.SysUtils,
+  System.UITypes,
+  System.Classes,
+{$IFDEF FMX}
+  FMX.Controls,
+  FMX.Forms,
+  FMX.Objects,
+  FMX.Graphics,
+{$ELSE}
   Vcl.Controls,
   Vcl.Forms,
   Vcl.Graphics,
-
+{$ENDIF}
   AnyiQuack;
-
-{$INCLUDE Compile.inc}
 
 type
   TAQPControlAnimations = class(TAQPlugin)
   protected
     function Swing(Times, Diff: Integer; Progress: Real): Integer;
-    procedure CustomColorAnimation(FromColor, ToColor: TColor; Duration: Integer; ID: Integer;
-      ColorAssignFunction: TEachMiscFunction<TColor>; EaseFunction: TEaseFunction = nil;
+    procedure CustomColorAnimation(FromColor, ToColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
+      Duration: Integer; ID: Integer;
+      ColorAssignFunction: TEachMiscFunction<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>;
+      EaseFunction: TEaseFunction = nil;
       OnComplete: TAnonymNotifyEvent = nil);
   public
     function AlphaBlendAnimation(ToAlphaBlendValue: Byte; Duration: Integer; ID: Integer = 0;
@@ -49,15 +58,23 @@ type
       OnComplete: TAnonymNotifyEvent = nil): TAQ;
     function ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration: Integer; ID: Integer = 0;
       OnComplete: TAnonymNotifyEvent = nil): TAQ;
+    {$IFNDEF FMX}
     function BackgroundColorAnimation(ToColor: TColor; Duration: Integer; ID: Integer = 0;
       EaseFunction: TEaseFunction = nil; OnComplete: TAnonymNotifyEvent = nil): TAQ;
     function FontColorAnimation(ToColor: TColor; Duration: Integer; ID: Integer = 0;
       EaseFunction: TEaseFunction = nil; OnComplete: TAnonymNotifyEvent = nil): TAQ;
+    {$ELSE}
+    function BackgroundColorAnimation<T: class>(Control: T; FromColor, ToColor: TAlphaColor; Duration: Integer; ID: Integer = 0;
+      EaseFunction: TEaseFunction = nil; OnComplete: TAnonymNotifyEvent = nil): TAQ;
+    function FontColorAnimation<T: class>(Control: T; FromColor, ToColor: TAlphaColor; Duration: Integer; ID: Integer = 0;
+      EaseFunction: TEaseFunction = nil; OnComplete: TAnonymNotifyEvent = nil): TAQ;
+    {$ENDIF}
   end;
 
 implementation
 
 type
+{$IFNDEF FMX}
   TControlRobin = class helper for TControl
   protected
     function GetBackgroundColor: TColor;
@@ -68,6 +85,7 @@ type
     property BackgroundColor: TColor read GetBackgroundColor write SetBackgroundColor;
     property FontColor: TColor read GetFontColor write SetFontColor;
   end;
+{$ENDIF}
 
   TFormRobin = class helper for TCustomForm
   protected
@@ -120,6 +138,7 @@ begin
     end);
 end;
 
+{$IFNDEF FMX}
 function TAQPControlAnimations.BackgroundColorAnimation(ToColor: TColor; Duration, ID: Integer;
   EaseFunction: TEaseFunction; OnComplete: TAnonymNotifyEvent): TAQ;
 begin
@@ -139,6 +158,29 @@ begin
             EaseFunction, OnComplete);
     end);
 end;
+{$ELSE}
+function TAQPControlAnimations.BackgroundColorAnimation<T>(Control: T; 
+      FromColor, ToColor: TAlphaColor; Duration: Integer; ID: Integer = 0;
+      EaseFunction: TEaseFunction = nil; OnComplete: TAnonymNotifyEvent = nil): TAQ;
+begin
+  Result := Each(
+    function(AQ: TAQ; O: TObject): Boolean
+    begin
+      Result := True; // Komplett durchlaufen
+      if O is TControl then
+        Take(O)
+          .Plugin<TAQPControlAnimations>
+          .CustomColorAnimation(FromColor, ToColor, Duration, ID,
+            function(AQ: TAQ; O: TObject; Color: TAlphaColor): Boolean
+            begin
+              if Control is TShape then
+                (Control as TShape).Fill.Color := Color;
+              Result := True;
+            end,
+            EaseFunction, OnComplete);
+    end);
+end;
+{$ENDIF}
 
 function TAQPControlAnimations.BoundsAnimation(
   NewLeft, NewTop, NewWidth, NewHeight, Duration, ID: Integer;
@@ -153,15 +195,18 @@ begin
     OC: TControl absolute O;
   begin
     Result := True;
-    if not ((O is TControl) and
-      ((NewLeft <> OC.Left) or (NewTop <> OC.Top) or
-      (NewWidth <> OC.Width) or (NewHeight <> OC.Height))) then
-      Exit;
 
-    PrevLeft := OC.Left;
-    PrevTop := OC.Top;
-    PrevWidth := OC.Width;
-    PrevHeight := OC.Height;
+    PrevLeft:= {$IFDEF FMX}Round(OC.Position.X){$ELSE}OC.Left{$ENDIF};
+    PrevTop:= {$IFDEF FMX}Round(OC.Position.Y){$ELSE}OC.Top{$ENDIF};
+    PrevWidth:= {$IFDEF FMX}Round(OC.Width){$ELSE}OC.Width{$ENDIF};
+    PrevHeight:= {$IFDEF FMX}Round(OC.Height){$ELSE}OC.Height{$ENDIF};
+
+    if not ((O is TControl) and
+      ((NewLeft <> PrevLeft) or
+        (NewTop <> PrevTop) or
+          (NewWidth <> PrevWidth) or 
+            (NewHeight <> PrevHeight))) then
+      Exit;
 
     EachF := function(AQ: TAQ; O: TObject): Boolean
     var
@@ -177,11 +222,11 @@ begin
       if NewWidth >= 0 then
         AniWidth := TAQ.EaseInteger(PrevWidth, NewWidth, Progress, EaseFunction)
       else
-        AniWidth := OOC.Width;
+        AniWidth := {$IFDEF FMX}Round({$ENDIF}OOC.Width{$IFDEF FMX}){$ENDIF};
       if NewHeight >= 0 then
         AniHeight := TAQ.EaseInteger(PrevHeight, NewHeight, Progress, EaseFunction)
       else
-        AniHeight := OOC.Height;
+        AniHeight := {$IFDEF FMX}Round({$ENDIF}OOC.Height{$IFDEF FMX}){$ENDIF};
 
       OOC.SetBounds(AniLeft, AniTop, AniWidth, AniHeight);
 
@@ -203,8 +248,8 @@ begin
   Result := Each(WholeEach);
 end;
 
-procedure TAQPControlAnimations.CustomColorAnimation(FromColor, ToColor: TColor;
-  Duration, ID: Integer; ColorAssignFunction: TEachMiscFunction<TColor>;
+procedure TAQPControlAnimations.CustomColorAnimation(FromColor, ToColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
+  Duration, ID: Integer; ColorAssignFunction: TEachMiscFunction<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>;
   EaseFunction: TEaseFunction; OnComplete: TAnonymNotifyEvent);
 begin
   if FromColor = ToColor then
@@ -226,6 +271,7 @@ begin
     nil, ID);
 end;
 
+{$IFNDEF FMX}
 function TAQPControlAnimations.FontColorAnimation(ToColor: TColor; Duration, ID: Integer;
   EaseFunction: TEaseFunction; OnComplete: TAnonymNotifyEvent): TAQ;
 begin
@@ -245,6 +291,29 @@ begin
             EaseFunction, OnComplete);
     end);
 end;
+{$ELSE}
+function TAQPControlAnimations.FontColorAnimation<T>(Control: T; 
+  FromColor, ToColor: TAlphaColor; Duration: Integer; ID: Integer = 0;
+      EaseFunction: TEaseFunction = nil; OnComplete: TAnonymNotifyEvent = nil): TAQ;
+begin
+  Result := Each(
+    function(AQ: TAQ; O: TObject): Boolean
+    begin
+      Result := True; // Komplett durchlaufen
+      if O is TTextControl then
+        Take(O)
+          .Plugin<TAQPControlAnimations>
+          .CustomColorAnimation(FromColor, ToColor, Duration, ID,
+            function(AQ: TAQ; O: TObject; Color: TAlphaColor): Boolean
+            begin
+              if Control is TTextControl  then
+                (Control as TTextControl).FontColor := Color;
+              Result := True;
+            end,
+            EaseFunction, OnComplete);
+    end);
+end;
+{$ENDIF}
 
 function TAQPControlAnimations.ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration, ID: Integer;
   OnComplete: TAnonymNotifyEvent): TAQ;
@@ -261,9 +330,9 @@ begin
     if not (O is TControl) then
       Exit;
 
-    PrevLeft := OC.Left;
-    PrevTop := OC.Top;
-
+    PrevLeft:= {$IFDEF FMX}Round(OC.Position.X){$ELSE}OC.Left{$ENDIF};
+    PrevTop:= {$IFDEF FMX}Round(OC.Position.Y){$ELSE}OC.Top{$ENDIF};
+    
     EachF := function(AQ: TAQ; O: TObject): Boolean
     var
       Progress: Real;
@@ -308,6 +377,7 @@ begin
   Result := Ceil(Diff * Sin(Progress * Times * Pi * 2));
 end;
 
+{$IFNDEF FMX}
 {** TControlRobin **}
 
 function TControlRobin.GetBackgroundColor: TColor;
@@ -330,21 +400,51 @@ begin
   Font.Color := NewColor;
 end;
 
+{$ENDIF}
+
 {** TFormRobin **}
 
 function TFormRobin.GetAlphaBlendActivated: Boolean;
 begin
+  {$IFNDEF FMX}
   Result := AlphaBlend;
+  {$ELSE}
+  Result:= Transparency;
+  {$ENDIF}
 end;
 
 function TFormRobin.GetAlphaBlendValue: Byte;
+{$IFDEF FMX}
+var
+  ac: TAlphaColorRec;
+{$ENDIF}
 begin
+  {$IFNDEF FMX}
   Result := inherited AlphaBlendValue;
+  {$ELSE}
+  ac:=TAlphaColorRec.Create(Fill.Color);
+  Result := ac.A;
+  {$ENDIF}
 end;
 
 procedure TFormRobin.SetAlphaBlendValue(NewAlphaBlendValue: Byte);
+{$IFDEF FMX}
+var
+  ac: TAlphaColorRec;
+{$ENDIF}
 begin
+  {$IFNDEF FMX}
   inherited AlphaBlendValue := NewAlphaBlendValue;
+  {$ELSE}
+  if NewAlphaBlendValue = $FF then
+    Self.Transparency:=False
+  else
+  begin
+    ac:=TAlphaColorRec.Create(Fill.Color);
+    ac.A:=NewAlphaBlendValue;
+    inherited Fill.Color := ac.Color;
+  end;
+  {$ENDIF}
 end;
 
 end.
