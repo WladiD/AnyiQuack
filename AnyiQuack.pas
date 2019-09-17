@@ -41,7 +41,7 @@ uses
   Generics.Collections;
 
 const
-  Version = '1.0.4';
+  Version = '1.1.0';
 
 type
   EAQ = class(Exception);
