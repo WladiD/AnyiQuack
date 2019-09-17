@@ -33,7 +33,7 @@ uses
   System.Types,
   System.Classes,
   System.Character,
-  System.Math,
+
   System.Diagnostics,
   System.SyncObjs,
   System.UITypes,
@@ -228,7 +228,7 @@ type
     function CustomActors(ActorRole: TActorRole; ID: Integer; IncludeOrphans: Boolean): TAQ;
 
     function IfContainsEach(ByClass: TClass): TEachFunction; overload;
-    function IfContainsEach(Objects: TObjectArray): TEachFunction; overload;
+    function IfContainsEach(const Objects: TObjectArray): TEachFunction; overload;
     function IfContainsEach(Objects: TObjectList<TObject>): TEachFunction; overload;
     function IfContainsEach(AQ: TAQ): TEachFunction; overload;
 
@@ -303,9 +303,9 @@ type
     class function EaseRect(StartRect, EndRect: TRect; Progress: Real;
       EaseFunction: TEaseFunction): TRect; overload;
 
-    class function EaseString(StartString, EndString: String; Progress: Real; EaseType: TEaseType;
+    class function EaseString(const StartString, EndString: String; Progress: Real; EaseType: TEaseType;
       EaseModifier: TEaseModifier = emIn): String; overload;
-    class function EaseString(StartString, EndString: String; Progress: Real;
+    class function EaseString(const StartString, EndString: String; Progress: Real;
       EaseFunction: TEaseFunction): String; overload;
 
   // Public instance related stuff
@@ -328,7 +328,7 @@ type
     function Die: TAQ;
 
     function Append(AObject: TObject): TAQ; overload;
-    function Append(Objects: TObjectArray): TAQ; overload;
+    function Append(const Objects: TObjectArray): TAQ; overload;
     function Append(Objects: TObjectList<TObject>): TAQ; overload;
     function AppendAQ(AQ: TAQ): TAQ;
 
@@ -357,7 +357,7 @@ type
 
     function ExcludeChain(ByClass: TClass): TAQ; overload;
     function ExcludeChain(AObject: TObject): TAQ; overload;
-    function ExcludeChain(Objects: TObjectArray): TAQ; overload;
+    function ExcludeChain(const Objects: TObjectArray): TAQ; overload;
     function ExcludeChain(Objects: TObjectList<TObject>): TAQ; overload;
     function ExcludeChain(AQ: TAQ): TAQ; overload;
     function ExcludeChain(ExcludeEach: TEachFunction): TAQ; overload;
@@ -372,12 +372,12 @@ type
     function IfContains(AObject: TObject): TAQ;
 
     function IfContainsAny(ByClass: TClass): TAQ; overload;
-    function IfContainsAny(Objects: TObjectArray): TAQ; overload;
+    function IfContainsAny(const Objects: TObjectArray): TAQ; overload;
     function IfContainsAny(Objects: TObjectList<TObject>): TAQ; overload;
     function IfContainsAny(AQ: TAQ): TAQ; overload;
 
     function IfContainsAll(ByClass: TClass): TAQ; overload;
-    function IfContainsAll(Objects: TObjectArray): TAQ; overload;
+    function IfContainsAll(const Objects: TObjectArray): TAQ; overload;
     function IfContainsAll(Objects: TObjectList<TObject>): TAQ; overload;
     function IfContainsAll(AQ: TAQ): TAQ; overload;
 
@@ -459,11 +459,11 @@ type
 
   // Shortcuts to appropriate `TAQ.Take` methods
   function Take(AObject: TObject): TAQ; overload;
-  function Take(Objects: TObjectArray): TAQ; overload;
+  function Take(const Objects: TObjectArray): TAQ; overload;
   function Take(Objects: TObjectList<TObject>): TAQ; overload;
   function Take(Enumerator: TEnumerable<TObject>): TAQ; overload;
 
-  function OA(Objects: array of TObject): TObjectArray;
+  function OA(const Objects: array of TObject): TObjectArray;
 
   function MatchID(CompareID, CurrentID: Integer): Boolean;
 
@@ -471,6 +471,9 @@ const
   MaxLifeTime = 10000;
 
 implementation
+
+uses
+  System.Math;
 
 const
 {$IFDEF UseThreadTimer}
@@ -627,7 +630,7 @@ begin
   Result := TAQ.Take(AObject);
 end;
 
-function Take(Objects: TObjectArray): TAQ;
+function Take(const Objects: TObjectArray): TAQ;
 begin
   Result := TAQ.Take(Objects);
 end;
@@ -642,7 +645,7 @@ begin
   Result := TAQ.Take(Enumerator);
 end;
 
-function OA(Objects: array of TObject): TObjectArray;
+function OA(const Objects: array of TObject): TObjectArray;
 var
   cc: Integer;
 begin
@@ -689,7 +692,7 @@ end;
 { TAQ }
 
 // Appends all in the TObjectArray contained objects to the current TAQ instance
-function TAQ.Append(Objects: TObjectArray): TAQ;
+function TAQ.Append(const Objects: TObjectArray): TAQ;
 var
   cc: Integer;
 begin
@@ -1254,7 +1257,7 @@ begin
   end;
 end;
 
-function TAQ.ExcludeChain(Objects: TObjectArray): TAQ;
+function TAQ.ExcludeChain(const Objects: TObjectArray): TAQ;
 begin
   if SupervisorLock(Result, aqmExcludeChain) then
     Exit;
@@ -1411,6 +1414,8 @@ begin
 end;
 
 class function TAQ.Ease(EaseFunction: TEaseFunction; EaseModifier: TEaseModifier): TEaseFunction;
+const
+  EPSILON = 0.0000001;
 begin
   if not Assigned(EaseFunction) then
     EaseFunction := LinearEase;
@@ -1426,7 +1431,8 @@ begin
     emInOut:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Progress := Progress / 0.5
         else
           Progress := 1 - ((Progress - 0.5) / 0.5);
@@ -1445,7 +1451,8 @@ begin
     emOutIn:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Progress := Progress / 0.5
         else
           Progress := 1 - ((Progress - 0.5) / 0.5);
@@ -1454,7 +1461,8 @@ begin
     emInOutMirrored:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Progress := Progress / 0.5
         else
           Progress := 1 - ((Progress - 0.5) / 0.5);
@@ -1463,7 +1471,8 @@ begin
     emOutInMirrored:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Progress := Progress / 0.5
         else
           Progress := 1 - ((Progress - 0.5) / 0.5);
@@ -1472,7 +1481,8 @@ begin
     emInOutCombined:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Result := EaseFunction(Progress / 0.5)
         else
           Result := 1 - EaseFunction((Progress - 0.5) / 0.5);
@@ -1480,7 +1490,8 @@ begin
     emOutInCombined:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Result := EaseFunction(1 - (Progress / 0.5))
         else
           Result := 1 - EaseFunction(1 - ((Progress - 0.5) / 0.5));
@@ -1488,7 +1499,8 @@ begin
     emInSnake:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Result := EaseFunction(Progress / 0.5)
         else
           Result := EaseFunction(1) + (1 - EaseFunction(1 - ((Progress - 0.5) / 0.5)));
@@ -1497,7 +1509,8 @@ begin
     emOutSnake:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Result := 1 + (1 - EaseFunction(Progress / 0.5))
         else
           Result := EaseFunction(1 - ((Progress - 0.5) / 0.5));
@@ -1506,7 +1519,8 @@ begin
     emInSnakeInverted:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+           (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Result := 1 - EaseFunction(1 - (Progress / 0.5))
         else
           Result := EaseFunction(1) + EaseFunction((Progress - 0.5) / 0.5);
@@ -1515,7 +1529,8 @@ begin
     emOutSnakeInverted:
       Result := function(Progress: Real): Real
       begin
-        if Progress <= 0.5 then
+        if (CompareValue(Progress, 0.5, EPSILON) = LessThanValue) or
+          (CompareValue(Progress, 0.5, EPSILON) = EqualsValue) then
           Result := 1 + EaseFunction(1 - Progress / 0.5)
         else
           Result := 1 - EaseFunction((Progress - 0.5) / 0.5);
@@ -1597,14 +1612,14 @@ begin
     EasePoint(StartRect.BottomRight, EndRect.BottomRight, Progress, nil));
 end;
 
-class function TAQ.EaseString(StartString, EndString: String; Progress: Real; EaseType: TEaseType;
-  EaseModifier: TEaseModifier): String;
+class function TAQ.EaseString(const StartString, EndString: String; Progress:
+    Real; EaseType: TEaseType; EaseModifier: TEaseModifier = emIn): String;
 begin
   Result := EaseString(StartString, EndString, Progress, Ease(EaseType, EaseModifier));
 end;
 
-class function TAQ.EaseString(StartString, EndString: String; Progress: Real;
-  EaseFunction: TEaseFunction): String;
+class function TAQ.EaseString(const StartString, EndString: String; Progress:
+    Real; EaseFunction: TEaseFunction): String;
 var
   StartStringLength, EndStringLength, EasedStringLength: Integer;
   StartChar, EndChar, EasedChar: Char;
@@ -1813,7 +1828,7 @@ begin
   Result := IfAll(IfContainsEach(AQ));
 end;
 
-function TAQ.IfContainsAll(Objects: TObjectArray): TAQ;
+function TAQ.IfContainsAll(const Objects: TObjectArray): TAQ;
 begin
   if SupervisorLock(Result, aqmIfContainsAll) then
     Exit;
@@ -1841,7 +1856,7 @@ begin
   Result := IfAny(IfContainsEach(AQ));
 end;
 
-function TAQ.IfContainsAny(Objects: TObjectArray): TAQ;
+function TAQ.IfContainsAny(const Objects: TObjectArray): TAQ;
 begin
   if SupervisorLock(Result, aqmIfContainsAny) then
     Exit;
@@ -1870,7 +1885,7 @@ begin
   end;
 end;
 
-function TAQ.IfContainsEach(Objects: TObjectArray): TEachFunction;
+function TAQ.IfContainsEach(const Objects: TObjectArray): TEachFunction;
 begin
   Result := function(AQ: TAQ; O: TObject): Boolean
   var
@@ -2495,9 +2510,9 @@ begin
   begin
     AQMatch.HeartBeat;
     Result := AQMatch;
-//{$IFDEF OutputDebugGCRetake}
-//		RetakeDebugMessage(Result);
-//{$ENDIF}
+{$IFDEF OutputDebugGCRetake}
+		RetakeDebugMessage(Result);
+{$ENDIF}
     Exit;
   end
   else
