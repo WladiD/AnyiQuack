@@ -3,8 +3,17 @@ unit Main;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, NotificationWindows, MyNotificationWindow, ExtCtrls;
+  System.SysUtils,
+  System.Classes,
+  Vcl.Graphics,
+  Vcl.Controls,
+  Vcl.Forms,
+  Vcl.Dialogs,
+  Vcl.StdCtrls,
+  Vcl.ExtCtrls,
+
+  NotificationWindows,
+  MyNotificationWindow;
 
 type
   TMainForm = class(TForm)

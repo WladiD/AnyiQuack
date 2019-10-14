@@ -3,11 +3,26 @@ unit Main;
 interface
 
 uses
-  System.SysUtils, System.Types, System.Classes, System.Variants,
-  FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.StdCtrls,
-  FMX.Layouts, FMX.Controls.Presentation, FMX.ExtCtrls, FMX.ListBox, FMX.Colors,
+  System.SysUtils,
+  System.Types,
+  System.Classes,
+  System.UITypes,
+  System.Math,
+  FMX.Types,
+  FMX.Controls,
+  FMX.Forms,
+  FMX.Graphics,
+  FMX.Dialogs,
+  FMX.StdCtrls,
+  FMX.Layouts,
+  FMX.Controls.Presentation,
+  FMX.ExtCtrls,
+  FMX.ListBox,
+  FMX.Colors,
+  FMX.Objects,
 
-  AQPControlAnimations, AnyiQuack;
+  AnyiQuack,
+  AQPControlAnimations;
 
 type
   TMainForm = class(TForm)
@@ -51,12 +66,7 @@ var
 
 implementation
 
-uses
-  FMX.Objects, System.UITypes, System.Math;
-
 {$R *.fmx}
-
-{$DEFINE FMX}
 
 const
   BoundsAnimationID = 1;

@@ -3,8 +3,16 @@ unit Main;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, AnyiQuack, AQPCustomPlugin;
+  System.SysUtils,
+  System.Classes,
+  Vcl.Graphics,
+  Vcl.Controls,
+  Vcl.Forms,
+  Vcl.Dialogs,
+  Vcl.StdCtrls,
+
+  AnyiQuack,
+  AQPCustomPlugin;
 
 type
   TForm1 = class(TForm)
@@ -23,7 +31,7 @@ type
     procedure ShowButtonClick(Sender: TObject);
     procedure HideButtonClick(Sender: TObject);
   private
-    function TargetButtons:TAQ;
+    function TargetButtons: TAQ;
   end;
 
 var
@@ -32,6 +40,14 @@ var
 implementation
 
 {$R *.dfm}
+
+function TForm1.TargetButtons: TAQ;
+begin
+  Result := Take(Form1)
+    .ChildrenChain
+    .FilterChain(TButton)
+    .ExcludeChain(OA([HideButton, ShowButton]));
+end;
 
 procedure TForm1.HideButtonClick(Sender: TObject);
 begin
@@ -45,14 +61,6 @@ begin
   TargetButtons
     .Plugin<TAQPCustomPlugin>
     .Show;
-end;
-
-function TForm1.TargetButtons:TAQ;
-begin
-  Result := Take(Form1)
-    .ChildrenChain
-    .FilterChain(TButton)
-    .ExcludeChain(OA([HideButton, ShowButton]));
 end;
 
 end.

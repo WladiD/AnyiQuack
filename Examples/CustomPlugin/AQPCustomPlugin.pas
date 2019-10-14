@@ -20,10 +20,12 @@ function TAQPCustomPlugin.Hide: TAQ;
 begin
   Result := Each(
     function(AQ: TAQ; O: TObject): Boolean
+    var
+      OC: TControl absolute O;
     begin
-      if (O is TControl) and (TControl(O).Visible) then
-        TControl(O).Hide;
-      Result := TRUE;
+      if (O is TControl) and OC.Visible then
+        OC.Hide;
+      Result := True;
     end);
 end;
 
@@ -31,10 +33,12 @@ function TAQPCustomPlugin.Show:TAQ;
 begin
   Result := Each(
     function(AQ: TAQ; O :TObject): Boolean
+    var
+      OC: TControl absolute O;
     begin
-      if (O is TControl) and (not TControl(O).Visible) then
-        TControl(O).Show;
-      Result := TRUE;
+      if (O is TControl) and not OC.Visible then
+        OC.Show;
+      Result := True;
     end);
 end;
 

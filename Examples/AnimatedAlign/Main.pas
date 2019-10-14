@@ -3,8 +3,18 @@ unit Main;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, ComCtrls, Math,
+  System.SysUtils,
+  System.Variants,
+  System.Classes,
+  System.Math,
+  Vcl.Graphics,
+  Vcl.Controls,
+  Vcl.Forms,
+  Vcl.Dialogs,
+  Vcl.StdCtrls,
+  Vcl.ExtCtrls,
+  Vcl.ComCtrls,
+
   AnyiQuack,
   AQPControlAnimations; // AnyiQuack-Plugin
 
@@ -28,9 +38,18 @@ type
     procedure FormResize(Sender: TObject);
     procedure PanelSizeTrackBarChange(Sender: TObject);
     procedure RemovePanelButtonClick(Sender: TObject);
+
+  private
+    class var
+    BoundsAnimationID: Integer;
+    HoverAnimationID: Integer;
+    HoverShakeAnimationID: Integer;
+
   private
     FPanelCounter: Integer;
   public
+    class constructor Create;
+
     procedure PanelMouseEnter(Sender: TObject);
     procedure PanelMouseLeave(Sender: TObject);
     procedure PanelHoverHandler(Sender: TObject; MouseOver: Boolean);
@@ -48,11 +67,15 @@ implementation
 {$R *.dfm}
 
 const
-  BoundsAnimationID = 1;
-  HoverAnimationID = 2;
-  HoverShakeAnimationID = 3;
   ActivePanelTag = 69;
   InactivePanelTag = 70;
+
+class constructor TMainForm.Create;
+begin
+  BoundsAnimationID := TAQ.GetUniqueID;
+  HoverAnimationID := TAQ.GetUniqueID;
+  HoverShakeAnimationID := TAQ.GetUniqueID;
+end;
 
 procedure TMainForm.AddPanelButtonClick(Sender: TObject);
 var
