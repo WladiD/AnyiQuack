@@ -33,3 +33,6 @@ begin
     .ShakeAnimation(1, 10, 2, 5, 300); 
 end;
 ```
+
+## Wiki
+A wiki is started and may be helpful sometime: [Wiki for AnyiQuack](https://github.com/WladiD/AnyiQuack/wiki)
