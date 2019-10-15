@@ -56,9 +56,14 @@ type
   TInterval = class;
   TTimerThread = class;
 
+  // More info:
+  // https://github.com/WladiD/AnyiQuack/wiki/Reference-of-simple-AnyiQuack-types#TEaseType
   TEaseType = (etLinear, etQuad, etCubic, etQuart, etQuint, etSext, etSinus,
     etElastic, etBack, etLowWave, etMiddleWave, etHighWave, etBounce,
     etCircle, etSwing10, etSwing50, etSwing100, etSwing200);
+
+  // More info:
+  // https://github.com/WladiD/AnyiQuack/wiki/Reference-of-simple-AnyiQuack-types#TEaseModifier
   TEaseModifier = (
     emIn, emInInverted, emInSnake, emInSnakeInverted,
     emOut, emOutInverted, emOutSnake, emOutSnakeInverted,
@@ -99,6 +104,8 @@ type
     property WorkAQ: TAQ read FWorkAQ;
   end;
 
+  // More info:
+  // https://github.com/WladiD/AnyiQuack/wiki/Reference-of-TAQ
   TAQ = class sealed (TAQBase)
   // Private section for local types and constants
   private
