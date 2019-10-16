@@ -12,11 +12,18 @@ uses
 
 type
   TAQPStickyTools = class(TAQPlugin)
+  private
+    class var
+    BoundsAnimationID: Integer;
+    MessageListenID: Integer;
   protected
     procedure Autorun; override;
     function StickyEach(AQ: TAQ; O: TObject):Boolean;
   public
-    class var AnimateStick: Boolean;
+    class var
+    AnimateStick: Boolean;
+
+    class constructor Create;
   end;
 
 implementation
@@ -24,11 +31,15 @@ implementation
 uses
   Tools;
 
-{** TAQPStickyTools **}
+{ TAQPStickyTools }
+
+class constructor TAQPStickyTools.Create;
+begin
+  BoundsAnimationID := TAQ.GetUniqueID;
+  MessageListenID := TAQ.GetUniqueID;
+end;
 
 procedure TAQPStickyTools.Autorun;
-const
-  MessageListenID = 3;
 begin
   inherited Autorun;
 
@@ -71,11 +82,11 @@ begin
   if AnimateStick then
   begin
     Take(O)
-      .CancelAnimations(161) // 161 is an random number but with the purpose to associate this animation
+      .CancelAnimations(BoundsAnimationID)
       .Plugin<TAQPControlAnimations>
-      .BoundsAnimation(LocalTargetPos.X, LocalTargetPos.Y, -1, -1, 350, 161,
+      .BoundsAnimation(LocalTargetPos.X, LocalTargetPos.Y, -1, -1, 350, BoundsAnimationID,
         TAQ.Ease(etElastic, emIn))
-    .Die;
+      .Die;
   end
   else
     with ToolsForm do

@@ -47,27 +47,29 @@ type
     function Swing(Times, Diff: Integer; Progress: Real): Integer;
     procedure CustomColorAnimation(FromColor, ToColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
       Duration: Integer; ID: Integer;
-      ColorAssignFunction: TEachMiscFunction<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>;
-      EaseFunction: TEaseFunction = nil;
-      OnComplete: TAnonymNotifyEvent = nil);
+      const ColorAssignFunction: TEachMiscFunction<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>;
+      const EaseFunction: TEaseFunction = nil;
+      const OnComplete: TAnonymNotifyEvent = nil);
   public
     function AlphaBlendAnimation(ToAlphaBlendValue: Byte; Duration: Integer; ID: Integer = 0;
-      EaseFunction: TEaseFunction = nil; OnComplete: TAnonymNotifyEvent = nil): TAQ;
+      const EaseFunction: TEaseFunction = nil; const OnComplete: TAnonymNotifyEvent = nil): TAQ;
     function BoundsAnimation(NewLeft, NewTop, NewWidth, NewHeight: Integer; Duration: Integer;
-      ID: Integer = 0; EaseFunction: TEaseFunction = nil;
-      OnComplete: TAnonymNotifyEvent = nil): TAQ;
+      ID: Integer = 0; const EaseFunction: TEaseFunction = nil;
+      const OnComplete: TAnonymNotifyEvent = nil): TAQ;
     function ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration: Integer; ID: Integer = 0;
-      OnComplete: TAnonymNotifyEvent = nil): TAQ;
+      const OnComplete: TAnonymNotifyEvent = nil): TAQ;
     {$IFNDEF FMX}
     function BackgroundColorAnimation(ToColor: TColor; Duration: Integer; ID: Integer = 0;
-      EaseFunction: TEaseFunction = nil; OnComplete: TAnonymNotifyEvent = nil): TAQ;
+      const EaseFunction: TEaseFunction = nil; const OnComplete: TAnonymNotifyEvent = nil): TAQ;
     function FontColorAnimation(ToColor: TColor; Duration: Integer; ID: Integer = 0;
-      EaseFunction: TEaseFunction = nil; OnComplete: TAnonymNotifyEvent = nil): TAQ;
+      const EaseFunction: TEaseFunction = nil; const OnComplete: TAnonymNotifyEvent = nil): TAQ;
     {$ELSE}
-    function BackgroundColorAnimation<T: class>(Control: T; FromColor, ToColor: TAlphaColor; Duration: Integer; ID: Integer = 0;
-      EaseFunction: TEaseFunction = nil; OnComplete: TAnonymNotifyEvent = nil): TAQ;
-    function FontColorAnimation<T: class>(Control: T; FromColor, ToColor: TAlphaColor; Duration: Integer; ID: Integer = 0;
-      EaseFunction: TEaseFunction = nil; OnComplete: TAnonymNotifyEvent = nil): TAQ;
+    function BackgroundColorAnimation<T: class>(Control: T; FromColor, ToColor: TAlphaColor;
+      Duration: Integer; ID: Integer = 0; const EaseFunction: TEaseFunction = nil;
+      const OnComplete: TAnonymNotifyEvent = nil): TAQ;
+    function FontColorAnimation<T: class>(Control: T; FromColor, ToColor: TAlphaColor;
+      Duration: Integer; ID: Integer = 0; const EaseFunction: TEaseFunction = nil;
+      const OnComplete: TAnonymNotifyEvent = nil): TAQ;
     {$ENDIF}
   end;
 
@@ -105,7 +107,7 @@ type
  * TCustomForm.AlphaBlend must be set to True previously.
  *}
 function TAQPControlAnimations.AlphaBlendAnimation(ToAlphaBlendValue: Byte; Duration, ID: Integer;
-  EaseFunction: TEaseFunction; OnComplete: TAnonymNotifyEvent): TAQ;
+  const EaseFunction: TEaseFunction; const OnComplete: TAnonymNotifyEvent): TAQ;
 begin
   Result := Each(
     function(AQ: TAQ; O: TObject): Boolean
@@ -140,7 +142,7 @@ end;
 
 {$IFNDEF FMX}
 function TAQPControlAnimations.BackgroundColorAnimation(ToColor: TColor; Duration, ID: Integer;
-  EaseFunction: TEaseFunction; OnComplete: TAnonymNotifyEvent): TAQ;
+  const EaseFunction: TEaseFunction; const OnComplete: TAnonymNotifyEvent): TAQ;
 begin
   Result := Each(
     function(AQ: TAQ; O: TObject): Boolean
@@ -160,8 +162,8 @@ begin
 end;
 {$ELSE}
 function TAQPControlAnimations.BackgroundColorAnimation<T>(Control: T; 
-      FromColor, ToColor: TAlphaColor; Duration: Integer; ID: Integer = 0;
-      EaseFunction: TEaseFunction = nil; OnComplete: TAnonymNotifyEvent = nil): TAQ;
+  FromColor, ToColor: TAlphaColor; Duration: Integer; ID: Integer;
+  const EaseFunction: TEaseFunction; const OnComplete: TAnonymNotifyEvent): TAQ;
 begin
   Result := Each(
     function(AQ: TAQ; O: TObject): Boolean
@@ -184,7 +186,7 @@ end;
 
 function TAQPControlAnimations.BoundsAnimation(
   NewLeft, NewTop, NewWidth, NewHeight, Duration, ID: Integer;
-  EaseFunction: TEaseFunction; OnComplete: TAnonymNotifyEvent): TAQ;
+  const EaseFunction: TEaseFunction; const OnComplete: TAnonymNotifyEvent): TAQ;
 var
   WholeEach: TEachFunction;
 begin
@@ -249,13 +251,12 @@ begin
 end;
 
 procedure TAQPControlAnimations.CustomColorAnimation(FromColor, ToColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
-  Duration, ID: Integer; ColorAssignFunction: TEachMiscFunction<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>;
-  EaseFunction: TEaseFunction; OnComplete: TAnonymNotifyEvent);
+  Duration, ID: Integer; const ColorAssignFunction: TEachMiscFunction<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>;
+  const EaseFunction: TEaseFunction; const OnComplete: TAnonymNotifyEvent);
 begin
   if FromColor = ToColor then
     Exit;
 
-  EaseFunction := (TAQ.Ease(EaseFunction));
   WorkAQ.EachAnimation(Duration,
     function(AQ: TAQ; O: TObject): Boolean
     var
@@ -273,7 +274,7 @@ end;
 
 {$IFNDEF FMX}
 function TAQPControlAnimations.FontColorAnimation(ToColor: TColor; Duration, ID: Integer;
-  EaseFunction: TEaseFunction; OnComplete: TAnonymNotifyEvent): TAQ;
+  const EaseFunction: TEaseFunction; const OnComplete: TAnonymNotifyEvent): TAQ;
 begin
   Result := Each(
     function(AQ: TAQ; O: TObject): Boolean
@@ -293,8 +294,8 @@ begin
 end;
 {$ELSE}
 function TAQPControlAnimations.FontColorAnimation<T>(Control: T; 
-  FromColor, ToColor: TAlphaColor; Duration: Integer; ID: Integer = 0;
-      EaseFunction: TEaseFunction = nil; OnComplete: TAnonymNotifyEvent = nil): TAQ;
+  FromColor, ToColor: TAlphaColor; Duration: Integer; ID: Integer;
+  const EaseFunction: TEaseFunction; const OnComplete: TAnonymNotifyEvent): TAQ;
 begin
   Result := Each(
     function(AQ: TAQ; O: TObject): Boolean
@@ -316,7 +317,7 @@ end;
 {$ENDIF}
 
 function TAQPControlAnimations.ShakeAnimation(XTimes, XDiff, YTimes, YDiff, Duration, ID: Integer;
-  OnComplete: TAnonymNotifyEvent): TAQ;
+  const OnComplete: TAnonymNotifyEvent): TAQ;
 var
   WholeEach: TEachFunction;
 begin

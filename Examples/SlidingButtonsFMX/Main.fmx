@@ -170,7 +170,6 @@ object Form2: TForm2
     Size.PlatformDefault = False
     TextSettings.HorzAlign = Trailing
     Text = 'Y duration'
-    TabOrder = 18
   end
   object Label2: TLabel
     Anchors = [akRight, akBottom]
@@ -181,7 +180,6 @@ object Form2: TForm2
     Size.PlatformDefault = False
     TextSettings.HorzAlign = Trailing
     Text = 'X duration'
-    TabOrder = 19
   end
   object YTrackBar: TTrackBar
     Anchors = [akRight, akBottom]
@@ -192,7 +190,7 @@ object Form2: TForm2
     Position.X = 132.132873535156300000
     Position.Y = 370.375640869140600000
     Size.Width = 140.000000000000000000
-    Size.Height = 19.000000000000000000
+    Size.Height = 20.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 16
     Value = 750.000000000000000000
@@ -206,7 +204,7 @@ object Form2: TForm2
     Position.X = 131.000000000000000000
     Position.Y = 337.000000000000000000
     Size.Width = 142.000000000000000000
-    Size.Height = 19.000000000000000000
+    Size.Height = 20.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 17
     Value = 500.000000000000000000
@@ -223,6 +221,5 @@ object Form2: TForm2
     Text = 
       'The X and Y properties of the Position are animated independentl' +
       'y. '#13#10'Try to hit the space key rapidly.'
-    TabOrder = 20
   end
 end

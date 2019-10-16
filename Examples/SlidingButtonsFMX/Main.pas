@@ -3,9 +3,21 @@ unit Main;
 interface
 
 uses
-  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
-  FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.StdCtrls,
-  FMX.Controls.Presentation;
+  System.SysUtils,
+  System.Types,
+  System.UITypes,
+  System.Classes,
+  System.Variants,
+  FMX.Types,
+  FMX.Controls,
+  FMX.Forms,
+  FMX.Graphics,
+  FMX.Dialogs,
+  FMX.StdCtrls,
+  FMX.Controls.Presentation,
+
+  AnyiQuack,
+  AQPSystemTypesAnimations;
 
 type
   TForm2 = class(TForm)
@@ -30,19 +42,12 @@ type
     Label1: TLabel;
     procedure SlideButtonClick(Sender: TObject);
     procedure XTrackBarChange(Sender: TObject);
-  private
-    { Private declarations }
-  public
-    { Public declarations }
   end;
 
 var
   Form2: TForm2;
 
 implementation
-
-uses
-  AQPSystemTypesAnimations, AnyiQuack;
 
 {$R *.fmx}
 

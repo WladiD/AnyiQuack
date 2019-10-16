@@ -82,7 +82,7 @@ type
 
   TAQBase = class(TObjectList)
   protected
-    function Each(EachFunction: TEachFunction): TAQ; virtual; abstract;
+    function Each(const EachFunction: TEachFunction): TAQ; virtual; abstract;
   public
     constructor Create; reintroduce; virtual;
   end;
@@ -92,7 +92,7 @@ type
     FWorkAQ: TAQ;
 
     function GarbageCollector: TAQ;
-    function Each(EachFunction: TEachFunction): TAQ; override;
+    function Each(const EachFunction: TEachFunction): TAQ; override;
 
     procedure Autorun; virtual;
 
@@ -233,7 +233,7 @@ type
     procedure ProcessInterval(Interval: TInterval);
     procedure RemoveInterval(Interval: TInterval);
 
-    function CustomFiller(Filler: TEachFunction; Append, Recurse: Boolean): TAQ;
+    function CustomFiller(const Filler: TEachFunction; Append, Recurse: Boolean): TAQ;
     procedure CustomCancel(ActorRole: TActorRole; ID: Integer; Finish: Boolean);
     function CustomActors(ActorRole: TActorRole; ID: Integer; IncludeOrphans: Boolean): TAQ;
 
@@ -283,54 +283,54 @@ type
       EaseModifier: TEaseModifier = emIn): TEaseFunction; overload;
     class function Ease(const EaseTypes: array of TEaseType;
       EaseModifier: TEaseModifier = emIn): TEaseFunction; overload;
-    class function Ease(EaseFunction: TEaseFunction = nil;
+    class function Ease(const EaseFunction: TEaseFunction = nil;
       EaseModifier: TEaseModifier = emIn): TEaseFunction; overload;
 
     class function EaseReal(StartValue, EndValue, Progress: Real; EaseType: TEaseType;
       EaseModifier: TEaseModifier = emIn): Real; overload;
     class function EaseReal(StartValue, EndValue, Progress: Real;
-      EaseFunction: TEaseFunction): Real; overload;
+      const EaseFunction: TEaseFunction): Real; overload;
 
     class function EaseInteger(StartValue, EndValue: Integer; Progress: Real; EaseType: TEaseType;
       EaseModifier: TEaseModifier = emIn): Integer; overload;
     class function EaseInteger(StartValue, EndValue: Integer; Progress: Real;
-      EaseFunction: TEaseFunction): Integer; overload;
+      const EaseFunction: TEaseFunction): Integer; overload;
 
     class function EaseColor(
       StartColor, EndColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; Progress: Real; EaseType: TEaseType;
       EaseModifier: TEaseModifier = emIn): {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; overload;
     class function EaseColor(
       StartColor, EndColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; Progress: Real;
-      EaseFunction: TEaseFunction): {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; overload;
+      const EaseFunction: TEaseFunction): {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; overload;
 
     class function EasePoint(StartPoint, EndPoint: TPoint; Progress: Real; EaseType: TEaseType;
       EaseModifier: TEaseModifier = emIn): TPoint; overload;
     class function EasePoint(StartPoint, EndPoint: TPoint; Progress: Real;
-      EaseFunction: TEaseFunction): TPoint; overload;
+      const EaseFunction: TEaseFunction): TPoint; overload;
 
     class function EaseRect(StartRect, EndRect: TRect; Progress: Real; EaseType: TEaseType;
       EaseModifier: TEaseModifier = emIn): TRect; overload;
     class function EaseRect(StartRect, EndRect: TRect; Progress: Real;
-      EaseFunction: TEaseFunction): TRect; overload;
+      const EaseFunction: TEaseFunction): TRect; overload;
 
     class function EaseString(const StartString, EndString: String; Progress: Real; EaseType: TEaseType;
       EaseModifier: TEaseModifier = emIn): String; overload;
     class function EaseString(const StartString, EndString: String; Progress: Real;
-      EaseFunction: TEaseFunction): String; overload;
+      const EaseFunction: TEaseFunction): String; overload;
 
   // Public instance related stuff
   public
     constructor Create; override;
     destructor Destroy; override;
 
-    function Each(EachFunction: TEachFunction): TAQ; override;
-    function EachInterval(Interval: Integer; Each: TEachFunction; ID: Integer = 0): TAQ;
-    function EachTimer(Duration: Integer; Each: TEachFunction; LastEach: TEachFunction = nil;
+    function Each(const EachFunction: TEachFunction): TAQ; override;
+    function EachInterval(Interval: Integer; const Each: TEachFunction; ID: Integer = 0): TAQ;
+    function EachTimer(Duration: Integer; const Each: TEachFunction; const LastEach: TEachFunction = nil;
       ID: Integer = 0): TAQ;
-    function EachAnimation(Duration: Integer; Each: TEachFunction; LastEach: TEachFunction = nil;
+    function EachAnimation(Duration: Integer; const Each: TEachFunction; const LastEach: TEachFunction = nil;
       ID: Integer = 0): TAQ;
-    function EachDelay(Delay: Integer; Each: TEachFunction; ID: Integer = 0): TAQ;
-    function EachRepeat(Times: Integer; EachFunction: TEachFunction): TAQ;
+    function EachDelay(Delay: Integer; const Each: TEachFunction; ID: Integer = 0): TAQ;
+    function EachRepeat(Times: Integer; const EachFunction: TEachFunction): TAQ;
 
     function NewChain: TAQ;
     function EndChain: TAQ;
@@ -363,21 +363,21 @@ type
     function CancelIntervals(ID: Integer = 0): TAQ;
 
     function FilterChain(ByClass: TClass): TAQ; overload;
-    function FilterChain(FilterEach: TEachFunction): TAQ; overload;
+    function FilterChain(const FilterEach: TEachFunction): TAQ; overload;
 
     function ExcludeChain(ByClass: TClass): TAQ; overload;
     function ExcludeChain(AObject: TObject): TAQ; overload;
     function ExcludeChain(const Objects: TObjectArray): TAQ; overload;
     function ExcludeChain(Objects: TObjectList): TAQ; overload;
     function ExcludeChain(AQ: TAQ): TAQ; overload;
-    function ExcludeChain(ExcludeEach: TEachFunction): TAQ; overload;
+    function ExcludeChain(const ExcludeEach: TEachFunction): TAQ; overload;
 
     function IfThen(Condition: Boolean): TAQ;
     function IfElse: TAQ;
     function IfEnd: TAQ;
 
-    function IfAll(EachFunction: TEachFunction): TAQ;
-    function IfAny(EachFunction: TEachFunction): TAQ;
+    function IfAll(const EachFunction: TEachFunction): TAQ;
+    function IfAny(const EachFunction: TEachFunction): TAQ;
 
     function IfContains(AObject: TObject): TAQ;
 
@@ -416,10 +416,10 @@ type
   protected
     procedure UpdateNextTick;
   public
-    constructor Infinite(Interval: Integer; Each: TEachFunction; ActorRole: TActorRole;
+    constructor Infinite(Interval: Integer; const Each: TEachFunction; ActorRole: TActorRole;
       ID: Integer);
-    constructor Finite(Duration: Integer; Each, LastEach: TEachFunction; ActorRole: TActorRole;
-      ID: Integer);
+    constructor Finite(Duration: Integer; const Each, LastEach: TEachFunction;
+      ActorRole: TActorRole; ID: Integer);
     destructor Destroy; override;
 
     function Each: TEachFunction;
@@ -1050,7 +1050,7 @@ begin
   Perform := nil;
 end;
 
-function TAQ.CustomFiller(Filler: TEachFunction; Append, Recurse: Boolean): TAQ;
+function TAQ.CustomFiller(const Filler: TEachFunction; Append, Recurse: Boolean): TAQ;
 var
   TargetAQ: TAQ;
 
@@ -1166,7 +1166,7 @@ end;
 // EachFunction by returning False. Otherwise you have to return True for further/full processing.
 // If the current TAQ instance contains other TAQ instances (appended by `TAQ.AppendAQ`) and
 // `TAQ.Recurse` is True (Default) EachFunction is also performed on them.
-function TAQ.Each(EachFunction: TEachFunction): TAQ;
+function TAQ.Each(const EachFunction: TEachFunction): TAQ;
 var
   cc: Integer;
   O: TObject;
@@ -1189,7 +1189,7 @@ begin
   end;
 end;
 
-function TAQ.EachAnimation(Duration: Integer; Each, LastEach: TEachFunction; ID: Integer): TAQ;
+function TAQ.EachAnimation(Duration: Integer; const Each, LastEach: TEachFunction; ID: Integer): TAQ;
 begin
   if Duration >= MaxLifeTime then
     raise EAQ.CreateFmt('Duration of the animation (%d) should be lower than MaxLifeTime (%d)',
@@ -1199,7 +1199,7 @@ begin
   AddInterval(TInterval.Finite(Duration, Each, LastEach, arAnimation, ID));
 end;
 
-function TAQ.EachDelay(Delay: Integer; Each: TEachFunction; ID: Integer): TAQ;
+function TAQ.EachDelay(Delay: Integer; const Each: TEachFunction; ID: Integer): TAQ;
 begin
   if Delay >= MaxLifeTime then
     raise EAQ.CreateFmt('Delay (%d) must be lower than MaxLifeTime (%d)',
@@ -1214,7 +1214,7 @@ end;
 // The Each is called each interval until you cancel it with `TAQ.CancelIntervals`.
 // Unit of Interval is millisecond. If you consider to perform several EachInterval's on the same
 // objects, you should define an ID, so you'll be able to cancel only the specific intervaled Each.
-function TAQ.EachInterval(Interval: Integer; Each: TEachFunction; ID: Integer): TAQ;
+function TAQ.EachInterval(Interval: Integer; const Each: TEachFunction; ID: Integer): TAQ;
 begin
   if Interval >= MaxLifeTime then
     raise EAQ.CreateFmt('Interval (%d) must be lower than MaxLifeTime (%d)',
@@ -1225,7 +1225,7 @@ begin
 end;
 
 // Performs the passed method/closure on each in TAQ contained object x times
-function TAQ.EachRepeat(Times: Integer; EachFunction: TEachFunction): TAQ;
+function TAQ.EachRepeat(Times: Integer; const EachFunction: TEachFunction): TAQ;
 var
   cc: Integer;
 begin
@@ -1241,7 +1241,7 @@ end;
 // From the performing Each function you can access to the associated interval with
 // `AQ.CurrentInterval` and use further runtime specific informations
 // e.g. `AQ.CurrentInterval.Progress`
-function TAQ.EachTimer(Duration: Integer; Each, LastEach: TEachFunction; ID: Integer): TAQ;
+function TAQ.EachTimer(Duration: Integer; const Each, LastEach: TEachFunction; ID: Integer): TAQ;
 begin
   if Duration >= MaxLifeTime then
     raise EAQ.CreateFmt('Timers duration (%d) must be lower than MaxLifeTime (%d)',
@@ -1302,7 +1302,7 @@ begin
     end);
 end;
 
-function TAQ.ExcludeChain(ExcludeEach: TEachFunction): TAQ;
+function TAQ.ExcludeChain(const ExcludeEach: TEachFunction): TAQ;
 var
   NewAQ: TAQ;
 begin
@@ -1420,13 +1420,11 @@ begin
   end;
 end;
 
-class function TAQ.Ease(EaseFunction: TEaseFunction; EaseModifier: TEaseModifier): TEaseFunction;
+class function TAQ.Ease(const EaseFunction: TEaseFunction;
+  EaseModifier: TEaseModifier): TEaseFunction;
 const
   EPSILON = 0.0000001;
 begin
-  if not Assigned(EaseFunction) then
-    EaseFunction := LinearEase;
-
   case EaseModifier of
     emIn:
       Result := EaseFunction;
@@ -1545,7 +1543,7 @@ end;
 
 class function TAQ.EaseColor(
   StartColor, EndColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; Progress: Real;
-  EaseFunction: TEaseFunction): {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
+  const EaseFunction: TEaseFunction): {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
 var
   StartCR, EndCR: {$IFDEF FMX}TAlphaColorRec{$ELSE}TColorRec{$ENDIF};
 begin
@@ -1563,7 +1561,7 @@ begin
 end;
 
 class function TAQ.EaseInteger(StartValue, EndValue: Integer; Progress: Real;
-  EaseFunction: TEaseFunction): Integer;
+  const EaseFunction: TEaseFunction): Integer;
 begin
   if Assigned(EaseFunction) then
     Progress := EaseFunction(Progress);
@@ -1571,7 +1569,7 @@ begin
 end;
 
 class function TAQ.EasePoint(StartPoint, EndPoint: TPoint; Progress: Real;
-  EaseFunction: TEaseFunction): TPoint;
+  const EaseFunction: TEaseFunction): TPoint;
 begin
   if Assigned(EaseFunction) then
     Progress := EaseFunction(Progress);
@@ -1592,7 +1590,8 @@ begin
   Result := EaseInteger(StartValue, EndValue, Progress, Ease(EaseType, EaseModifier));
 end;
 
-class function TAQ.EaseReal(StartValue, EndValue, Progress: Real; EaseFunction: TEaseFunction): Real;
+class function TAQ.EaseReal(StartValue, EndValue, Progress: Real;
+  const EaseFunction: TEaseFunction): Real;
 begin
   if Assigned(EaseFunction) then
     Progress := EaseFunction(Progress);
@@ -1600,7 +1599,7 @@ begin
 end;
 
 class function TAQ.EaseRect(StartRect, EndRect: TRect; Progress: Real;
-  EaseFunction: TEaseFunction): TRect;
+  const EaseFunction: TEaseFunction): TRect;
 begin
   if Assigned(EaseFunction) then
     Progress := EaseFunction(Progress);
@@ -1616,7 +1615,7 @@ begin
 end;
 
 class function TAQ.EaseString(const StartString, EndString: String; Progress:
-    Real; EaseFunction: TEaseFunction): String;
+    Real; const EaseFunction: TEaseFunction): String;
 var
   StartStringLength, EndStringLength, EasedStringLength: Integer;
   StartChar, EndChar, EasedChar: Char;
@@ -1673,7 +1672,7 @@ begin
     end);
 end;
 
-function TAQ.FilterChain(FilterEach: TEachFunction): TAQ;
+function TAQ.FilterChain(const FilterEach: TEachFunction): TAQ;
 var
   NewAQ: TAQ;
 begin
@@ -1779,7 +1778,7 @@ begin
     HeartBeatEcho(Self);
 end;
 
-function TAQ.IfAll(EachFunction: TEachFunction): TAQ;
+function TAQ.IfAll(const EachFunction: TEachFunction): TAQ;
 var
   Condition: Boolean;
 begin
@@ -1795,7 +1794,7 @@ begin
   Result := IfThen(Condition);
 end;
 
-function TAQ.IfAny(EachFunction: TEachFunction): TAQ;
+function TAQ.IfAny(const EachFunction: TEachFunction): TAQ;
 var
   Condition: Boolean;
 begin
@@ -2566,7 +2565,7 @@ begin
   // Can be implemented in custom plugins
 end;
 
-function TAQPlugin.Each(EachFunction: TEachFunction): TAQ;
+function TAQPlugin.Each(const EachFunction: TEachFunction): TAQ;
 begin
   Result := WorkAQ.Each(EachFunction);
 end;
@@ -2588,8 +2587,8 @@ end;
 
 { TInterval }
 
-constructor TInterval.Finite(Duration: Integer; Each, LastEach: TEachFunction; ActorRole: TActorRole;
-  ID: Integer);
+constructor TInterval.Finite(Duration: Integer; const Each, LastEach: TEachFunction;
+  ActorRole: TActorRole; ID: Integer);
 begin
   FID := ID;
   FActorRole := ActorRole;
@@ -2603,7 +2602,7 @@ begin
   UpdateNextTick;
 end;
 
-constructor TInterval.Infinite(Interval: Integer; Each: TEachFunction; ActorRole: TActorRole;
+constructor TInterval.Infinite(Interval: Integer; const Each: TEachFunction; ActorRole: TActorRole;
   ID: Integer);
 begin
   FID := ID;
