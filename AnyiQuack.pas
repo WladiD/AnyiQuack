@@ -204,9 +204,6 @@ type
     FComponentsNotifier: TComponentList;
     FIDGenerator: Integer;
 
-    class procedure Initialize;
-    class procedure Finalize;
-
     class function GarbageCollector: TAQ;
     class procedure GlobalIntervalTimerEvent;
     class procedure ComponentsNotification(AComponent: TComponent; Operation: TOperation);
@@ -267,6 +264,9 @@ type
 
   // Public class related stuff
   public
+    class procedure Initialize;
+    class procedure Finalize;
+
     class function Managed: TAQ;
     class function Unmanaged: TAQ;
 
@@ -2847,6 +2847,7 @@ end;
 initialization
 
 finalization
-TAQ.Finalize;
+if not IsLibrary then
+  TAQ.Finalize;
 
 end.
