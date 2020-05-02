@@ -147,7 +147,7 @@ begin
   Result := Each(
     function(AQ: TAQ; O: TObject): Boolean
     begin
-      Result := True; // Komplett durchlaufen
+      Result := True;
       if O is TControl then
         Take(O)
           .Plugin<TAQPControlAnimations>
@@ -168,7 +168,7 @@ begin
   Result := Each(
     function(AQ: TAQ; O: TObject): Boolean
     begin
-      Result := True; // Komplett durchlaufen
+      Result := True;
       if O is TControl then
         Take(O)
           .Plugin<TAQPControlAnimations>
@@ -198,16 +198,23 @@ begin
   begin
     Result := True;
 
-    PrevLeft:= {$IFDEF FMX}Round(OC.Position.X){$ELSE}OC.Left{$ENDIF};
-    PrevTop:= {$IFDEF FMX}Round(OC.Position.Y){$ELSE}OC.Top{$ENDIF};
-    PrevWidth:= {$IFDEF FMX}Round(OC.Width){$ELSE}OC.Width{$ENDIF};
-    PrevHeight:= {$IFDEF FMX}Round(OC.Height){$ELSE}OC.Height{$ENDIF};
+    PrevLeft := {$IFDEF FMX}Round(OC.Position.X){$ELSE}OC.Left{$ENDIF};
+    PrevTop := {$IFDEF FMX}Round(OC.Position.Y){$ELSE}OC.Top{$ENDIF};
+    PrevWidth := {$IFDEF FMX}Round(OC.Width){$ELSE}OC.Width{$ENDIF};
+    PrevHeight := {$IFDEF FMX}Round(OC.Height){$ELSE}OC.Height{$ENDIF};
 
-    if not ((O is TControl) and
-      ((NewLeft <> PrevLeft) or
-        (NewTop <> PrevTop) or
-          (NewWidth <> PrevWidth) or 
-            (NewHeight <> PrevHeight))) then
+    // Check, whether the bounds would be changed and quickly exit, if they don't
+    if
+      not
+      (
+        (O is TControl) and
+        (
+          (NewLeft <> PrevLeft) or
+          (NewTop <> PrevTop) or
+          (NewWidth <> PrevWidth) or
+          (NewHeight <> PrevHeight)
+        )
+      ) then
       Exit;
 
     EachF := function(AQ: TAQ; O: TObject): Boolean
@@ -279,7 +286,7 @@ begin
   Result := Each(
     function(AQ: TAQ; O: TObject): Boolean
     begin
-      Result := True; // Komplett durchlaufen
+      Result := True;
       if O is TControl then
         Take(O)
           .Plugin<TAQPControlAnimations>
@@ -357,10 +364,10 @@ begin
 
       if Progress = 1 then
       begin
-        {$IFDEF OutputDebugAnimation}
+{$IFDEF OutputDebugAnimation}
         OutputDebugString(PWideChar('ShakeAnimation beendet für $' + IntToHex(Integer(O),
           SizeOf(Integer) * 2)));
-        {$ENDIF}
+{$ENDIF}
 
         if Assigned(OnComplete) then
           OnComplete(O);
@@ -403,7 +410,7 @@ end;
 
 {$ENDIF}
 
-{** TFormRobin **}
+{ TFormRobin }
 
 function TFormRobin.GetAlphaBlendActivated: Boolean;
 begin
@@ -438,11 +445,11 @@ begin
   inherited AlphaBlendValue := NewAlphaBlendValue;
   {$ELSE}
   if NewAlphaBlendValue = $FF then
-    Self.Transparency:=False
+    Self.Transparency := False
   else
   begin
-    ac:=TAlphaColorRec.Create(Fill.Color);
-    ac.A:=NewAlphaBlendValue;
+    ac := TAlphaColorRec.Create(Fill.Color);
+    ac.A := NewAlphaBlendValue;
     inherited Fill.Color := ac.Color;
   end;
   {$ENDIF}
