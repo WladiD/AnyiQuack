@@ -52,10 +52,16 @@ type
       const Setter: TRefSystemTypeSetterProcedure<TColor>; Duration: Integer; ID: Integer = 0;
       const EaseFunction: TEaseFunction = nil; const OnComplete: TAnonymNotifyEvent = nil): TAQ;
 
-    function RectAnimation(TargetRect: TRect;
+    function RectAnimation(const TargetRect: TRect;
       const Getter: TRefSystemTypeGetterFunction<TRect>;
       const Setter: TRefSystemTypeSetterProcedure<TRect>; Duration: Integer; ID: Integer = 0;
-      const EaseFunction: TEaseFunction = nil; const OnComplete: TAnonymNotifyEvent = nil): TAQ;
+      const EaseFunction: TEaseFunction = nil;
+      const OnComplete: TAnonymNotifyEvent = nil): TAQ; overload;
+    function RectAnimation(const GetTargetRect: TFunc<TRect>;
+      const Getter: TRefSystemTypeGetterFunction<TRect>;
+      const Setter: TRefSystemTypeSetterProcedure<TRect>; Duration: Integer; ID: Integer = 0;
+      const EaseFunction: TEaseFunction = nil;
+      const OnComplete: TAnonymNotifyEvent = nil): TAQ; overload;
   end;
 
 implementation
@@ -170,7 +176,22 @@ begin
     end);
 end;
 
-function TAQPSystemTypesAnimations.RectAnimation(TargetRect: TRect;
+function TAQPSystemTypesAnimations.RectAnimation(const TargetRect: TRect;
+  const Getter: TRefSystemTypeGetterFunction<TRect>;
+  const Setter: TRefSystemTypeSetterProcedure<TRect>; Duration, ID: Integer;
+  const EaseFunction: TEaseFunction; const OnComplete: TAnonymNotifyEvent): TAQ;
+begin
+  Result := RectAnimation(
+    function: TRect
+    begin
+      Result := TargetRect;
+    end,
+    Getter, Setter, Duration, ID, EaseFunction, OnComplete);
+end;
+
+// This is a overloaded version for moving targets. The target rect is determined by the
+// passed GetTargetRect lambda instead of a fixed rect.
+function TAQPSystemTypesAnimations.RectAnimation(const GetTargetRect: TFunc<TRect>;
   const Getter: TRefSystemTypeGetterFunction<TRect>;
   const Setter: TRefSystemTypeSetterProcedure<TRect>; Duration, ID: Integer;
   const EaseFunction: TEaseFunction; const OnComplete: TAnonymNotifyEvent): TAQ;
@@ -192,7 +213,7 @@ begin
         begin
           Result := True;
           Progress := AQ.CurrentInterval.Progress;
-          AniRect := TAQ.EaseRect(FromRect, TargetRect, Progress, EaseFunction);
+          AniRect := TAQ.EaseRect(FromRect, GetTargetRect, Progress, EaseFunction);
 
           Setter(O, AniRect);
 
