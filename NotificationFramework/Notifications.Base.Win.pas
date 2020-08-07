@@ -1,4 +1,4 @@
-unit Notifications.Base;
+unit Notifications.Base.Win;
 
 interface
 

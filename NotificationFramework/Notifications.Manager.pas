@@ -5,13 +5,15 @@ interface
 uses
   System.Generics.Collections
   {$IFDEF FMX}
+  , FMX.Forms
   {$ELSE}
   , Vcl.Forms
   , Vcl.Controls
   , Winapi.Windows
   , Winapi.Messages
-  , Notifications.Base;
+  , Notifications.Base.Win
   {$ENDIF}
+  ;
 
 type
   TNotificationManager = class
