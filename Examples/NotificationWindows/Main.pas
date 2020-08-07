@@ -12,8 +12,9 @@ uses
   Vcl.StdCtrls,
   Vcl.ExtCtrls,
 
-  NotificationWindows,
-  MyNotificationWindow;
+  Notifications.Base,
+  MyNotificationWindow,
+  Notifications.Manager;
 
 type
   TMainForm = class(TForm)
@@ -31,7 +32,7 @@ type
     procedure CloseAllButtonClick(Sender: TObject);
     procedure CloseLastButtonClick(Sender: TObject);
   private
-    FStack: TNotificationStack;
+    FManager: TNotificationManager;
     FLastNotificationWindow: TNotificationWindow;
   end;
 
@@ -50,12 +51,12 @@ begin
   if AutoCloseCheckBox.Checked then
     MNW.CloseTimeout := 5000;
   FLastNotificationWindow := MNW;
-  FStack.Add(MNW);
+  FManager.Add(MNW);
 end;
 
 procedure TMainForm.CloseAllButtonClick(Sender: TObject);
 begin
-  FStack.CloseAll;
+  FManager.CloseAll;
 end;
 
 procedure TMainForm.CloseLastButtonClick(Sender: TObject);
@@ -63,10 +64,10 @@ var
   Target: TNotificationWindow;
 begin
   Target := FLastNotificationWindow;
-  if (FStack.List.Count > 0) and not FStack.List.Contains(Target) then
-    Target := FStack.List.Last;
+  if (FManager.List.Count > 0) and not FManager.List.Contains(Target) then
+    Target := FManager.List.Last;
 
-  FStack.Close(Target);
+  FManager.Close(Target);
 end;
 
 procedure TMainForm.AutoCreateCheckBoxClick(Sender: TObject);
@@ -76,12 +77,12 @@ end;
 
 procedure TMainForm.FormCreate(Sender:TObject);
 begin
-  FStack := TNotificationStack.Create;
+  FManager := TNotificationManager.Create;
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
 begin
-  FStack.Free;
+  FManager.Free;
 end;
 
 procedure TMainForm.Timer1Timer(Sender: TObject);

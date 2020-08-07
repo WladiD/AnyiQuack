@@ -1,8 +1,9 @@
 inherited MyNotificationWindow: TMyNotificationWindow
   Caption = 'My custom derived notification window'
   ClientHeight = 119
+  CustomTitleBar.Height = 0
   GlassFrame.Top = 0
-  ExplicitHeight = 143
+  ExplicitHeight = 148
   PixelsPerInch = 96
   TextHeight = 13
   object MainLabel: TLabel
@@ -23,8 +24,6 @@ inherited MyNotificationWindow: TMyNotificationWindow
     ParentFont = False
     ShowAccelChar = False
     Layout = tlCenter
-    ExplicitLeft = 0
-    ExplicitTop = 0
     ExplicitWidth = 216
     ExplicitHeight = 16
   end
