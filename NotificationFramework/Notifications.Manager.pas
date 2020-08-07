@@ -11,7 +11,7 @@ uses
   , Vcl.Controls
   , Winapi.Windows
   , Winapi.Messages
-  , Notifications.Base.Win
+  , Notifications.Base.VCL
   {$ENDIF}
   ;
 

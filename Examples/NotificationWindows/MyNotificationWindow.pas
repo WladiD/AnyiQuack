@@ -15,7 +15,7 @@ uses
   Vcl.StdCtrls,
   Vcl.ComCtrls,
 
-  Notifications.Base.Win,
+  Notifications.Base.VCL,
   AnyiQuack;
 
 type
