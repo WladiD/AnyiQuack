@@ -12,7 +12,7 @@ uses
   Vcl.StdCtrls,
   Vcl.ExtCtrls,
 
-  Notifications.Base,
+  Notifications.Base.Win,
   MyNotificationWindow,
   Notifications.Manager;
 

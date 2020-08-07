@@ -111,7 +111,7 @@
         </DelphiCompile>
         <DCCReference Include="..\..\AnyiQuack.pas"/>
         <DCCReference Include="..\..\AQPControlAnimations.pas"/>
-        <DCCReference Include="..\..\NotificationFramework\Notifications.Base.pas">
+        <DCCReference Include="..\..\NotificationFramework\Notifications.Base.Win.pas">
             <Form>NotificationWindow</Form>
             <FormType>dfm</FormType>
         </DCCReference>

@@ -4,7 +4,7 @@ uses
   Forms,
   AnyiQuack in '..\..\AnyiQuack.pas',
   AQPControlAnimations in '..\..\AQPControlAnimations.pas',
-  Notifications.Base in '..\..\NotificationFramework\Notifications.Base.pas' {NotificationWindow},
+  Notifications.Base.Win in '..\..\NotificationFramework\Notifications.Base.Win.pas' {NotificationWindow},
   Notifications.Manager in '..\..\NotificationFramework\Notifications.Manager.pas',
   Main in 'Main.pas' {MainForm},
   MyNotificationWindow in 'MyNotificationWindow.pas' {MyNotificationWindow};
