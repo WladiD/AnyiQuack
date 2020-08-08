@@ -393,7 +393,8 @@ type
 
     function SliceChain(StartIndex: Integer; Count: Integer = 0): TAQ;
 
-    function DebugMessage(HeadMessage: String = ''; Caption: String = ''): TAQ;
+    function DebugMessage(const HeadMessage: String = ''; Caption: String = ''):
+        TAQ;
 
     function Plugin<T: TAQPlugin,CONSTRUCTOR>: T;
 
@@ -1086,7 +1087,8 @@ begin
   Result := TargetAQ;
 end;
 
-function TAQ.DebugMessage(HeadMessage: String = ''; Caption: String = ''): TAQ;
+function TAQ.DebugMessage(const HeadMessage: String = ''; Caption: String
+    = ''): TAQ;
 {$IFDEF DEBUG}
 var
   ChainPath: TStringList;
@@ -2470,7 +2472,7 @@ end;
 
 class function TAQ.Take<T>(Objects: TObjectList<T>): TAQ;
 var
-  cc: Integer;
+  cc: integer;
 {$IFDEF RetakeFromGC}
   AQMatch: TAQ;
   ObjectsCount: Integer;
