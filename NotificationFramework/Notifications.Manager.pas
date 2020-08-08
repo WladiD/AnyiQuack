@@ -6,6 +6,8 @@ uses
   System.Generics.Collections
   {$IFDEF FMX}
   , FMX.Forms
+  , FMX.Platform
+  , Notifications.FMX.Base
   {$ELSE}
   , Vcl.Forms
   , Vcl.Controls
@@ -16,6 +18,11 @@ uses
   ;
 
 type
+  {$IFDEF FMX}
+  TNotificationWindow = TNotificationWindowFMX;
+  {$ELSE}
+  TNotificationWindow = TNotificationWindowVCL;
+  {$ENDIF}
   TNotificationManager = class
   private
     const
@@ -67,14 +74,22 @@ type
   end;
 
 procedure TNotificationManager.Add(const NotificationWindow: TNotificationWindow);
+{$IFDEF FMX}
+var
+  winService: IFMXWindowService;
+{$ENDIF}
 begin
+  NotificationWindow.Visible:=false;
   NotificationWindow.CloseProc:=Close;
   List.Add(NotificationWindow);
 
   NotificationWindow.Left := Screen.WorkAreaRect.Right - NotificationWindow.Width;
-  NotificationWindow.Top := Screen.PrimaryMonitor.BoundsRect.Bottom;
   {$IFDEF FMX}
+  NotificationWindow.Top := Screen.Displays[0].BoundsRect.Bottom;
+  if TPlatformServices.Current.SupportsPlatformService(IFMXWindowService, winService) then
+    winService.ShowWindow(NotificationWindow);
   {$ELSE}
+  NotificationWindow.Top := Screen.PrimaryMonitor.BoundsRect.Bottom;
   ShowWindow(TInnerWindow(NotificationWindow).WindowHandle, SW_SHOWNOACTIVATE);
   NotificationWindow.AlphaBlend := True;
   {$ENDIF}
@@ -87,6 +102,9 @@ procedure TNotificationManager.Close(const NotificationWindow:
 var
   NextFocusedWindowIndex: Integer;
   AniPlugin: TAQPControlAnimations;
+{$IFDEF FMX}
+  winService: IFMXWindowService;
+{$ENDIF}
 begin
   if not List.Contains(NotificationWindow) then
     Exit;
@@ -103,7 +121,13 @@ begin
      *}
     procedure(Sender: TObject)
     begin
+      {$IFDEF FMX}
+      if TPlatformServices.Current.
+                    SupportsPlatformService(IFMXWindowService, winService) then
+        winService.ReleaseWindow(NotificationWindow);
+      {$ELSE}
       NotificationWindow.Release;
+      {$ENDIF}
     end);
 
   NextFocusedWindowIndex := List.Remove(NotificationWindow);
@@ -113,7 +137,12 @@ begin
     Dec(NextFocusedWindowIndex);
     if NextFocusedWindowIndex < 0 then
       NextFocusedWindowIndex:=0;
-    List[NextFocusedWindowIndex].SetFocus;
+    List[NextFocusedWindowIndex].
+    {$IFDEF FMX}
+      Active:=true;
+    {$ELSE}
+      SetFocus;
+    {$ENDIF}
   end;
 
   UpdatePositions;
@@ -181,11 +210,15 @@ begin
 
         AniPlugin := Take(O).Plugin<TAQPControlAnimations>;
         AniPlugin.BoundsAnimation(
-          Screen.WorkAreaRect.Right - TargetNotf.Width,
+          {$IFDEF FMX}
+          Screen.Displays[0].WorkareaRect.Right
+          {$ELSE}
+          Screen.WorkAreaRect.Right
+          {$ENDIF} - TargetNotf.Width,
           TopPosition, -1, -1,
           IfThen(WindowIndex = 0, InPositionAnimationDuration div 2, InPositionAnimationDuration),
           PositionAnimationID, TAQ.Ease(etBack, emInInverted));
-        AniPlugin.AlphaBlendAnimation(MAXBYTE, InAlphaAnimationDuration,
+        AniPlugin.AlphaBlendAnimation(high(Byte), InAlphaAnimationDuration,
           AlphaAnimationID, TAQ.Ease(etSinus));
 
         Inc(WindowIndex);

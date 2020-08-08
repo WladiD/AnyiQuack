@@ -1,9 +1,9 @@
-object NotificationWindow: TNotificationWindow
+object NotificationWindowVCL: TNotificationWindowVCL
   Left = 0
   Top = 0
   AlphaBlendValue = 0
   BorderStyle = bsToolWindow
-  Caption = 'NotificationWindow'
+  Caption = 'NotificationWindowVCL'
   ClientHeight = 66
   ClientWidth = 350
   Color = clBtnFace

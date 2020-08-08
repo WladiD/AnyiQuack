@@ -1,30 +1,18 @@
-unit Notifications.Base.VCL;
+unit Notifications.FMX.Base;
 
 interface
 
 uses
-  Winapi.Windows,
-  Winapi.Messages,
-  System.SysUtils,
-  System.Contnrs,
-  System.Variants,
-  System.Classes,
-  System.Math,
-  Vcl.Graphics,
-  Vcl.Controls,
-  Vcl.Forms,
-  Vcl.Dialogs,
-  Generics.Collections,
-
-  AnyiQuack,
-  AQPControlAnimations;
+  System.SysUtils, System.Types, System.Classes,
+  System.Variants, FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics,
+  FMX.Dialogs, System.UITypes;
 
 type
-  TNotificationWindowVCL = class;
-  TCloseProcedure= procedure (const NotificationWindows: TNotificationWindowVCL) of object;
-  TNotificationWindowVCL = class(TForm)
+  TNotificationWindowFMX = class;
+  TCloseProcedure= procedure (const NotificationWindows: TNotificationWindowFMX) of object;
+  TNotificationWindowFMX = class(TForm)
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
-    procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure FormCreate(Sender: TObject);
   private
     const
     CloseDelayID = 779;
@@ -40,11 +28,8 @@ type
   protected
     function AutoClosePossible: Boolean; virtual;
   public
-    constructor Create(AOwner: TComponent); override;
-
-    procedure Close; reintroduce;
-
-    {**
+      procedure Close; reintroduce;
+   {**
      * Auto close feature
      *
      * Assign a value > 0 to enable the feature or 0 to disable it.
@@ -68,26 +53,26 @@ type
 
 implementation
 
-{$R *.dfm}
+uses
+  AnyiQuack;
 
-{** TNotificationWindow **}
+{$R *.fmx}
 
-constructor TNotificationWindowVCL.Create(AOwner: TComponent);
+procedure TNotificationWindowFMX.FormCreate(Sender: TObject);
 begin
-  inherited Create(AOwner);
-
-  // Win 10 bugfix: TWinControl descendants are sometimes not rendered, but
-  // the switch AlphaBlend off and on again solve the issue.
-  AlphaBlend := False;
-  AlphaBlend := True;
+  FCloseTimeout:=0;
+  FClosed:=false;
+  FCloseProc:=nil;
 end;
 
-function TNotificationWindowVCL.AutoClosePossible: Boolean;
+{ TNotificationWindow }
+
+function TNotificationWindowFMX.AutoClosePossible: Boolean;
 begin
-  Result := (Screen.ActiveForm <> Self) and not PtInRect(BoundsRect, Mouse.CursorPos);
+  Result := (Screen.ActiveForm <> Self) and not PtInRect(ClientRect, Screen.MousePos);
 end;
 
-procedure TNotificationWindowVCL.Close;
+procedure TNotificationWindowFMX.Close;
 begin
   FClosed := True;
   if assigned(FCloseProc) then
@@ -96,19 +81,14 @@ begin
     raise Exception.Create('Close Procedure in not set in Manager');
 end;
 
-procedure TNotificationWindowVCL.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TNotificationWindowFMX.FormClose(Sender: TObject; var Action:
+    TCloseAction);
 begin
-  Action := caNone;
+  Action:=TCloseAction.caNone;
   Close;
 end;
 
-procedure TNotificationWindowVCL.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
-begin
-  if Key = VK_ESCAPE then
-    Close;
-end;
-
-procedure TNotificationWindowVCL.SetCloseTimeout(CloseTimeout: Integer);
+procedure TNotificationWindowFMX.SetCloseTimeout(CloseTimeout: Integer);
 begin
   if CloseTimeout = FCloseTimeout then
     Exit;
@@ -116,7 +96,7 @@ begin
   UpdateCloseTimeout;
 end;
 
-procedure TNotificationWindowVCL.UpdateCloseTimeout;
+procedure TNotificationWindowFMX.UpdateCloseTimeout;
 begin
   Take(Self)
     .CancelDelays(CloseDelayID)
