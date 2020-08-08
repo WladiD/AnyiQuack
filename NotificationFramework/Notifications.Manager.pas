@@ -86,8 +86,6 @@ begin
   NotificationWindow.Left := Screen.WorkAreaRect.Right - NotificationWindow.Width;
   {$IFDEF FMX}
   NotificationWindow.Top := Screen.Displays[0].BoundsRect.Bottom;
-  if TPlatformServices.Current.SupportsPlatformService(IFMXWindowService, winService) then
-    winService.ShowWindow(NotificationWindow);
   {$ELSE}
   NotificationWindow.Top := Screen.PrimaryMonitor.BoundsRect.Bottom;
   ShowWindow(TInnerWindow(NotificationWindow).WindowHandle, SW_SHOWNOACTIVATE);
