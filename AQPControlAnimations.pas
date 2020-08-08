@@ -195,19 +195,41 @@ begin
     EachF: TEachFunction;
     PrevLeft, PrevTop, PrevWidth, PrevHeight: Integer;
     OC: TControl absolute O;
+    OFM: TForm absolute O;
   begin
     Result := True;
 
-    PrevLeft := {$IFDEF FMX}Round(OC.Position.X){$ELSE}OC.Left{$ENDIF};
-    PrevTop := {$IFDEF FMX}Round(OC.Position.Y){$ELSE}OC.Top{$ENDIF};
-    PrevWidth := {$IFDEF FMX}Round(OC.Width){$ELSE}OC.Width{$ENDIF};
-    PrevHeight := {$IFDEF FMX}Round(OC.Height){$ELSE}OC.Height{$ENDIF};
+    {$IFDEF FMX}
+    if O is TControl then
+    begin
+      PrevLeft:=Round(OC.Position.X);
+      PrevTop:=Round(OC.Position.Y);
+      PrevWidth:=Round(OC.Width);
+      PrevHeight:=Round(OC.Height);
+    end;
+    if O is TForm then
+    begin
+      PrevLeft:=Round(OFM.Left);
+      PrevTop:=Round(OFM.Top);
+      PrevWidth:=Round(OFM.Width);
+      PrevHeight:=Round(OFM.Height);
+    end;
+    {$ELSE}
+    PrevLeft:=OC.Left;
+    PrevTop:=OC.Top;
+    PrevWidth:=OC.Width;
+    PrevHeight:=OC.Height;
+    {$ENDIF}
 
     // Check, whether the bounds would be changed and quickly exit, if they don't
     if
       not
       (
-        (O is TControl) and
+        {$IFDEF FMX}
+        ((O is TControl) or (O is TForm))
+        {$ELSE}
+        (O is TControl)
+        {$ENDIF}  and
         (
           (NewLeft <> PrevLeft) or
           (NewTop <> PrevTop) or
@@ -222,6 +244,7 @@ begin
       Progress: Real;
       AniLeft, AniTop, AniWidth, AniHeight: Integer;
       OOC: TControl absolute O;
+      OOF: TForm absolute O;
     begin
       Result := True;
       Progress := AQ.CurrentInterval.Progress;
@@ -231,13 +254,33 @@ begin
       if NewWidth >= 0 then
         AniWidth := TAQ.EaseInteger(PrevWidth, NewWidth, Progress, EaseFunction)
       else
-        AniWidth := {$IFDEF FMX}Round({$ENDIF}OOC.Width{$IFDEF FMX}){$ENDIF};
+      begin
+        {$IFDEF FMX}
+        if (O is TControl) then
+          AniWidth:=Round(OOC.Width);
+        if (O is TForm) then
+          AniWidth:=Round(OOF.Width);
+        {$ELSE}
+        AniWidth:=OOC.Width;
+        {$ENDIF}
+      end;
       if NewHeight >= 0 then
         AniHeight := TAQ.EaseInteger(PrevHeight, NewHeight, Progress, EaseFunction)
       else
-        AniHeight := {$IFDEF FMX}Round({$ENDIF}OOC.Height{$IFDEF FMX}){$ENDIF};
-
-      OOC.SetBounds(AniLeft, AniTop, AniWidth, AniHeight);
+      begin
+        {$IFDEF FMX}
+        if (O is TControl) then
+          AniHeight:=Round(OOC.Height);
+        if (O is TForm) then
+          AniHeight:=Round(OOF.Height);
+        {$ELSE}
+        AniHeight:=OOC.Height;
+        {$ENDIF}
+      end;
+      if (O is TControl) then
+        OOC.SetBounds(AniLeft, AniTop, AniWidth, AniHeight);
+      if (O is TForm) then
+        OOF.SetBounds(AniLeft, AniTop, AniWidth, AniHeight);
 
       if Progress = 1 then
       begin
