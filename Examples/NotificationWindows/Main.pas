@@ -24,6 +24,7 @@ type
     Timer1: TTimer;
     CloseAllButton: TButton;
     CloseLastButton: TButton;
+    RadioGroup1: TRadioGroup;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure AddButtonClick(Sender: TObject);
@@ -51,6 +52,10 @@ begin
   if AutoCloseCheckBox.Checked then
     MNW.CloseTimeout := 5000;
   FLastNotificationWindow := MNW;
+  if RadioGroup1.ItemIndex = 0 then
+    FManager.Parent:=npMainScreen;
+  if RadioGroup1.ItemIndex = 1 then
+    FManager.Parent:=npApplication;
   FManager.Add(MNW);
 end;
 

@@ -17,6 +17,8 @@ type
     btnCloseLast: TButton;
     btnCloseAll: TButton;
     Timer1: TTimer;
+    rbMainScreen: TRadioButton;
+    rbApplication: TRadioButton;
     procedure btnAddClick(Sender: TObject);
     procedure btnCloseAllClick(Sender: TObject);
     procedure btnCloseLastClick(Sender: TObject);
@@ -49,6 +51,10 @@ begin
   if cbAutoCloseAfter5.IsChecked then
     notif.CloseTimeout := 5000;
   fLastNotificationWindow := notif;
+  if rbMainScreen.IsChecked then
+    fManager.Parent:=npMainScreen;
+  if rbApplication.IsChecked then
+    fManager.Parent:=npApplication;
   fManager.Add(notif);
 end;
 
@@ -70,7 +76,7 @@ end;
 
 procedure TFormMain.cbAutoCreateEverySecClick(Sender: TObject);
 begin
-  Timer1.Enabled := cbAutoCreateEverySec.IsChecked;
+  Timer1.Enabled := not cbAutoCreateEverySec.IsChecked;
 end;
 
 procedure TFormMain.FormDestroy(Sender: TObject);

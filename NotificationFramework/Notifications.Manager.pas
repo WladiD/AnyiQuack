@@ -18,6 +18,7 @@ uses
   ;
 
 type
+  TNotificationParent = (npMainScreen, npApplication);
   {$IFDEF FMX}
   TNotificationWindow = TNotificationWindowFMX;
   {$ELSE}
@@ -38,6 +39,7 @@ type
     FInAlphaAnimationDuration: Integer;
     FOutPositionAnimationDuration: Integer;
     FOutAlphaAnimationDuration: Integer;
+    fParent: TNotificationParent;
 
     procedure UpdatePositions;
 
@@ -59,12 +61,14 @@ type
       write FOutPositionAnimationDuration;
     property OutAlphaAnimationDuration: Integer read FOutAlphaAnimationDuration
       write FOutAlphaAnimationDuration;
+    property Parent: TNotificationParent read fParent write fParent default
+        npMainScreen;
   end;
 
 implementation
 
 uses
-  AQPControlAnimations, AnyiQuack, System.Math;
+  AQPControlAnimations, AnyiQuack, System.Math, System.Types, System.Classes;
 
 { TNotificationManager }
 
@@ -74,21 +78,41 @@ type
   end;
 
 procedure TNotificationManager.Add(const NotificationWindow: TNotificationWindow);
-{$IFDEF FMX}
-var
-  winService: IFMXWindowService;
-{$ENDIF}
 begin
   NotificationWindow.Visible:=false;
   NotificationWindow.CloseProc:=Close;
   List.Add(NotificationWindow);
 
-  NotificationWindow.Left := Screen.WorkAreaRect.Right - NotificationWindow.Width;
   {$IFDEF FMX}
-  NotificationWindow.Top := Screen.Displays[0].BoundsRect.Bottom;
+  case fParent of
+    npMainScreen: begin
+                    NotificationWindow.Left := Screen.Displays[0].BoundsRect.Right - NotificationWindow.Width;
+                    NotificationWindow.Top := Screen.Displays[0].BoundsRect.Bottom;
+                  end;
+    npApplication: begin
+                     NotificationWindow.Parent:=Application.MainForm;
+                     NotificationWindow.Left := round(
+                        Application.MainForm.ClientToScreen(TPointF.Create(
+                             Application.MainForm.Width - NotificationWindow.Width, 0)).X);
+                     NotificationWindow.Top := round(
+                        Application.MainForm.ClientToScreen(TPointF.Create(0,
+                                        Application.MainForm.Height)).Y);
+
+                   end;
+  end;
   {$ELSE}
-  NotificationWindow.Top := Screen.PrimaryMonitor.BoundsRect.Bottom;
-  ShowWindow(TInnerWindow(NotificationWindow).WindowHandle, SW_SHOWNOACTIVATE);
+  case fParent of
+    npMainScreen: begin
+                    NotificationWindow.Left := Screen.WorkAreaRect.Right - NotificationWindow.Width;
+                    NotificationWindow.Top := Screen.PrimaryMonitor.BoundsRect.Bottom;
+                    ShowWindow(TInnerWindow(NotificationWindow).WindowHandle, SW_SHOWNOACTIVATE)
+                  end;
+    npApplication: begin
+                     NotificationWindow.Left := Application.MainForm.Width
+                                                        - NotificationWindow.Width;
+                     NotificationWindow.Parent:=Application.MainForm;
+                   end;
+  end;
   NotificationWindow.AlphaBlend := True;
   {$ENDIF}
   NotificationWindow.Visible := True;
@@ -186,6 +210,7 @@ procedure TNotificationManager.UpdatePositions;
 var
   Stack: TAQ;
   WindowIndex, TopPosition: Integer;
+  RightPosition: integer;
 begin
   Stack := TAQ.Managed;
   for WindowIndex := List.Count - 1 downto 0 do
@@ -197,7 +222,17 @@ begin
     Exit;
   end;
 
-  TopPosition := Screen.WorkAreaRect.Bottom;
+  case fParent of
+    npMainScreen: TopPosition := Screen.WorkAreaRect.Bottom;
+    npApplication: TopPosition := {$IFDEF FMX}
+                                  round(
+                        Application.MainForm.ClientToScreen(TPointF.Create(0,
+                                        Application.MainForm.Height - 40)).Y);
+                                  {$ELSE}
+                                  Application.MainForm.Height - 40;
+                                  {$ENDIF}
+  end;
+
   WindowIndex := 0;
 
   Stack
@@ -211,13 +246,24 @@ begin
         Dec(TopPosition, TargetNotf.Height);
 
         AniPlugin := Take(O).Plugin<TAQPControlAnimations>;
-        AniPlugin.BoundsAnimation(
-          {$IFDEF FMX}
-          Screen.Displays[0].WorkareaRect.Right
-          {$ELSE}
-          Screen.WorkAreaRect.Right
-          {$ENDIF} - TargetNotf.Width,
-          TopPosition, -1, -1,
+        case fParent of
+          npMainScreen: RightPosition:={$IFDEF FMX}
+                                        Screen.Displays[0].WorkareaRect.Right;
+                                       {$ELSE}
+                                        Screen.WorkAreaRect.Right;
+                                       {$ENDIF}
+          npApplication: RightPosition:= {$IFDEF FMX}
+                                         round(
+                        Application.MainForm.ClientToScreen(TPointF.Create(
+                             Application.MainForm.Width - 20, 0)).X);
+                                         {$ELSE}
+                                         Application.MainForm.Width - 20;
+                                         {$ENDIF}
+        end;
+        RightPosition:=RightPosition - TargetNotf.Width;
+
+        AniPlugin.BoundsAnimation(RightPosition,
+          TopPosition - 10, -1, -1,
           IfThen(WindowIndex = 0, InPositionAnimationDuration div 2, InPositionAnimationDuration),
           PositionAnimationID, TAQ.Ease(etBack, emInInverted));
         AniPlugin.AlphaBlendAnimation(high(Byte), InAlphaAnimationDuration,
