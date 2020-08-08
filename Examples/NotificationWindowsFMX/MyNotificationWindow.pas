@@ -12,6 +12,7 @@ type
     lbTitle: TLabel;
     btnAction: TButton;
     pbrAction: TProgressBar;
+    procedure FormCreate(Sender: TObject);
     procedure btnActionClick(Sender: TObject);
   private
     { Private declarations }
@@ -27,6 +28,12 @@ uses
   AnyiQuack;
 
 {$R *.fmx}
+
+procedure TMyNotificationWindowFMX.FormCreate(Sender: TObject);
+begin
+  inherited;
+  pbrAction.Visible:=false;
+end;
 
 { TMyNotificationWindowFMX }
 
