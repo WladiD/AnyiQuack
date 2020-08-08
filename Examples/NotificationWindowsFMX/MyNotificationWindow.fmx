@@ -1,0 +1,36 @@
+inherited MyNotificationWindowFMX: TMyNotificationWindowFMX
+  Caption = 'NotificationWindowFMX1'
+  ClientHeight = 115
+  ClientWidth = 453
+  DesignerMasterStyle = 0
+  object lbTitle: TLabel
+    Align = Top
+    StyledSettings = [Family, Style, FontColor]
+    Margins.Left = 20.000000000000000000
+    Margins.Top = 10.000000000000000000
+    Margins.Right = 20.000000000000000000
+    Margins.Bottom = 10.000000000000000000
+    Position.X = 20.000000000000000000
+    Position.Y = 10.000000000000000000
+    Size.Width = 413.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Size = 14.000000000000000000
+    TextSettings.HorzAlign = Center
+    Text = 'Here comes the important message...'
+  end
+  object btnAction: TButton
+    Position.X = 352.000000000000000000
+    Position.Y = 72.000000000000000000
+    Text = 'Action!'
+    OnClick = btnActionClick
+  end
+  object pbrAction: TProgressBar
+    Orientation = Horizontal
+    Position.X = 16.000000000000000000
+    Position.Y = 72.000000000000000000
+    Size.Width = 313.000000000000000000
+    Size.Height = 20.000000000000000000
+    Size.PlatformDefault = False
+  end
+end

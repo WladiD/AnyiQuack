@@ -1,0 +1,114 @@
+object FormMain: TFormMain
+  Left = 0
+  Top = 0
+  Caption = 'Main'
+  ClientHeight = 246
+  ClientWidth = 291
+  Position = DesktopCenter
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  DesignerMasterStyle = 0
+  object Label1: TLabel
+    Align = Top
+    StyledSettings = [Family, FontColor]
+    Margins.Left = 20.000000000000000000
+    Margins.Top = 5.000000000000000000
+    Margins.Right = 20.000000000000000000
+    Margins.Bottom = 5.000000000000000000
+    Position.X = 20.000000000000000000
+    Position.Y = 5.000000000000000000
+    Size.Width = 251.000000000000000000
+    Size.Height = 33.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Size = 16.000000000000000000
+    TextSettings.Font.StyleExt = {00070000000000000004000000}
+    TextSettings.HorzAlign = Center
+    Text = 'Notification Windows'
+  end
+  object cbAutoCloseAfter5: TCheckBox
+    Align = Top
+    StyledSettings = [Family, Style, FontColor]
+    IsChecked = True
+    Margins.Left = 20.000000000000000000
+    Margins.Right = 20.000000000000000000
+    Margins.Bottom = 10.000000000000000000
+    Position.X = 20.000000000000000000
+    Position.Y = 43.000000000000000000
+    Size.Width = 251.000000000000000000
+    Size.Height = 19.000000000000000000
+    Size.PlatformDefault = False
+    Text = 'Auto close after 5 sec.'
+    TextSettings.Font.Size = 14.000000000000000000
+  end
+  object cbAutoCreateEverySec: TCheckBox
+    Align = Top
+    StyledSettings = [Family, Style, FontColor]
+    Margins.Left = 20.000000000000000000
+    Margins.Right = 20.000000000000000000
+    Margins.Bottom = 10.000000000000000000
+    Position.X = 20.000000000000000000
+    Position.Y = 72.000000000000000000
+    Size.Width = 251.000000000000000000
+    Size.Height = 19.000000000000000000
+    Size.PlatformDefault = False
+    Text = 'Auto create each second'
+    TextSettings.Font.Size = 14.000000000000000000
+    OnClick = cbAutoCreateEverySecClick
+  end
+  object btnAdd: TButton
+    Align = Top
+    StyledSettings = [Family, Style, FontColor]
+    Margins.Left = 20.000000000000000000
+    Margins.Right = 20.000000000000000000
+    Position.X = 20.000000000000000000
+    Position.Y = 101.000000000000000000
+    Size.Width = 251.000000000000000000
+    Size.Height = 57.000000000000000000
+    Size.PlatformDefault = False
+    Text = 'Add Notification Window'
+    TextSettings.Font.Size = 14.000000000000000000
+    OnClick = btnAddClick
+  end
+  object Layout1: TLayout
+    Align = Top
+    Margins.Left = 20.000000000000000000
+    Margins.Top = 10.000000000000000000
+    Margins.Right = 20.000000000000000000
+    Position.X = 20.000000000000000000
+    Position.Y = 168.000000000000000000
+    Size.Width = 251.000000000000000000
+    Size.Height = 50.000000000000000000
+    Size.PlatformDefault = False
+    object btnCloseLast: TButton
+      Align = Left
+      StyledSettings = [Family, Style, FontColor]
+      Margins.Right = 20.000000000000000000
+      Size.Width = 120.000000000000000000
+      Size.Height = 50.000000000000000000
+      Size.PlatformDefault = False
+      Text = 'Close Last'
+      TextSettings.Font.Size = 14.000000000000000000
+      OnClick = btnCloseLastClick
+    end
+    object btnCloseAll: TButton
+      Align = Right
+      StyledSettings = [Family, Style, FontColor]
+      Position.X = 131.000000000000000000
+      Size.Width = 120.000000000000000000
+      Size.Height = 50.000000000000000000
+      Size.PlatformDefault = False
+      Text = 'Close All'
+      TextSettings.Font.Size = 14.000000000000000000
+      OnClick = btnCloseAllClick
+    end
+  end
+  object Timer1: TTimer
+    Enabled = False
+    OnTimer = Timer1Timer
+    Left = 232
+    Top = 48
+  end
+end

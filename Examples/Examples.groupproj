@@ -33,7 +33,7 @@
         <Projects Include="NotificationWindows\NotificationExample.dproj">
             <Dependencies/>
         </Projects>
-        <Projects Include="NotificationWindowsFMX\NotificationWindowsFMX.dproj">
+        <Projects Include="NotificationWindowsFMX\NotificationExampleFMX.dproj">
             <Dependencies/>
         </Projects>
         <Projects Include="SlidingButtonsFMX\SlidingButtonsFMX.dproj">
@@ -137,14 +137,14 @@
     <Target Name="NotificationExample:Make">
         <MSBuild Projects="NotificationWindows\NotificationExample.dproj" Targets="Make"/>
     </Target>
-    <Target Name="NotificationWindowsFMX">
-        <MSBuild Projects="NotificationWindowsFMX\NotificationWindowsFMX.dproj"/>
+    <Target Name="NotificationExampleFMX">
+        <MSBuild Projects="NotificationWindowsFMX\NotificationExampleFMX.dproj"/>
     </Target>
-    <Target Name="NotificationWindowsFMX:Clean">
-        <MSBuild Projects="NotificationWindowsFMX\NotificationWindowsFMX.dproj" Targets="Clean"/>
+    <Target Name="NotificationExampleFMX:Clean">
+        <MSBuild Projects="NotificationWindowsFMX\NotificationExampleFMX.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="NotificationWindowsFMX:Make">
-        <MSBuild Projects="NotificationWindowsFMX\NotificationWindowsFMX.dproj" Targets="Make"/>
+    <Target Name="NotificationExampleFMX:Make">
+        <MSBuild Projects="NotificationWindowsFMX\NotificationExampleFMX.dproj" Targets="Make"/>
     </Target>
     <Target Name="SlidingButtonsFMX">
         <MSBuild Projects="SlidingButtonsFMX\SlidingButtonsFMX.dproj"/>
@@ -156,13 +156,13 @@
         <MSBuild Projects="SlidingButtonsFMX\SlidingButtonsFMX.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlignFMX;AnimatedAlign;SlidingForm;MethodTests;CustomPlugin;StickyTools;EasingSuite;NotificationExample;NotificationWindowsFMX;SlidingButtonsFMX"/>
+        <CallTarget Targets="PulsateEdits;SyncScroll;AnimatedAlignFMX;AnimatedAlign;SlidingForm;MethodTests;CustomPlugin;StickyTools;EasingSuite;NotificationExample;NotificationExampleFMX;SlidingButtonsFMX"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlignFMX:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean;CustomPlugin:Clean;StickyTools:Clean;EasingSuite:Clean;NotificationExample:Clean;NotificationWindowsFMX:Clean;SlidingButtonsFMX:Clean"/>
+        <CallTarget Targets="PulsateEdits:Clean;SyncScroll:Clean;AnimatedAlignFMX:Clean;AnimatedAlign:Clean;SlidingForm:Clean;MethodTests:Clean;CustomPlugin:Clean;StickyTools:Clean;EasingSuite:Clean;NotificationExample:Clean;NotificationExampleFMX:Clean;SlidingButtonsFMX:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlignFMX:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make;CustomPlugin:Make;StickyTools:Make;EasingSuite:Make;NotificationExample:Make;NotificationWindowsFMX:Make;SlidingButtonsFMX:Make"/>
+        <CallTarget Targets="PulsateEdits:Make;SyncScroll:Make;AnimatedAlignFMX:Make;AnimatedAlign:Make;SlidingForm:Make;MethodTests:Make;CustomPlugin:Make;StickyTools:Make;EasingSuite:Make;NotificationExample:Make;NotificationExampleFMX:Make;SlidingButtonsFMX:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

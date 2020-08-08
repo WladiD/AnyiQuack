@@ -45,9 +45,9 @@ implementation
 
 procedure TMainForm.AddButtonClick(Sender: TObject);
 var
-  MNW: TMyNotificationWindow;
+  MNW: TMyNotificationWindowVCL;
 begin
-  MNW := TMyNotificationWindow.Create(nil);
+  MNW := TMyNotificationWindowVCL.Create(nil);
   if AutoCloseCheckBox.Checked then
     MNW.CloseTimeout := 5000;
   FLastNotificationWindow := MNW;

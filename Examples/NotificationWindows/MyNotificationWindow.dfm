@@ -1,4 +1,4 @@
-inherited MyNotificationWindow: TMyNotificationWindow
+inherited MyNotificationWindowVCL: TMyNotificationWindowVCL
   Caption = 'My custom derived notification window'
   ClientHeight = 119
   CustomTitleBar.Height = 0

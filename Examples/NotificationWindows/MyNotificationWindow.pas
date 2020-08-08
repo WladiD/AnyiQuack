@@ -3,37 +3,32 @@ unit MyNotificationWindow;
 interface
 
 uses
-  Winapi.Windows,
-  Winapi.Messages,
-  System.SysUtils,
-  System.Variants,
-  System.Classes,
-  Vcl.Graphics,
-  Vcl.Controls,
-  Vcl.Forms,
-  Vcl.Dialogs,
-  Vcl.StdCtrls,
-  Vcl.ComCtrls,
-
-  Notifications.Base.VCL,
-  AnyiQuack;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
+  System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
+  Notifications.Base.VCL, Vcl.ComCtrls, Vcl.StdCtrls;
 
 type
-  TMyNotificationWindow = class(TNotificationWindow)
-    MainLabel: TLabel;
-    MainActionButton: TButton;
+  TMyNotificationWindowVCL = class(TNotificationWindowVCL)
     ProgressBar: TProgressBar;
+    MainActionButton: TButton;
+    MainLabel: TLabel;
     procedure MainActionButtonClick(Sender: TObject);
-
+  private
+    { Private declarations }
   protected
     function AutoClosePossible: Boolean; override;
+  public
+    { Public declarations }
   end;
 
 implementation
 
+uses
+  AnyiQuack;
+
 {$R *.dfm}
 
-function TMyNotificationWindow.AutoClosePossible: Boolean;
+function TMyNotificationWindowVCL.AutoClosePossible: Boolean;
 begin
   if ProgressBar.Visible and (ProgressBar.Position < ProgressBar.Max) then
     Result := False
@@ -41,7 +36,7 @@ begin
     Result := inherited AutoClosePossible;
 end;
 
-procedure TMyNotificationWindow.MainActionButtonClick(Sender: TObject);
+procedure TMyNotificationWindowVCL.MainActionButtonClick(Sender: TObject);
 begin
   MainActionButton.Enabled := False;
   ProgressBar.Visible := True;
@@ -69,7 +64,6 @@ begin
         end;
         Result := True;
       end);
-
 end;
 
 end.

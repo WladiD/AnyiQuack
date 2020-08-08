@@ -90,6 +90,7 @@
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <Icon_MainIcon>$(BDS)\bin\delphi_PROJECTICON.ico</Icon_MainIcon>
+        <BT_BuildType>Debug</BT_BuildType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
@@ -112,7 +113,7 @@
         <DCCReference Include="..\..\AnyiQuack.pas"/>
         <DCCReference Include="..\..\AQPControlAnimations.pas"/>
         <DCCReference Include="..\..\NotificationFramework\Notifications.Base.VCL.pas">
-            <Form>NotificationWindow</Form>
+            <Form>NotificationWindowVCL</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="..\..\NotificationFramework\Notifications.Manager.pas"/>
@@ -121,7 +122,7 @@
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="MyNotificationWindow.pas">
-            <Form>MyNotificationWindow</Form>
+            <Form>MyNotificationWindowVCL</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <BuildConfiguration Include="Release">
@@ -183,6 +184,12 @@
                 <Platform value="Win64">False</Platform>
             </Platforms>
             <Deployment Version="3">
+                <DeployFile LocalName="..\..\Builds\NotificationExample\Win32.Debug\NotificationExample.exe" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>NotificationExample.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="NotificationExample.exe" Configuration="Release" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>NotificationExample.exe</RemoteName>
