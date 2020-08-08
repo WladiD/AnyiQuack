@@ -155,7 +155,11 @@ begin
       List[cc].Close
     else
     begin
-      List[cc].Release;
+      TThread.ForceQueue(nil,
+        procedure
+        begin
+          List[cc].DisposeOf;
+        end);
       List.Delete(cc);
     end;
 end;
