@@ -33,4 +33,13 @@ inherited MyNotificationWindowFMX: TMyNotificationWindowFMX
     Size.Height = 20.000000000000000000
     Size.PlatformDefault = False
   end
+  object Label1: TLabel
+    Position.X = 32.000000000000000000
+    Position.Y = 40.000000000000000000
+    Size.Width = 401.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.HorzAlign = Center
+    Text = 'Time to Close: 0 sec'
+  end
 end
