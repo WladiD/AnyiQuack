@@ -10,6 +10,7 @@ uses
 type
   TNotificationWindowFMX = class;
   TCloseProcedure= procedure (const NotificationWindows: TNotificationWindowFMX) of object;
+  TOnClose = procedure (const ID: TGUID) of object;
   TNotificationWindowFMX = class(TForm)
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCreate(Sender: TObject);
@@ -21,11 +22,13 @@ type
     FCloseTimeout: Integer;
     FClosed: Boolean;
     FCloseProc:TCloseProcedure;
-
+    FID: TGUID;
+    FOnClose: TOnClose;
     procedure UpdateCloseTimeout;
 
     procedure SetCloseTimeout(CloseTimeout: Integer);
   protected
+    procedure OnAutoCloseCountDown(const ElapsedTimeMs: Real); virtual;
     function AutoClosePossible: Boolean; virtual;
   public
       procedure Close; reintroduce;
@@ -45,10 +48,15 @@ type
      * This is used to trigger the Close event in the Notification Manager
      * It is set by the Notification Manager
      * DO NOT SET IT IN THIS CLASS
+     * DO NOT USE IT - USE OnClose Event
      *}
     property CloseProc: TCloseProcedure read FCloseProc write FCloseProc;
 
     property Closed: Boolean read FClosed write FClosed;
+    property ID: TGUID read FID;
+
+   published
+    property OnClose: TOnClose read FOnClose write FOnClose;
   end;
 
 implementation
@@ -63,6 +71,15 @@ begin
   FCloseTimeout:=0;
   FClosed:=false;
   FCloseProc:=nil;
+  fOnClose:=nil;
+  if CreateGUID(FID) <> 0 then
+    fID:=StringToGUID('{00099900-0000-0000-Z999-000000000099}');
+end;
+
+procedure TNotificationWindowFMX.OnAutoCloseCountDown(
+  const ElapsedTimeMs: Real);
+begin
+// DO NOT DELETE - OVERRIDE IN DESCENDENTS
 end;
 
 { TNotificationWindow }
@@ -76,7 +93,11 @@ procedure TNotificationWindowFMX.Close;
 begin
   FClosed := True;
   if assigned(FCloseProc) then
-    FCloseProc(Self)
+  begin
+    FCloseProc(Self);
+    if assigned(FOnClose) then
+      FOnClose(fID);
+  end
   else
     raise Exception.Create('Close Procedure in not set in Manager');
 end;
@@ -99,6 +120,12 @@ end;
 procedure TNotificationWindowFMX.UpdateCloseTimeout;
 begin
   Take(Self)
+//    .Each(function(AQ:TAQ; O: TObject): boolean
+//                                begin
+//
+//          OnAutoCloseCountdown(AQ.CurrentInterval.Progress);
+//
+//                                end)
     .CancelDelays(CloseDelayID)
     .IfThen(CloseTimeout > 0)
       {**

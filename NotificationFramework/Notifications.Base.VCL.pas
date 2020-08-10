@@ -22,6 +22,7 @@ uses
 type
   TNotificationWindowVCL = class;
   TCloseProcedure= procedure (const NotificationWindows: TNotificationWindowVCL) of object;
+  TOnClose = procedure (const ID: TGUID) of object;
   TNotificationWindowVCL = class(TForm)
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -33,6 +34,8 @@ type
     FCloseTimeout: Integer;
     FClosed: Boolean;
     FCloseProc:TCloseProcedure;
+    FID: TGUID;
+    FOnClose: TOnClose;
 
     procedure UpdateCloseTimeout;
 
@@ -64,6 +67,8 @@ type
     property CloseProc: TCloseProcedure read FCloseProc write FCloseProc;
 
     property Closed: Boolean read FClosed write FClosed;
+  published
+    property OnClose: TOnClose read FOnClose write FOnClose;
   end;
 
 implementation
@@ -80,6 +85,13 @@ begin
   // the switch AlphaBlend off and on again solve the issue.
   AlphaBlend := False;
   AlphaBlend := True;
+
+  FCloseTimeout:=0;
+  FClosed:=false;
+  FCloseProc:=nil;
+  FOnClose:=nil;
+  if CreateGUID(FID) <> 0 then
+    FID:=StringToGUID('{00099900-0000-0000-Z999-000000000099}');
 end;
 
 function TNotificationWindowVCL.AutoClosePossible: Boolean;
@@ -91,7 +103,11 @@ procedure TNotificationWindowVCL.Close;
 begin
   FClosed := True;
   if assigned(FCloseProc) then
-    FCloseProc(Self)
+  begin
+    FCloseProc(Self);
+    if assigned(FOnClose) then
+      FOnClose(fID);
+  end
   else
     raise Exception.Create('Close Procedure in not set in Manager');
 end;
