@@ -34,12 +34,13 @@ type
     TNotificationList = TObjectList<TNotificationWindow>;
 
     var
+    FActivateNotification: boolean;
     FList: TNotificationList;
     FInPositionAnimationDuration: Integer;
     FInAlphaAnimationDuration: Integer;
     FOutPositionAnimationDuration: Integer;
     FOutAlphaAnimationDuration: Integer;
-    fParent: TNotificationParent;
+    FParent: TNotificationParent;
 
     procedure UpdatePositions;
 
@@ -51,6 +52,8 @@ type
     procedure Close(const NotificationWindow: TNotificationWindow);
     procedure CloseAll(const Animate: Boolean = True);
 
+    property ActivateNotification: boolean read FActivateNotification write
+        FActivateNotification default false;
     property List: TNotificationList read FList;
 
     property InPositionAnimationDuration: Integer read FInPositionAnimationDuration
@@ -61,7 +64,7 @@ type
       write FOutPositionAnimationDuration;
     property OutAlphaAnimationDuration: Integer read FOutAlphaAnimationDuration
       write FOutAlphaAnimationDuration;
-    property Parent: TNotificationParent read fParent write fParent default
+    property Parent: TNotificationParent read FParent write FParent default
         npMainScreen;
   end;
 
@@ -197,6 +200,9 @@ begin
   FInAlphaAnimationDuration := 800;
   FOutPositionAnimationDuration := 500;
   FOutAlphaAnimationDuration := 300;
+
+  FActivateNotification:=false;
+  FParent:=npApplication;
 end;
 
 destructor TNotificationManager.Destroy;
@@ -270,6 +276,19 @@ begin
           AlphaAnimationID, TAQ.Ease(etSinus));
 
         Inc(WindowIndex);
+
+        if FActivateNotification then
+        {$IFDEF FMX}
+          TargetNotf.Active:=true
+        {$ELSE}
+          TargetNotf.SetFocus
+        {$ENDIF}
+        else
+        {$IFDEF FMX}
+          Application.MainForm.Active:=true;
+        {$ELSE}
+          Application.MainForm.SetFocus;
+        {$ENDIF}
         Result := True;
       end);
 end;

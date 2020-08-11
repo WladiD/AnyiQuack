@@ -68,6 +68,7 @@ uses
 
 procedure TNotificationWindowFMX.FormCreate(Sender: TObject);
 begin
+  inherited;
   FCloseTimeout:=0;
   FClosed:=false;
   FCloseProc:=nil;
