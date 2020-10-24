@@ -2,10 +2,20 @@ object MainForm: TMainForm
   Left = 0
   Top = 0
   Caption = 'Animated Align with AnyiQuack'
-  ClientHeight = 400
-  ClientWidth = 793
-  Fill.Color = claLightslategray
-  Fill.Kind = Solid
+  ClientHeight = 411
+  ClientWidth = 680
+  Fill.Kind = Gradient
+  Fill.Gradient.Points = <
+    item
+      Color = claWhite
+      Offset = 0.000000000000000000
+    end
+    item
+      Color = xFF2E3353
+      Offset = 1.000000000000000000
+    end>
+  Fill.Gradient.StartPosition.Y = 1.000000000000000000
+  Fill.Gradient.StopPosition.Y = 0.000000000000000000
   FormFactor.Width = 320
   FormFactor.Height = 480
   FormFactor.Devices = [Desktop]
@@ -14,7 +24,7 @@ object MainForm: TMainForm
   object TopPanel: TPanel
     Tag = 1
     Align = Top
-    Size.Width = 793.000000000000000000
+    Size.Width = 680.000000000000000000
     Size.Height = 55.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
@@ -29,7 +39,7 @@ object MainForm: TMainForm
       object Label1: TLabel
         Align = Client
         Size.Width = 145.000000000000000000
-        Size.Height = 25.000000000000000000
+        Size.Height = 26.000000000000000000
         Size.PlatformDefault = False
         Text = 'Panel Size'
       end
@@ -40,9 +50,9 @@ object MainForm: TMainForm
         Min = 55.000000000000000000
         Orientation = Horizontal
         Margins.Bottom = 10.000000000000000000
-        Position.Y = 25.000000000000000000
+        Position.Y = 26.000000000000000000
         Size.Width = 145.000000000000000000
-        Size.Height = 20.000000000000000000
+        Size.Height = 19.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 1
         Value = 100.000000000000000000
@@ -60,7 +70,7 @@ object MainForm: TMainForm
       object Label2: TLabel
         Align = Client
         Size.Width = 145.000000000000000000
-        Size.Height = 23.000000000000000000
+        Size.Height = 13.000000000000000000
         Size.PlatformDefault = False
         Text = 'Disturbed Animations'
       end
@@ -71,9 +81,9 @@ object MainForm: TMainForm
           'Finish')
         ItemIndex = 0
         Margins.Bottom = 10.000000000000000000
-        Position.Y = 23.000000000000000000
+        Position.Y = 13.000000000000000000
         Size.Width = 145.000000000000000000
-        Size.Height = 22.000000000000000000
+        Size.Height = 32.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 1
       end
@@ -89,9 +99,9 @@ object MainForm: TMainForm
       object Label3: TLabel
         Align = Client
         Size.Width = 145.000000000000000000
-        Size.Height = 25.000000000000000000
+        Size.Height = 26.000000000000000000
         Size.PlatformDefault = False
-        Text = 'Animation Duration (msec)'
+        Text = 'Animation Duration'
       end
       object AnimationDurationTrackBar: TTrackBar
         Align = Bottom
@@ -100,9 +110,9 @@ object MainForm: TMainForm
         Min = 100.000000000000000000
         Orientation = Horizontal
         Margins.Bottom = 10.000000000000000000
-        Position.Y = 25.000000000000000000
+        Position.Y = 26.000000000000000000
         Size.Width = 145.000000000000000000
-        Size.Height = 20.000000000000000000
+        Size.Height = 19.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 1
         Value = 500.000000000000000000
@@ -119,7 +129,7 @@ object MainForm: TMainForm
       object Label4: TLabel
         Align = Client
         Size.Width = 145.000000000000000000
-        Size.Height = 23.000000000000000000
+        Size.Height = 13.000000000000000000
         Size.PlatformDefault = False
         Text = 'Hover Color'
       end
@@ -130,9 +140,9 @@ object MainForm: TMainForm
         DisableFocusEffect = False
         ItemIndex = 7
         Margins.Bottom = 10.000000000000000000
-        Position.Y = 23.000000000000000000
+        Position.Y = 13.000000000000000000
         Size.Width = 145.000000000000000000
-        Size.Height = 22.000000000000000000
+        Size.Height = 32.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 1
       end
@@ -158,63 +168,58 @@ object MainForm: TMainForm
       end
     end
   end
-  object BottomPanel: TPanel
-    Tag = 1
-    Align = Bottom
-    Position.Y = 345.000000000000000000
-    Size.Width = 793.000000000000000000
-    Size.Height = 55.000000000000000000
+  object MainActionsLayout: TLayout
+    Align = MostBottom
+    Position.Y = 331.000000000000000000
+    Size.Width = 680.000000000000000000
+    Size.Height = 80.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 1
-    object AddPanelButton: TButton
+    object AddPanelButton: TSpeedButton
+      Action = AddPanelAction
       Align = Right
-      Margins.Left = 20.000000000000000000
-      Margins.Top = 15.000000000000000000
-      Margins.Right = 10.000000000000000000
-      Margins.Bottom = 15.000000000000000000
-      Position.X = 703.000000000000000000
-      Position.Y = 15.000000000000000000
+      Enabled = True
+      ImageIndex = -1
+      Position.X = 600.000000000000000000
       Size.Width = 80.000000000000000000
-      Size.Height = 25.000000000000000000
+      Size.Height = 80.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 1
-      Text = '&Add Panel'
-      OnClick = AddPanelButtonClick
+      StyleLookup = 'additembutton'
     end
-    object RemovePanelButton: TButton
+    object RemovePanelButton: TSpeedButton
+      Action = RemovePanelAction
       Align = Right
-      Enabled = False
-      Margins.Left = 20.000000000000000000
-      Margins.Top = 15.000000000000000000
-      Margins.Bottom = 15.000000000000000000
-      Position.X = 576.000000000000000000
-      Position.Y = 15.000000000000000000
-      Size.Width = 107.000000000000000000
-      Size.Height = 25.000000000000000000
+      Enabled = True
+      ImageIndex = -1
+      Position.X = 520.000000000000000000
+      Size.Width = 80.000000000000000000
+      Size.Height = 80.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 0
-      Text = '&Remove Panel'
-      OnClick = RemovePanelButtonClick
+      StyleLookup = 'deleteitembutton'
     end
   end
-  object Layout5: TLayout
+  object Label5: TLabel
     Align = Bottom
-    Position.Y = 272.000000000000000000
-    Size.Width = 793.000000000000000000
-    Size.Height = 73.000000000000000000
+    AutoSize = True
+    Margins.Right = 10.000000000000000000
+    Position.Y = 315.000000000000000000
+    Size.Width = 670.000000000000000000
+    Size.Height = 16.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 2
-    object Label5: TLabel
-      Align = Right
-      Margins.Right = 10.000000000000000000
-      Position.X = 495.000000000000000000
-      Size.Width = 288.000000000000000000
-      Size.Height = 73.000000000000000000
-      Size.PlatformDefault = False
-      TextSettings.HorzAlign = Trailing
-      Text = 
-        'Add a couple of panels and play with the size of form or panels.' +
-        ' Also try the different handling for disturbed animations.'
+    TextSettings.HorzAlign = Trailing
+    Text = 'Add some panels'
+    TabOrder = 3
+  end
+  object MainActionList: TActionList
+    Left = 256
+    Top = 224
+    object AddPanelAction: TAction
+      Text = 'Add panel'
+      OnExecute = AddPanelActionExecute
+    end
+    object RemovePanelAction: TAction
+      Text = 'Remove panel'
+      OnExecute = RemovePanelActionExecute
     end
   end
 end

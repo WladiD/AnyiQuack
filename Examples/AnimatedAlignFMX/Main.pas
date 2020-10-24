@@ -8,6 +8,8 @@ uses
   System.Classes,
   System.UITypes,
   System.Math,
+  System.Actions,
+
   FMX.Types,
   FMX.Controls,
   FMX.Forms,
@@ -20,6 +22,7 @@ uses
   FMX.ListBox,
   FMX.Colors,
   FMX.Objects,
+  FMX.ActnList,
 
   AnyiQuack,
   AQPControlAnimations;
@@ -39,18 +42,22 @@ type
     Layout4: TLayout;
     Label4: TLabel;
     HoverColorBox: TColorComboBox;
-    BottomPanel: TPanel;
-    AddPanelButton: TButton;
-    RemovePanelButton: TButton;
     Label5: TLabel;
-    Layout5: TLayout;
+    MainActionsLayout: TLayout;
     Layout6: TLayout;
     HoverShakeCheckBox: TCheckBox;
-    procedure AddPanelButtonClick(Sender: TObject);
-    procedure RemovePanelButtonClick(Sender: TObject);
+    AddPanelButton: TSpeedButton;
+    MainActionList: TActionList;
+    AddPanelAction: TAction;
+    RemovePanelAction: TAction;
+    RemovePanelButton: TSpeedButton;
     procedure UpdateAlignEventHandler(Sender: TObject);
+    procedure AddPanelActionExecute(Sender: TObject);
+    procedure RemovePanelActionExecute(Sender: TObject);
   private
     FPanelCounter: Integer;
+
+
   public
     procedure PanelMouseEnter(Sender: TObject);
     procedure PanelMouseLeave(Sender: TObject);
@@ -67,9 +74,10 @@ var
 implementation
 
 {$R *.fmx}
-
+{$R *.LgXhdpiPh.fmx ANDROID}
+
 const
-  BoundsAnimationID = 1;
+  BoundsAnimationID = 1;
   HoverAnimationID = 2;
   HoverShakeAnimationID = 3;
   ActivePanelTag = 69;
@@ -77,7 +85,7 @@ const
 
 { TMainForm }
 
-procedure TMainForm.AddPanelButtonClick(Sender: TObject);
+procedure TMainForm.AddPanelActionExecute(Sender: TObject);
 var
   P: TPanel;
   R: TRectangle;
@@ -110,7 +118,7 @@ begin
 
   P.BringToFront;
   TopPanel.BringToFront;
-  BottomPanel.BringToFront;
+  MainActionsLayout.BringToFront;
 
   UpdateAlign;
 end;
@@ -141,6 +149,9 @@ var
   LabelControl: TLabel;
   Control: TControl;
 begin
+  if SenderPanel.Tag = InactivePanelTag then
+    Exit;
+
   LabelControl := nil;
   Rect := nil;
 
@@ -202,7 +213,7 @@ begin
   PanelHoverHandler(Sender, False);
 end;
 
-procedure TMainForm.RemovePanelButtonClick(Sender: TObject);
+procedure TMainForm.RemovePanelActionExecute(Sender: TObject);
 begin
   GetPanelsAQ
     .SliceChain(-1) // Reduce to the last panel
@@ -221,7 +232,7 @@ begin
             Round(AnimationDurationTrackBar.Value), 0, TAQ.Ease(etQuad),
             procedure(Sender: TObject)
             begin
-              Sender.Free;
+              Sender.DisposeOf;
             end);
       end);
 
@@ -237,10 +248,10 @@ var
 begin
   PanelsAQ := GetPanelsAQ;
 
-  RemovePanelButton.Enabled := PanelsAQ.Count > 0;
+  RemovePanelAction.Enabled := PanelsAQ.Count > 0;
 
   AWidth := ClientWidth;
-  AHeight := Round(ClientHeight - TopPanel.Height - BottomPanel.Height);
+  AHeight := Round(ClientHeight - TopPanel.Height);
   PQSize := Round(PanelSizeTrackBar.Value);
   DivMod(AWidth, PQSize, PColumns, LeftOffset);
   DivMod(AHeight, PQSize, PRows, TopOffset);

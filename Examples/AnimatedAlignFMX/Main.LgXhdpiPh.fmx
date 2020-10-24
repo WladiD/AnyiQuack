@@ -1,0 +1,73 @@
+inherited MainForm_LgXhdpiPh: TMainForm_LgXhdpiPh
+  ClientHeight = 695
+  ClientWidth = 450
+  DesignerMasterStyle = 0
+  inherited TopPanel: TPanel
+    Size.Width = 450.000000000000000000
+    inherited Layout1: TLayout
+      Size.Width = 191.000000000000000000
+      inherited Label1: TLabel
+        StyledSettings = [Family, Style, FontColor]
+        Size.Width = 191.000000000000000000
+        Size.Height = 13.000000000000000000
+      end
+      inherited PanelSizeTrackBar: TTrackBar
+        Position.Y = 13.000000000000000000
+        Size.Width = 191.000000000000000000
+        Size.Height = 32.000000000000000000
+      end
+    end
+    inherited Layout2: TLayout
+      Visible = False
+    end
+    inherited Layout3: TLayout
+      Position.X = 211.000000000000000000
+      Size.Width = 206.000000000000000000
+      inherited Label3: TLabel
+        StyledSettings = [Family, Style, FontColor]
+        Size.Width = 206.000000000000000000
+        Size.Height = 13.000000000000000000
+      end
+      inherited AnimationDurationTrackBar: TTrackBar
+        Position.Y = 13.000000000000000000
+        Size.Width = 206.000000000000000000
+        Size.Height = 32.000000000000000000
+      end
+    end
+    inherited Layout4: TLayout
+      Position.X = 320.000000000000000000
+      Visible = False
+    end
+    inherited Layout6: TLayout
+      Position.X = 320.000000000000000000
+      Visible = False
+    end
+  end
+  inherited MainActionsLayout: TLayout
+    Position.Y = 615.000000000000000000
+    Size.Width = 450.000000000000000000
+    inherited AddPanelButton: TSpeedButton
+      StyledSettings = [Family, Style, FontColor]
+      Position.X = 402.000000000000000000
+      Position.Y = 16.000000000000000000
+      Size.Width = 48.000000000000000000
+      Size.Height = 48.000000000000000000
+    end
+    inherited RemovePanelButton: TSpeedButton
+      StyledSettings = [Family, Style, FontColor]
+      Position.X = 354.000000000000000000
+      Position.Y = 16.000000000000000000
+      Size.Width = 48.000000000000000000
+      Size.Height = 48.000000000000000000
+    end
+  end
+  inherited Label5: TLabel
+    Position.Y = 593.000000000000000000
+    Size.Width = 440.000000000000000000
+    Size.Height = 22.000000000000000000
+  end
+  inherited MainActionList: TActionList
+    Left = 32
+    Top = 640
+  end
+end
