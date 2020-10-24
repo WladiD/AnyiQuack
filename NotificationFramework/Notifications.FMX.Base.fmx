@@ -1,0 +1,14 @@
+object NotificationWindowFMX: TNotificationWindowFMX
+  Left = 0
+  Top = 0
+  BorderStyle = SizeToolWin
+  Caption = 'Form3'
+  ClientHeight = 138
+  ClientWidth = 506
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  OnClose = FormClose
+  DesignerMasterStyle = 0
+end

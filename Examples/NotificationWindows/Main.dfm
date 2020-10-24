@@ -2,8 +2,8 @@ object MainForm: TMainForm
   Left = 0
   Top = 0
   Caption = 'NotificationWindows test'
-  ClientHeight = 148
-  ClientWidth = 169
+  ClientHeight = 530
+  ClientWidth = 683
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -18,7 +18,7 @@ object MainForm: TMainForm
   TextHeight = 13
   object AddButton: TButton
     Left = 8
-    Top = 54
+    Top = 206
     Width = 153
     Height = 49
     Caption = 'Add notify window'
@@ -47,7 +47,7 @@ object MainForm: TMainForm
   end
   object CloseAllButton: TButton
     Left = 86
-    Top = 109
+    Top = 261
     Width = 75
     Height = 25
     Cancel = True
@@ -57,12 +57,24 @@ object MainForm: TMainForm
   end
   object CloseLastButton: TButton
     Left = 8
-    Top = 109
+    Top = 261
     Width = 75
     Height = 25
     Caption = 'Close last'
     TabOrder = 4
     OnClick = CloseLastButtonClick
+  end
+  object RadioGroup1: TRadioGroup
+    Left = 8
+    Top = 72
+    Width = 153
+    Height = 105
+    Caption = 'Positioning'
+    ItemIndex = 0
+    Items.Strings = (
+      'Main Screen'
+      'Application')
+    TabOrder = 5
   end
   object Timer1: TTimer
     Enabled = False

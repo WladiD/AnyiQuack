@@ -2,11 +2,12 @@ program NotificationExample;
 
 uses
   Forms,
-  Main in 'Main.pas' {MainForm},
   AnyiQuack in '..\..\AnyiQuack.pas',
   AQPControlAnimations in '..\..\AQPControlAnimations.pas',
-  NotificationWindows in '..\..\NotificationWindowsFramework\NotificationWindows.pas' {NotificationWindow},
-  MyNotificationWindow in 'MyNotificationWindow.pas' {NotificationWindow1};
+  Notifications.Base.VCL in '..\..\NotificationFramework\Notifications.Base.VCL.pas' {NotificationWindowVCL},
+  Notifications.Manager in '..\..\NotificationFramework\Notifications.Manager.pas',
+  Main in 'Main.pas' {MainForm},
+  MyNotificationWindow in 'MyNotificationWindow.pas' {MyNotificationWindowVCL};
 
 {$R *.res}
 

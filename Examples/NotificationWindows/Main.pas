@@ -12,8 +12,9 @@ uses
   Vcl.StdCtrls,
   Vcl.ExtCtrls,
 
-  NotificationWindows,
-  MyNotificationWindow;
+  Notifications.Base.VCL,
+  MyNotificationWindow,
+  Notifications.Manager;
 
 type
   TMainForm = class(TForm)
@@ -23,6 +24,7 @@ type
     Timer1: TTimer;
     CloseAllButton: TButton;
     CloseLastButton: TButton;
+    RadioGroup1: TRadioGroup;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure AddButtonClick(Sender: TObject);
@@ -31,7 +33,7 @@ type
     procedure CloseAllButtonClick(Sender: TObject);
     procedure CloseLastButtonClick(Sender: TObject);
   private
-    FStack: TNotificationStack;
+    FManager: TNotificationManager;
     FLastNotificationWindow: TNotificationWindow;
   end;
 
@@ -44,18 +46,22 @@ implementation
 
 procedure TMainForm.AddButtonClick(Sender: TObject);
 var
-  MNW: TMyNotificationWindow;
+  MNW: TMyNotificationWindowVCL;
 begin
-  MNW := TMyNotificationWindow.Create(nil);
+  MNW := TMyNotificationWindowVCL.Create(nil);
   if AutoCloseCheckBox.Checked then
     MNW.CloseTimeout := 5000;
   FLastNotificationWindow := MNW;
-  FStack.Add(MNW);
+  if RadioGroup1.ItemIndex = 0 then
+    FManager.Parent:=npMainScreen;
+  if RadioGroup1.ItemIndex = 1 then
+    FManager.Parent:=npApplication;
+  FManager.Add(MNW);
 end;
 
 procedure TMainForm.CloseAllButtonClick(Sender: TObject);
 begin
-  FStack.CloseAll;
+  FManager.CloseAll;
 end;
 
 procedure TMainForm.CloseLastButtonClick(Sender: TObject);
@@ -63,10 +69,10 @@ var
   Target: TNotificationWindow;
 begin
   Target := FLastNotificationWindow;
-  if (FStack.List.Count > 0) and not FStack.List.Contains(Target) then
-    Target := FStack.List.Last;
+  if (FManager.List.Count > 0) and not FManager.List.Contains(Target) then
+    Target := FManager.List.Last;
 
-  FStack.Close(Target);
+  FManager.Close(Target);
 end;
 
 procedure TMainForm.AutoCreateCheckBoxClick(Sender: TObject);
@@ -76,12 +82,12 @@ end;
 
 procedure TMainForm.FormCreate(Sender:TObject);
 begin
-  FStack := TNotificationStack.Create;
+  FManager := TNotificationManager.Create;
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
 begin
-  FStack.Free;
+  FManager.Free;
 end;
 
 procedure TMainForm.Timer1Timer(Sender: TObject);
