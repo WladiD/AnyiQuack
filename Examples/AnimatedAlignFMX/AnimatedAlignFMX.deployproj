@@ -4,8 +4,8 @@
         <ProjectFileVersion>12</ProjectFileVersion>
     </ProjectExtensions>
     <PropertyGroup>
-        <DeviceId Condition="'$(Platform)'=='Android'">QV701MKD0B</DeviceId>
-        <DeviceId Condition="'$(Platform)'=='Android64'">QV701MKD0B</DeviceId>
+        <DeviceId Condition="'$(Platform)'=='Android'">9A9AY1CAW6</DeviceId>
+        <DeviceId Condition="'$(Platform)'=='Android64'">9A9AY1CAW6</DeviceId>
     </PropertyGroup>
     <ItemGroup Condition="'$(Platform)'=='Win32'">
         <DeployFile Include="..\..\Compile.inc" Condition="'$(Config)'=='Debug'">

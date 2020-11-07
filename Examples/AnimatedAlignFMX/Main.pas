@@ -56,8 +56,6 @@ type
     procedure RemovePanelActionExecute(Sender: TObject);
   private
     FPanelCounter: Integer;
-
-
   public
     procedure PanelMouseEnter(Sender: TObject);
     procedure PanelMouseLeave(Sender: TObject);
@@ -75,7 +73,7 @@ implementation
 
 {$R *.fmx}
 {$R *.LgXhdpiPh.fmx ANDROID}
-
+
 const
   BoundsAnimationID = 1;
   HoverAnimationID = 2;
@@ -129,14 +127,14 @@ begin
 end;
 
 function TMainForm.GetPanelsAQ: TAQ;
+var
+  ChildItem: TFmxObject;
 begin
-  Result := Take(MainForm)
-    .ChildrenChain
-    .FilterChain(
-      function(AQ: TAQ; O: TObject): Boolean
-      begin
-        Result := (O is TPanel) and (TControl(O).Tag = ActivePanelTag);
-      end);
+  Result := TAQ.Managed;
+
+  for ChildItem in Children do
+    if (ChildItem is TPanel) and (TControl(ChildItem).Tag = ActivePanelTag) then
+      Result.Add(ChildItem);
 end;
 
 procedure TMainForm.PanelHoverHandler(Sender: TObject; MouseOver: Boolean);
@@ -148,6 +146,7 @@ var
   Rect: TRectangle;
   LabelControl: TLabel;
   Control: TControl;
+  TrackerDuration: Integer;
 begin
   if SenderPanel.Tag = InactivePanelTag then
     Exit;
@@ -164,6 +163,8 @@ begin
     else if Control is TLabel then
       LabelControl := Control as TLabel;
   end;
+
+  TrackerDuration := 1000 + Round(AnimationDurationTrackBar.Value);
 
   if MouseOver then
   begin
@@ -185,27 +186,26 @@ begin
 
     if ShakeIt then
       AQAniPlugin.ShakeAnimation(3, Floor(PanelSizeTrackBar.Value * 0.1), 2,
-        Floor(PanelSizeTrackBar.Value * 0.05), 1000 + Round(AnimationDurationTrackBar.Value),
+        Floor(PanelSizeTrackBar.Value * 0.05), TrackerDuration,
         BoundsAnimationID);
   end
   else
   begin
-    AQAniPlugin := AQ.FinishAnimations(HoverAnimationID).Plugin<TAQPControlAnimations>;
+    AQAniPlugin := AQ.CancelAnimations(HoverAnimationID).Plugin<TAQPControlAnimations>;
 
     if Assigned(LabelControl) then
       AQAniPlugin.FontColorAnimation<TLabel>(LabelControl, LabelControl.FontColor,
-            TAlphaColorRec.Black, 750, HoverAnimationID, TAQ.Ease(etCubic));
+        TAlphaColorRec.Black, 750, HoverAnimationID, TAQ.Ease(etCubic));
 
     if Assigned(Rect) then
-      AQAniPlugin.BackgroundColorAnimation<TRectangle>
-          (Rect, TAlphaColorRec.White, 1500, HoverColorBox.Color, HoverAnimationID,
-            TAQ.Ease(etSinus));
+      AQAniPlugin.BackgroundColorAnimation<TRectangle>(Rect,
+        Rect.Fill.Color, TAlphaColorRec.White, TrackerDuration, HoverAnimationID, TAQ.Ease(etSinus));
   end;
 end;
 
 procedure TMainForm.PanelMouseEnter(Sender: TObject);
 begin
-  PanelHoverHandler(Sender, TRUE);
+  PanelHoverHandler(Sender, True);
 end;
 
 procedure TMainForm.PanelMouseLeave(Sender: TObject);
@@ -214,26 +214,27 @@ begin
 end;
 
 procedure TMainForm.RemovePanelActionExecute(Sender: TObject);
+var
+  PanelsAQ: TAQ;
+  OControl: TControl;
 begin
-  GetPanelsAQ
-    .SliceChain(-1) // Reduce to the last panel
-    .Each(
-      function(AQ: TAQ; O: TObject): Boolean
-      var
-        OControl: TControl absolute O;
+  PanelsAQ := GetPanelsAQ.Die;
+
+  if PanelsAQ.Count = 0 then
+    Exit;
+
+  Dec(FPanelCounter);
+  OControl := TControl(PanelsAQ.Items[PanelsAQ.Count - 1]);
+  OControl.Tag := InactivePanelTag; // This excludes the panel from being taken by GetPanelsAQ
+
+  Take(OControl)
+    .CancelAnimations
+    .Plugin<TAQPControlAnimations>
+    .BoundsAnimation(Round(OControl.Position.X), Height, -1, -1,
+      Round(AnimationDurationTrackBar.Value), 0, TAQ.Ease(etQuad),
+      procedure(Sender: TObject)
       begin
-        Result := True;
-        Dec(FPanelCounter);
-        OControl.Tag := InactivePanelTag; // This excludes the panel from being taken by GetPanelsAQ
-        AQ
-          .CancelAnimations
-          .Plugin<TAQPControlAnimations>
-          .BoundsAnimation(Round(OControl.Position.X), Height, -1, -1,
-            Round(AnimationDurationTrackBar.Value), 0, TAQ.Ease(etQuad),
-            procedure(Sender: TObject)
-            begin
-              Sender.DisposeOf;
-            end);
+        Sender.DisposeOf;
       end);
 
   UpdateAlign;
@@ -268,6 +269,7 @@ begin
       var
         TargetLeft, TargetTop: Integer;
         XTile, YTile, Dummy: Word;
+        OControl: TControl absolute O;
       begin
         Result := True;
 
@@ -282,15 +284,21 @@ begin
 
         YTile := Floor(PIndex/PColumns);
         DivMod(((PIndex - (YTile * PColumns)) + PColumns), PColumns, Dummy, XTile);
+        Inc(PIndex);
 
         TargetLeft := (XTile * PQSize) + LeftOffset;
         TargetTop := (YTile * PQSize) + TopOffset;
 
-        Take(O)
-          .Plugin<TAQPControlAnimations>
-          .BoundsAnimation(TargetLeft, TargetTop, PQSize, PQSize,
-            Round(AnimationDurationTrackBar.Value), BoundsAnimationID, TAQ.Ease(etElastic));
-        Inc(PIndex);
+        if (OControl.Position.X <> TargetLeft) or
+          (OControl.Position.Y <> TargetTop) or
+          (OControl.Width <> PQSize) or
+          (OControl.Height <> PQSize) then
+        begin
+          Take(O)
+            .Plugin<TAQPControlAnimations>
+            .BoundsAnimation(TargetLeft, TargetTop, PQSize, PQSize,
+              Round(AnimationDurationTrackBar.Value), BoundsAnimationID, TAQ.Ease(etElastic));
+        end;
       end, BoundsAnimationID)
     .Die;
 end;

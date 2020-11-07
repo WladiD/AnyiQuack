@@ -181,6 +181,7 @@ object MainForm: TMainForm
       Enabled = True
       ImageIndex = -1
       Position.X = 600.000000000000000000
+      RepeatClick = True
       Size.Width = 80.000000000000000000
       Size.Height = 80.000000000000000000
       Size.PlatformDefault = False
@@ -192,6 +193,7 @@ object MainForm: TMainForm
       Enabled = True
       ImageIndex = -1
       Position.X = 520.000000000000000000
+      RepeatClick = True
       Size.Width = 80.000000000000000000
       Size.Height = 80.000000000000000000
       Size.PlatformDefault = False

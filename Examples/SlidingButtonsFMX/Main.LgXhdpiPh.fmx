@@ -1,0 +1,78 @@
+inherited Form2_LgXhdpiPh: TForm2_LgXhdpiPh
+  ClientHeight = 695
+  ClientWidth = 450
+  DesignerMasterStyle = 0
+  inherited LinearSlideButton: TButton
+    Size.Width = 100.000000000000000000
+  end
+  inherited SlideBounceButton: TButton
+    Size.Width = 100.000000000000000000
+  end
+  inherited SlideCircleButton: TButton
+    Position.X = 125.000000000000000000
+    Size.Width = 100.000000000000000000
+  end
+  inherited HighWaveButton: TButton
+    Position.X = 229.000000000000000000
+    Size.Width = 100.000000000000000000
+  end
+  inherited LowWaveSlideButton: TButton
+    Size.Width = 100.000000000000000000
+  end
+  inherited MiddleWaveSlideButton: TButton
+    Position.X = 125.000000000000000000
+    Size.Width = 100.000000000000000000
+  end
+  inherited BackSlideButton: TButton
+    Position.X = 229.000000000000000000
+    Size.Width = 100.000000000000000000
+  end
+  inherited SinusSlideButton: TButton
+    Size.Width = 100.000000000000000000
+  end
+  inherited ElasticSlideButton: TButton
+    Position.X = 125.000000000000000000
+    Size.Width = 100.000000000000000000
+  end
+  inherited QuadSlideButton: TButton
+    Position.X = 125.000000000000000000
+    Size.Width = 100.000000000000000000
+  end
+  inherited SextSlideButton: TButton
+    Position.X = 229.000000000000000000
+    Size.Width = 100.000000000000000000
+  end
+  inherited QuartSlideButton: TButton
+    Size.Width = 100.000000000000000000
+  end
+  inherited CubicSlideButton: TButton
+    Position.X = 229.000000000000000000
+    Size.Width = 100.000000000000000000
+  end
+  inherited QuintSlideButton: TButton
+    Position.X = 125.000000000000000000
+    Size.Width = 100.000000000000000000
+  end
+  inherited Label3: TLabel
+    Position.X = 184.341537475585900000
+    Position.Y = 590.132202148437500000
+  end
+  inherited Label2: TLabel
+    Position.X = 183.000000000000000000
+    Position.Y = 558.000000000000000000
+  end
+  inherited YTrackBar: TTrackBar
+    Position.X = 300.132873535156300000
+    Position.Y = 590.375610351562500000
+    Size.Height = 32.000000000000000000
+  end
+  inherited XTrackBar: TTrackBar
+    Position.X = 299.000000000000000000
+    Position.Y = 557.000000000000000000
+    Size.Height = 32.000000000000000000
+  end
+  inherited Label1: TLabel
+    Position.X = 184.000000000000000000
+    Position.Y = 616.000000000000000000
+  end
+end
