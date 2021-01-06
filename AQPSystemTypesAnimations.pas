@@ -47,9 +47,10 @@ type
       const Setter: TRefSystemTypeSetterProcedure<Single>; Duration: Integer; ID: Integer = 0;
       const EaseFunction: TEaseFunction = nil; const OnComplete: TAnonymNotifyEvent = nil): TAQ;
 
-    function ColorAnimation(const TargetColor: TColor;
-      const Getter: TRefSystemTypeGetterFunction<TColor>;
-      const Setter: TRefSystemTypeSetterProcedure<TColor>; Duration: Integer; ID: Integer = 0;
+    function ColorAnimation(const TargetColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
+      const Getter: TRefSystemTypeGetterFunction<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>;
+      const Setter: TRefSystemTypeSetterProcedure<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>;
+      Duration: Integer; ID: Integer = 0;
       const EaseFunction: TEaseFunction = nil; const OnComplete: TAnonymNotifyEvent = nil): TAQ;
 
     function RectAnimation(const TargetRect: TRect;
@@ -144,15 +145,16 @@ begin
     end);
 end;
 
-function TAQPSystemTypesAnimations.ColorAnimation(const TargetColor: TColor;
-  const Getter: TRefSystemTypeGetterFunction<TColor>;
-  const Setter: TRefSystemTypeSetterProcedure<TColor>; Duration, ID: Integer;
+function TAQPSystemTypesAnimations.ColorAnimation(
+  const TargetColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
+  const Getter: TRefSystemTypeGetterFunction<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>;
+  const Setter: TRefSystemTypeSetterProcedure<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>; Duration, ID: Integer;
   const EaseFunction: TEaseFunction; const OnComplete: TAnonymNotifyEvent): TAQ;
 begin
   Result := Each(
     function(AQ: TAQ; O: TObject): Boolean
     var
-      FromColor: TColor;
+      FromColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
     begin
       Result := True;
 
@@ -162,7 +164,7 @@ begin
         function(AQ: TAQ; O: TObject): Boolean
         var
           Progress: Real;
-          AniColor: TColor;
+          AniColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
         begin
           Result := True;
           Progress := AQ.CurrentInterval.Progress;

@@ -1563,14 +1563,15 @@ begin
   if StartColor = EndColor then
     Exit(StartColor);
 
-  StartCR.Color := {$IFDEF FMX}TAlphaColorRec{$ELSE}TColorRec{$ENDIF}.ColorToRGB(StartColor);
-  EndCR.Color := {$IFDEF FMX}TAlphaColorRec{$ELSE}TColorRec{$ENDIF}.ColorToRGB(EndColor);
+  StartCR.Color := StartColor;
+  EndCR.Color := EndColor;
   Progress := EaseFunction(Progress);
 
   Result := {$IFDEF FMX}MakeColor{$ELSE}RGB{$ENDIF}
     (Min(255, Max(0, EaseInteger(StartCR.R, EndCR.R, Progress, nil))),
     Min(255, Max(0, EaseInteger(StartCR.G, EndCR.G, Progress, nil))),
-    Min(255, Max(0, EaseInteger(StartCR.B, EndCR.B, Progress, nil))));
+    Min(255, Max(0, EaseInteger(StartCR.B, EndCR.B, Progress, nil)))
+    {$IFDEF FMX}, Min(255, Max(0, EaseInteger(StartCR.A, EndCR.A, Progress, nil))){$ENDIF});
 end;
 
 class function TAQ.EaseInteger(StartValue, EndValue: Integer; Progress: Real;
