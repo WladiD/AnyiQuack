@@ -1121,19 +1121,19 @@ begin
   Result := TargetAQ;
 end;
 
-function TAQ.DebugMessage(HeadMessage: String = ''; Caption: String = ''): TAQ;
-{$IFDEF DEBUG}
+function TAQ.DebugMessage(HeadMessage: string = ''; Caption: string = ''): TAQ;
+{$IFDEF OutputDebug}
 var
   ChainPath: TStringList;
   cc: Integer;
   IntervalsCount: Integer;
-  WholeMessage: String;
+  WholeMessage: string;
 {$ENDIF}
 begin
-  {$IFNDEF DEBUG}
+{$IFNDEF OutputDebug}
   Exit(Self);
-  {$ELSE}
-  {$IFDEF MSWINDOWS}
+{$ELSE}
+
   if SupervisorLock(Result, aqmDebugMessage) then
     Exit;
   ChainPath := TStringList.Create;
@@ -1155,13 +1155,13 @@ begin
 
   WholeMessage := ChainPath.Text;
   if HeadMessage <> '' then
-    WholeMessage := HeadMessage + #10#13 + '-------------------------------' + #10#13 +
+    WholeMessage := HeadMessage + sLineBreak + '-------------------------------' + sLineBreak +
       WholeMessage;
-  MessageBox(0, PWideChar(WholeMessage), PWideChar(Caption), MB_OK or MB_ICONINFORMATION);
-//OutputDebug(WholeMessage); // If anybody don't like MessageBox...
-  {$ENDIF}
+
+  OutputDebug(WholeMessage); // If anybody don't like MessageBox...
+
   Result := Self; // Important, because Result is assigned in the loop above
-  {$ENDIF}
+{$ENDIF}
 end;
 
 function TAQ.DelayActorsChain(ID: Integer; IncludeOrphans: Boolean): TAQ;
@@ -2665,12 +2665,14 @@ var
   LocalInterval: Integer;
 
   procedure RaiseTimer;
+{$IFDEF MSWINDOWS}
   var
 {$IF CompilerVersion >= 23.0}
     MessageResult: NativeUInt; // Since XE2
 {$ELSE}
     MessageResult: Cardinal;
 {$IFEND}
+{$ENDIF}
   begin
 {$IFDEF MSWINDOWS}
     SendMessageTimeout(FWindowHandle, WM_TIMER, 0, 0, SMTO_ABORTIFHUNG, LocalInterval,
