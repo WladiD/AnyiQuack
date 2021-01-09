@@ -32,6 +32,9 @@ uses
   Winapi.Windows,
   Winapi.Messages,
 {$ENDIF}
+{$IFDEF FMX}
+  FMX.Types,
+{$ENDIF}
   System.SysUtils,
   System.Types,
   System.Classes,
@@ -45,7 +48,7 @@ uses
   Generics.Collections;
 
 const
-  Version = '1.1.0';
+  Version = '2.0.0';
 
 type
   EAQ = class(Exception);
@@ -499,8 +502,8 @@ const
   IntervalResolution = 20;
 {$ENDIF}
   GarbageCleanInterval = 5000;
-  GarbageCleanTime = IntervalResolution div 2;
-  SpareAQsCount = 1000;
+  // The garbage collector has just x ms per cleanup round
+  GarbageCleanTime = 25;
 
 const
   RecurseBitMask       = $01;
@@ -702,6 +705,26 @@ begin
   Result := (Container and BitMask) <> 0;
 end;
 
+{$IFDEF OutputDebug}
+procedure OutputDebug(const Fmt: string; const Args: array of const); overload;
+begin
+{$IFDEF FMX}
+  Log.d(Fmt, Args)
+{$ELSE}
+  OutputDebugString(PChar(Format(Fmt, Args)));
+{$ENDIF}
+end;
+
+procedure OutputDebug(const Msg: string); overload;
+begin
+{$IFDEF FMX}
+  Log.d(Msg)
+{$ELSE}
+  OutputDebugString(Msg);
+{$ENDIF}
+end;
+{$ENDIF}
+
 { TAQBase }
 
 constructor TAQBase.Create;
@@ -778,8 +801,7 @@ begin
     FActiveIntervalAQs.Add(Self);
   GetIntervals.Add(Interval);
   {$IFDEF OutputDebugActiveIntervals}
-    OutputDebugString(PWideChar('TAQ-Instanzen mit Intervallen: ' +
-      IntToStr(FActiveIntervalAQs.Count)));
+    OutputDebug('TAQ-Instanzen mit Intervallen: ' + IntToStr(FActiveIntervalAQs.Count)));
   {$ENDIF}
 end;
 
@@ -1136,7 +1158,7 @@ begin
     WholeMessage := HeadMessage + #10#13 + '-------------------------------' + #10#13 +
       WholeMessage;
   MessageBox(0, PWideChar(WholeMessage), PWideChar(Caption), MB_OK or MB_ICONINFORMATION);
-//	OutputDebugString(PWideChar(WholeMessage)); // If anybody don't like MessageBox...
+//OutputDebug(WholeMessage); // If anybody don't like MessageBox...
   {$ENDIF}
   Result := Self; // Important, because Result is assigned in the loop above
   {$ENDIF}
@@ -2005,73 +2027,66 @@ begin
 end;
 
 class function TAQ.GarbageCollector: TAQ;
+var
+  GCDumpAQ: TAQ;
 begin
   if Initialized then
     Exit(FGC);
 
   Initialize;
 
-  FGC.EachInterval(GarbageCleanInterval,
+  // Special AQ for the dump of the garbage collector
+  GCDumpAQ := TAQ.Managed;
+  GCDumpAQ.Recurse := False;
+  GCDumpAQ.Immortally := True;
+  GCDumpAQ.Add(FGC);
+
+  GCDumpAQ.EachInterval(GarbageCleanInterval,
     {**
      * In GarbageCollector befindet sich der FGarbageCollector selbst und
      * in O eine TAQ-Instanz die auf ihre Lebenszeichen untersucht werden muss.
      *}
-    function(GC: TAQ; O: TObject): Boolean
+    function(AQ: TAQ; O: TObject): Boolean
     var
       CleanEndTick: Int64;
-      AQsForDestroy: Integer;
+      GCCleanTimeout: Boolean;
+      GCCleanIterations: Integer;
     begin
-      {**
-       * Soll nur einmal ausgeführt werden, da die eigentliche Bereinigung in den
-       * untergeordeneten Eachs abläuft
-       *}
       // False means here, that this closure is only called once per Interval, because the
-      // actually clean up is performed in the subsequent Each calls.
+      // clean up is performed in the subsequent Each calls.
       Result := False;
 
-      // Determine the count of dead TAQ instances
-      AQsForDestroy := 0;
-      GC.Each(
-        function(AQ: TAQ; O: TObject): Boolean
-        begin
-          if (O is TAQ) and not TAQ(O).IsAlive then
-            Inc(AQsForDestroy);
-          Result := True;
-        end);
-
-      // Clean up is only performed when SpareAQsCount is exceeded
-      if AQsForDestroy < SpareAQsCount then
-      begin
-        {$IFDEF OutputDebugGCFree}
-        OutputDebugString(PWideChar(Format('Clean up skipped, beacause the spare limit (%d) isn''t exsceeded (%d)',
-          [SpareAQsCount, AQsForDestroy])));
-        {$ENDIF}
-        Exit;
-      end;
-
       CleanEndTick := FStopWatch.ElapsedMilliseconds + GarbageCleanTime;
+      GCCleanTimeout := False;
+      GCCleanIterations := 0;
 
-      GC.Each(
+      FGC.Each(
         function(GC: TAQ; O: TObject): Boolean
+
+          procedure UpdateGCCleanTimeout;
+          begin
+            GCCleanTimeout := CleanEndTick <= FStopWatch.ElapsedMilliseconds;
+          end;
+
         begin
+          Inc(GCCleanIterations);
+
           if (O is TAQ) and not TAQ(O).IsAlive then
           begin
             GC.Remove(O);
-            Dec(AQsForDestroy);
+            UpdateGCCleanTimeout;
             {$IFDEF OutputDebugGCFree}
-            OutputDebugString(PWideChar(Format('TAQ released. Left instances in GarbageCollector: %d.',
-              [GarbageCollector.Count])));
+            OutputDebug('TAQ released. Left instances in GarbageCollector: %d.', [GC.Count]);
             {$ENDIF}
-          end;
-          // Conditional cleanup runtime
-          // It runs as long there are more destroyable instances as SpareAQsCount
-          // or until GarbageCleanTime expired
-          Result := (AQsForDestroy > SpareAQsCount) or
-            (CleanEndTick >= FStopWatch.ElapsedMilliseconds);
+          end
+          else if (GCCleanIterations mod 25) = 0 then
+            UpdateGCCleanTimeout;
+
+          Result := not GCCleanTimeout;
         end);
         {$IFDEF OutputDebugGCFree}
-        if CleanEndTick < FStopWatch.ElapsedMilliseconds then
-          OutputDebugString('Cleanup process aborted prematurely, because the timeout expired.');
+        if GCCleanTimeout then
+          OutputDebug('Cleanup process aborted prematurely, because the timeout expired.');
         {$ENDIF}
     end);
 
@@ -2124,43 +2139,14 @@ end;
 // Returns a managed TAQ instance
 //
 // Managed means, that you don't need to worry about memory leaks ;-)
-// There is a simple (but maybe powerful) garbage collector implementation. By requesting for a
-// managed instance it looks primary in the garabage for an died TAQ instance and in case returning
-// it.
 class function TAQ.Managed: TAQ;
-var
-  ManagedAQ: TAQ;
 begin
-  ManagedAQ := nil;
-
-  // Looks in in the GarbageCollector for an died TAQ instance
-  GarbageCollector.Each(
-    function(AQ: TAQ; O: TObject): Boolean
-    begin
-      if (O is TAQ) and not TAQ(O).IsAlive then
-      begin
-        ManagedAQ := TAQ(O);
-        ManagedAQ.Clean;
-        ManagedAQ.HeartBeat;
-{$IFDEF OutputDebugGCRecycle}
-        OutputDebugString(PWideChar(Format('TAQ %p at index #%d of GC recycled.',
-          [@O, AQ.IndexOf(O)])));
-{$ENDIF}
-      end;
-      // Let the Each run, until we find an died TAQ instance
-      Result := not Assigned(ManagedAQ);
-    end);
-
-  if Assigned(ManagedAQ) then
-    Exit(ManagedAQ);
-
   Result := TAQ.Create;
   Result.HeartBeat;
   // This is the whole magic behind the managed TAQ instance
   GarbageCollector.Add(Result);
 {$IFDEF OutputDebugGCCreate}
-  OutputDebugString(PWideChar(Format('New TAQ %p in GC at index #%d.',
-    [@Result, GarbageCollector.IndexOf(Result)])));
+  OutputDebug('New TAQ %p in GC at index #%d.', [@Result, GarbageCollector.IndexOf(Result)]);
 {$ENDIF}
 end;
 
@@ -2270,8 +2256,7 @@ begin
   if FIntervals.Count = 0 then
     FActiveIntervalAQs.Remove(Self);
   {$IFDEF OutputDebugActiveIntervals}
-    OutputDebugString(PWideChar('TAQ instances with intervals: ' +
-      IntToStr(FActiveIntervalAQs.Count)));
+    OutputDebug('TAQ instances with intervals: ' + IntToStr(FActiveIntervalAQs.Count));
   {$ENDIF}
 end;
 
@@ -2331,206 +2316,26 @@ begin
   end;
 end;
 
-// Private function, used by the overloaded TAQ.Take methods
-//
-// @param AQ Is will be only assigned, if the result is True
-function PrimaryRetakeCheck(CheckForAQ: TObject; First: TObject; ObjectsCount: Integer;
-  out AQ: TAQ): Boolean; inline;
-var
-  CheckAQ: TAQ;
-begin
-  if not (CheckForAQ is TAQ) then
-    Exit(False);
-  CheckAQ := TAQ(CheckForAQ);
-  Result := (CheckAQ.Count = ObjectsCount) and (CheckAQ.FConditionCount = 0) and
-     (CheckAQ[0] = First) and not CheckAQ.ConditionLock and CheckAQ.Recurse
-    {and (AQ.FChainedTo = nil)};
-  if Result then
-    AQ := CheckAQ;
-end;
-
-procedure RetakeDebugMessage(RetakenAQ: TAQ);
-begin
-{$IFDEF MSWINDOWS}
-  OutputDebugString(PWideChar(Format('TAQ %p at index #%d of GC retaken.',
-    [@RetakenAQ, TAQ.GarbageCollector.IndexOf(RetakenAQ)])));
-{$ENDIF}
-end;
-
 class function TAQ.Take(const Objects: TObjectArray): TAQ;
-{$IFDEF RetakeFromGC}
-var
-  AQMatch: TAQ;
-  ObjectsCount: Integer;
-begin
-  AQMatch := nil;
-  ObjectsCount := Length(Objects);
-
-  if ObjectsCount > 0 then
-    GarbageCollector.Each(
-      function(GC: TAQ; O: TObject): Boolean
-      var
-        cc: Integer;
-        Match: Boolean;
-        AQ: TAQ;
-      begin
-        Match := PrimaryRetakeCheck(O, Objects[0], ObjectsCount, AQ);
-        if Match then
-        begin
-          for cc := 1 to ObjectsCount - 1 do // Note: Begin at index 1, because IsAQMatch has already tested on 0
-            if AQ[cc] <> Objects[cc] then
-            begin
-              Match := False;
-              Break;
-            end;
-          if Match then
-            AQMatch := AQ;
-        end;
-        Result := not Match; // Break the Each, if the first TAQ instance matched
-      end);
-
-  if Assigned(AQMatch) then
-  begin
-    AQMatch.HeartBeat;
-    Result := AQMatch;
-{$IFDEF OutputDebugGCRetake}
-    RetakeDebugMessage(Result);
-{$ENDIF}
-  end
-  else
-    Result := Managed.Append(Objects);
-{$ELSE}
 begin
   Result := Managed.Append(Objects);
-{$ENDIF}
 end;
 
 class function TAQ.Take(AObject: TObject): TAQ;
-{$IFDEF RetakeFromGC}
-var
-  AQMatch: TAQ;
-begin
-  AQMatch := nil;
-  GarbageCollector.Each(
-    function(GC: TAQ; O: TObject): Boolean
-    begin
-      Result := not PrimaryRetakeCheck(O, AObject, 1, AQMatch);
-    end);
-
-  if Assigned(AQMatch) then
-  begin
-    AQMatch.HeartBeat;
-    Result := AQMatch;
-{$IFDEF OutputDebugGCRetake}
-    RetakeDebugMessage(Result);
-{$ENDIF}
-  end
-  else
-    Result := Managed.Append(AObject);
-{$ELSE}
 begin
   Result := Managed.Append(AObject);
-{$ENDIF}
 end;
 
 class function TAQ.Take(Objects: TObjectList<TObject>): TAQ;
-{$IFDEF RetakeFromGC}
-var
-  AQMatch: TAQ;
-  ObjectsCount: Integer;
-begin
-  AQMatch := nil;
-  ObjectsCount := Objects.Count;
-
-  if ObjectsCount > 0 then
-    GarbageCollector.Each(
-      function(GC: TAQ; O: TObject): Boolean
-      var
-        cc: Integer;
-        Match: Boolean;
-        AQ: TAQ;
-      begin
-        Match := PrimaryRetakeCheck(O, Objects[0], ObjectsCount, AQ);
-        if Match then
-        begin
-          for cc := 1 to ObjectsCount - 1 do // Note: Begin at index 1, because IsAQMatch has already tested on 0
-            if AQ[cc] <> Objects[cc] then
-            begin
-              Match := False;
-              Break;
-            end;
-          if Match then
-            AQMatch := AQ;
-        end;
-
-        Result := not Match;  // Break the Each, if the first TAQ instance matched
-      end);
-
-  if Assigned(AQMatch) then
-  begin
-    AQMatch.HeartBeat;
-    Result := AQMatch;
-{$IFDEF OutputDebugGCRetake}
-    RetakeDebugMessage(Result);
-{$ENDIF}
-  end
-  else
-    Result := Managed.Append(Objects);
-{$ELSE}
 begin
   Result := Managed.Append(Objects);
-{$ENDIF}
 end;
 
 class function TAQ.Take<T>(Objects: TObjectList<T>): TAQ;
 var
   cc: Integer;
-{$IFDEF RetakeFromGC}
-  AQMatch: TAQ;
-  ObjectsCount: Integer;
-begin
-  AQMatch := nil;
-  ObjectsCount := Objects.Count;
-
-  if ObjectsCount > 0 then
-    GarbageCollector.Each(
-      function(GC: TAQ; O: TObject): Boolean
-      var
-        cc: Integer;
-        Match: Boolean;
-        AQ: TAQ;
-      begin
-        Match := PrimaryRetakeCheck(O, Objects[0], ObjectsCount, AQ);
-        if Match then
-        begin
-          for cc := 1 to ObjectsCount - 1 do // Note: Begin at index 1, because IsAQMatch has already tested on 0
-            if AQ[cc] <> TObject(Objects[cc]) then
-            begin
-              Match := False;
-              Break;
-            end;
-          if Match then
-            AQMatch := AQ;
-        end;
-
-        Result := not Match;  // Break the Each, if the first TAQ instance matched
-      end);
-
-  if Assigned(AQMatch) then
-  begin
-    AQMatch.HeartBeat;
-    Result := AQMatch;
-{$IFDEF OutputDebugGCRetake}
-    RetakeDebugMessage(Result);
-{$ENDIF}
-    Exit;
-  end
-  else
-    Result := Managed;
-{$ELSE}
 begin
   Result := Managed;
-{$ENDIF}
   for cc := 0 to Objects.Count - 1 do
     Result.Add(Objects[cc]);
 end;
