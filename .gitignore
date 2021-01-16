@@ -9,6 +9,6 @@ Examples/EasingSuite/EasingSuite.dres
 Examples/EasingSuite/EasingSuiteResource.rc
 Examples/SlidingButtonsFMX/Android/
 *.res
-Examples/SlidingButtonsFMX/OSX32/
-Examples/AnimatedAlignFMX/Android/
-Examples/AnimatedAlignFMX/OSX32/
+# Exclude all output paths of the examples
+Examples/*/Android*/**
+Examples/*/Win*/**
