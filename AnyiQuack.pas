@@ -303,15 +303,21 @@ type
       EaseModifier: TEaseModifier = emIn): Real; overload;
     class function EaseReal(StartValue, EndValue, Progress: Real;
       const EaseFunction: TEaseFunction): Real; overload;
+    class function EaseReal(const Values: TArray<Real>; Progress: Real;
+      const EaseFunction: TEaseFunction): Real; overload;
 
     class function EaseSingle(StartValue, EndValue: Single; Progress: Real; EaseType: TEaseType;
       EaseModifier: TEaseModifier = emIn): Real; overload;
     class function EaseSingle(StartValue, EndValue: Single; Progress: Real;
       const EaseFunction: TEaseFunction): Real; overload;
+    class function EaseSingle(const Values: TSingleDynArray; Progress: Real;
+      const EaseFunction: TEaseFunction): Real; overload;
 
     class function EaseInteger(StartValue, EndValue: Integer; Progress: Real; EaseType: TEaseType;
       EaseModifier: TEaseModifier = emIn): Integer; overload;
     class function EaseInteger(StartValue, EndValue: Integer; Progress: Real;
+      const EaseFunction: TEaseFunction): Integer; overload;
+    class function EaseInteger(const Values: TIntegerDynArray; Progress: Real;
       const EaseFunction: TEaseFunction): Integer; overload;
 
     class function EaseColor(
@@ -320,15 +326,21 @@ type
     class function EaseColor(
       StartColor, EndColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; Progress: Real;
       const EaseFunction: TEaseFunction): {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; overload;
+    class function EaseColor(const Colors: TArray<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>;
+      Progress: Real; const EaseFunction: TEaseFunction): {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}; overload;
 
     class function EasePoint(const StartPoint, EndPoint: TPoint; Progress: Real; EaseType: TEaseType;
       EaseModifier: TEaseModifier = emIn): TPoint; overload;
     class function EasePoint(const StartPoint, EndPoint: TPoint; Progress: Real;
       const EaseFunction: TEaseFunction): TPoint; overload;
+    class function EasePoint(const Points: TArray<TPoint>; Progress: Real;
+      const EaseFunction: TEaseFunction): TPoint; overload;
 {$IFDEF FMX}
-    class function EasePointF(const StartPoint, EndPoint: TPointF; Progress: Real; EaseType: TEaseType;
-      EaseModifier: TEaseModifier = emIn): TPointF; overload;
     class function EasePointF(const StartPoint, EndPoint: TPointF; Progress: Real;
+      EaseType: TEaseType; EaseModifier: TEaseModifier = emIn): TPointF; overload;
+    class function EasePointF(const StartPoint, EndPoint: TPointF; Progress: Real;
+      const EaseFunction: TEaseFunction): TPointF; overload;
+    class function EasePointF(const Points: TArray<TPointF>; Progress: Real;
       const EaseFunction: TEaseFunction): TPointF; overload;
 {$ENDIF}
 
@@ -336,10 +348,14 @@ type
       EaseModifier: TEaseModifier = emIn): TRect; overload;
     class function EaseRect(const StartRect, EndRect: TRect; Progress: Real;
       const EaseFunction: TEaseFunction): TRect; overload;
+    class function EaseRect(const Rects: TArray<TRect>; Progress: Real;
+      const EaseFunction: TEaseFunction): TRect; overload;
 {$IFDEF FMX}
     class function EaseRectF(const StartRect, EndRect: TRectF; Progress: Real; EaseType: TEaseType;
       EaseModifier: TEaseModifier = emIn): TRectF; overload;
     class function EaseRectF(const StartRect, EndRect: TRectF; Progress: Real;
+      const EaseFunction: TEaseFunction): TRectF; overload;
+    class function EaseRectF(const Rects: TArray<TRectF>; Progress: Real;
       const EaseFunction: TEaseFunction): TRectF; overload;
 {$ENDIF}
 
@@ -506,6 +522,9 @@ type
   function OA(const Objects: array of TObject): TObjectArray;
 
   function MatchID(CompareID, CurrentID: Integer): Boolean;
+
+  procedure ProgressMap(EntriesCount: Integer; Progress: Real; out SubProgress: Real;
+    out IndexA, IndexB: Integer);
 
 const
   MaxLifeTime = 10000;
@@ -707,6 +726,21 @@ begin
     ((CompareID > 0) and (CompareID = CurrentID)) or
     ((CompareID = -1) and (CurrentID = 0)) or
     ((CompareID = -2) and (CurrentID > 0));
+end;
+
+procedure ProgressMap(EntriesCount: Integer; Progress: Real; out SubProgress: Real;
+  out IndexA, IndexB: Integer);
+var
+  Step: Real;
+begin
+  if EntriesCount < 2 then
+    Exit;
+  Step := 1 / (EntriesCount - 1);
+  IndexA := Trunc(Progress / Step);
+  IndexB := (IndexA + 1);
+  if IndexB >= EntriesCount then
+    IndexB := EntriesCount - 1;
+  SubProgress := Min(Max((Progress - (Step * IndexA)) / Step, 0), 1);
 end;
 
 procedure SetBit(var Container: Byte; BitMask: Byte; Value: Boolean);
@@ -1604,7 +1638,8 @@ begin
 
   StartCR.Color := {$IFDEF FMX}StartColor{$ELSE}TColors.ColorToRGB(StartColor){$ENDIF};
   EndCR.Color := {$IFDEF FMX}EndColor{$ELSE}TColors.ColorToRGB(EndColor){$ENDIF};
-  Progress := EaseFunction(Progress);
+  if Assigned(EaseFunction) then
+    Progress := EaseFunction(Progress);
 
   Result := {$IFDEF FMX}MakeColor{$ELSE}RGB{$ENDIF}
     (Min(255, Max(0, EaseInteger(StartCR.R, EndCR.R, Progress, nil))),
@@ -1613,12 +1648,23 @@ begin
     {$IFDEF FMX}, Min(255, Max(0, EaseInteger(StartCR.A, EndCR.A, Progress, nil))){$ENDIF});
 end;
 
-class function TAQ.EaseInteger(StartValue, EndValue: Integer; Progress: Real;
-  const EaseFunction: TEaseFunction): Integer;
+class function TAQ.EaseColor(const Colors: TArray<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>;
+  Progress: Real; const EaseFunction: TEaseFunction): {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
+var
+  IndexA, IndexB: Integer;
+  SubProgress: Real;
 begin
   if Assigned(EaseFunction) then
     Progress := EaseFunction(Progress);
-  Result := Round(StartValue + ((EndValue - StartValue) * Progress));
+
+  ProgressMap(Length(Colors), Progress, SubProgress, IndexA, IndexB);
+  Result := EaseColor(Colors[IndexA], Colors[IndexB], SubProgress, nil);
+end;
+
+class function TAQ.EasePoint(const StartPoint, EndPoint: TPoint; Progress: Real; EaseType: TEaseType;
+  EaseModifier: TEaseModifier): TPoint;
+begin
+  Result := EasePoint(StartPoint, EndPoint, Progress, Ease(EaseType, EaseModifier));
 end;
 
 class function TAQ.EasePoint(const StartPoint, EndPoint: TPoint; Progress: Real;
@@ -1631,10 +1677,17 @@ begin
     EaseInteger(StartPoint.Y, EndPoint.Y, Progress, nil));
 end;
 
-class function TAQ.EasePoint(const StartPoint, EndPoint: TPoint; Progress: Real; EaseType: TEaseType;
-  EaseModifier: TEaseModifier): TPoint;
+class function TAQ.EasePoint(const Points: TArray<TPoint>; Progress: Real;
+  const EaseFunction: TEaseFunction): TPoint;
+var
+  IndexA, IndexB: Integer;
+  SubProgress: Real;
 begin
-  Result := EasePoint(StartPoint, EndPoint, Progress, Ease(EaseType, EaseModifier));
+  if Assigned(EaseFunction) then
+    Progress := EaseFunction(Progress);
+
+  ProgressMap(Length(Points), Progress, SubProgress, IndexA, IndexB);
+  Result := TAQ.EasePoint(Points[IndexA], Points[IndexB], SubProgress, nil);
 end;
 
 {$IFDEF FMX}
@@ -1648,10 +1701,23 @@ begin
     EaseSingle(StartPoint.Y, EndPoint.Y, Progress, nil));
 end;
 
-class function TAQ.EasePointF(const StartPoint, EndPoint: TPointF; Progress: Real; EaseType: TEaseType;
-  EaseModifier: TEaseModifier = emIn): TPointF;
+class function TAQ.EasePointF(const StartPoint, EndPoint: TPointF; Progress: Real;
+  EaseType: TEaseType; EaseModifier: TEaseModifier = emIn): TPointF;
 begin
   Result := EasePointF(StartPoint, EndPoint, Progress, Ease(EaseType, EaseModifier));
+end;
+
+class function TAQ.EasePointF(const Points: TArray<TPointF>; Progress: Real;
+  const EaseFunction: TEaseFunction): TPointF;
+var
+  IndexA, IndexB: Integer;
+  SubProgress: Real;
+begin
+  if Assigned(EaseFunction) then
+    Progress := EaseFunction(Progress);
+
+  ProgressMap(Length(Points), Progress, SubProgress, IndexA, IndexB);
+  Result := EasePointF(Points[IndexA], Points[IndexB], SubProgress, nil);
 end;
 {$ENDIF}
 
@@ -1659,6 +1725,33 @@ class function TAQ.EaseInteger(StartValue, EndValue: Integer; Progress: Real; Ea
   EaseModifier: TEaseModifier): Integer;
 begin
   Result := EaseInteger(StartValue, EndValue, Progress, Ease(EaseType, EaseModifier));
+end;
+
+class function TAQ.EaseInteger(StartValue, EndValue: Integer; Progress: Real;
+  const EaseFunction: TEaseFunction): Integer;
+begin
+  if Assigned(EaseFunction) then
+    Progress := EaseFunction(Progress);
+  Result := Round(StartValue + ((EndValue - StartValue) * Progress));
+end;
+
+class function TAQ.EaseInteger(const Values: TIntegerDynArray; Progress: Real;
+  const EaseFunction: TEaseFunction): Integer;
+var
+  IndexA, IndexB: Integer;
+  SubProgress: Real;
+begin
+  if Assigned(EaseFunction) then
+    Progress := EaseFunction(Progress);
+
+  ProgressMap(Length(Values), Progress, SubProgress, IndexA, IndexB);
+  Result := EaseInteger(Values[IndexA], Values[IndexB], Progress, nil);
+end;
+
+class function TAQ.EaseReal(StartValue, EndValue, Progress: Real; EaseType: TEaseType;
+  EaseModifier: TEaseModifier): Real;
+begin
+  Result := EaseReal(StartValue, EndValue, Progress, Ease(EaseType, EaseModifier));
 end;
 
 class function TAQ.EaseReal(StartValue, EndValue, Progress: Real;
@@ -1669,10 +1762,23 @@ begin
   Result := StartValue + ((EndValue - StartValue) * Progress);
 end;
 
-class function TAQ.EaseReal(StartValue, EndValue, Progress: Real; EaseType: TEaseType;
-  EaseModifier: TEaseModifier): Real;
+class function TAQ.EaseReal(const Values: TArray<Real>; Progress: Real;
+  const EaseFunction: TEaseFunction): Real;
+var
+  IndexA, IndexB: Integer;
+  SubProgress: Real;
 begin
-  Result := EaseReal(StartValue, EndValue, Progress, Ease(EaseType, EaseModifier));
+  if Assigned(EaseFunction) then
+    Progress := EaseFunction(Progress);
+
+  ProgressMap(Length(Values), Progress, SubProgress, IndexA, IndexB);
+  Result := EaseReal(Values[IndexA], Values[IndexB], SubProgress, nil);
+end;
+
+class function TAQ.EaseSingle(StartValue, EndValue: Single; Progress: Real; EaseType: TEaseType;
+  EaseModifier: TEaseModifier = emIn): Real;
+begin
+  Result := EaseSingle(StartValue, EndValue, Progress, Ease(EaseType, EaseModifier));
 end;
 
 class function TAQ.EaseSingle(StartValue, EndValue: Single; Progress: Real;
@@ -1683,10 +1789,23 @@ begin
   Result := StartValue + ((EndValue - StartValue) * Progress);
 end;
 
-class function TAQ.EaseSingle(StartValue, EndValue: Single; Progress: Real; EaseType: TEaseType;
-  EaseModifier: TEaseModifier = emIn): Real;
+class function TAQ.EaseSingle(const Values: TSingleDynArray; Progress: Real;
+  const EaseFunction: TEaseFunction): Real;
+var
+  IndexA, IndexB: Integer;
+  SubProgress: Real;
 begin
-  Result := EaseSingle(StartValue, EndValue, Progress, Ease(EaseType, EaseModifier));
+  if Assigned(EaseFunction) then
+    Progress := EaseFunction(Progress);
+
+  ProgressMap(Length(Values), Progress, SubProgress, IndexA, IndexB);
+  Result := EaseSingle(Values[IndexA], Values[IndexB], SubProgress, nil);
+end;
+
+class function TAQ.EaseRect(const StartRect, EndRect: TRect; Progress: Real; EaseType: TEaseType;
+  EaseModifier: TEaseModifier): TRect;
+begin
+  Result := EaseRect(StartRect, EndRect, Progress, Ease(EaseType, EaseModifier));
 end;
 
 class function TAQ.EaseRect(const StartRect, EndRect: TRect; Progress: Real;
@@ -1699,13 +1818,26 @@ begin
     EasePoint(StartRect.BottomRight, EndRect.BottomRight, Progress, nil));
 end;
 
-class function TAQ.EaseRect(const StartRect, EndRect: TRect; Progress: Real; EaseType: TEaseType;
-  EaseModifier: TEaseModifier): TRect;
+class function TAQ.EaseRect(const Rects: TArray<TRect>; Progress: Real;
+  const EaseFunction: TEaseFunction): TRect;
+var
+  IndexA, IndexB: Integer;
+  SubProgress: Real;
 begin
-  Result := EaseRect(StartRect, EndRect, Progress, Ease(EaseType, EaseModifier));
+  if Assigned(EaseFunction) then
+    Progress := EaseFunction(Progress);
+
+  ProgressMap(Length(Rects), Progress, SubProgress, IndexA, IndexB);
+  Result := EaseRect(Rects[IndexA], Rects[IndexB], SubProgress, nil);
 end;
 
 {$IFDEF FMX}
+class function TAQ.EaseRectF(const StartRect, EndRect: TRectF; Progress: Real; EaseType: TEaseType;
+  EaseModifier: TEaseModifier = emIn): TRectF;
+begin
+  Result := EaseRectF(StartRect, EndRect, Progress, Ease(EaseType, EaseModifier));
+end;
+
 class function TAQ.EaseRectF(const StartRect, EndRect: TRectF; Progress: Real;
   const EaseFunction: TEaseFunction): TRectF;
 begin
@@ -1715,11 +1847,19 @@ begin
   Result.BottomRight := EasePointF(StartRect.BottomRight, EndRect.BottomRight, Progress, nil);
 end;
 
-class function TAQ.EaseRectF(const StartRect, EndRect: TRectF; Progress: Real; EaseType: TEaseType;
-  EaseModifier: TEaseModifier = emIn): TRectF;
+class function TAQ.EaseRectF(const Rects: TArray<TRectF>; Progress: Real;
+  const EaseFunction: TEaseFunction): TRectF;
+var
+  IndexA, IndexB: Integer;
+  SubProgress: Real;
 begin
-  Result := EaseRectF(StartRect, EndRect, Progress, Ease(EaseType, EaseModifier));
+  if Assigned(EaseFunction) then
+    Progress := EaseFunction(Progress);
+
+  ProgressMap(Length(Rects), Progress, SubProgress, IndexA, IndexB);
+  Result := EaseRectF(Rects[IndexA], Rects[IndexB], SubProgress, nil);
 end;
+
 {$ENDIF}
 
 class function TAQ.EaseString(const StartString, EndString: String; Progress:
