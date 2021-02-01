@@ -26,6 +26,7 @@ uses
   System.SysUtils,
   System.Types,
   System.UITypes,
+  System.Math,
 
   AnyiQuack;
 
@@ -53,6 +54,13 @@ type
       Duration: Integer; ID: Integer = 0;
       const EaseFunction: TEaseFunction = nil; const OnComplete: TAnonymNotifyEvent = nil): TAQ;
 
+    function BlinkColor(
+      const Getter: TRefSystemTypeGetterFunction<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>;
+      const Setter: TRefSystemTypeSetterProcedure<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>;
+      ABlinkColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
+      Times, Duration: Integer; ID: Integer = 0;
+      const EaseFunction: TEaseFunction = nil; const OnComplete: TAnonymNotifyEvent = nil): TAQ;
+
     function RectAnimation(const TargetRect: TRect;
       const Getter: TRefSystemTypeGetterFunction<TRect>;
       const Setter: TRefSystemTypeSetterProcedure<TRect>; Duration: Integer; ID: Integer = 0;
@@ -63,9 +71,20 @@ type
       const Setter: TRefSystemTypeSetterProcedure<TRect>; Duration: Integer; ID: Integer = 0;
       const EaseFunction: TEaseFunction = nil;
       const OnComplete: TAnonymNotifyEvent = nil): TAQ; overload;
+
+    function ShakePoint(
+      const Getter: TRefSystemTypeGetterFunction<TPointF>;
+      const Setter: TRefSystemTypeSetterProcedure<TPointF>;
+      XTimes, XDiff, YTimes, YDiff, Duration, ID: Integer;
+      const OnComplete: TAnonymNotifyEvent): TAQ;
   end;
 
 implementation
+
+function SwingSingle(Times, Diff: Integer; Progress: Real): Single;
+begin
+  Result := Diff * Sin(Progress * Times * Pi * 2);
+end;
 
 procedure FireCompleteEvent(ForObject: TObject;
   const OnComplete: TAnonymNotifyEvent
@@ -178,6 +197,43 @@ begin
     end);
 end;
 
+function TAQPSystemTypesAnimations.BlinkColor(
+  const Getter: TRefSystemTypeGetterFunction<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>;
+  const Setter: TRefSystemTypeSetterProcedure<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>;
+  ABlinkColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
+  Times, Duration, ID: Integer;
+  const EaseFunction: TEaseFunction; const OnComplete: TAnonymNotifyEvent): TAQ;
+begin
+  Result := Each(
+    function(AQ: TAQ; O: TObject): Boolean
+    var
+      FromColor: {$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF};
+      Colors: TArray<{$IFDEF FMX}TAlphaColor{$ELSE}TColor{$ENDIF}>;
+      cc: Integer;
+    begin
+      Result := True;
+
+      FromColor := Getter(O);
+      SetLength(Colors, 1 + (Times * 2));
+      Colors[0] := FromColor;
+      for cc := 0 to Times - 1 do
+      begin
+        Colors[1 + (cc * 2)] := ABlinkColor;
+        Colors[2 + (cc * 2)] := FromColor;
+      end;
+
+      Take(O).EachAnimation(Duration,
+        function(AQ: TAQ; O: TObject): Boolean
+        begin
+          Result := True;
+          Setter(O, TAQ.EaseColor(Colors, AQ.CurrentInterval.Progress, EaseFunction));
+
+          if AQ.CurrentInterval.Progress = 1 then
+            FireCompleteEvent(O, OnComplete{$IFDEF OutputDebugAnimation}, 'BlinkColor'{$ENDIF});
+        end, nil, ID);
+    end);
+end;
+
 function TAQPSystemTypesAnimations.RectAnimation(const TargetRect: TRect;
   const Getter: TRefSystemTypeGetterFunction<TRect>;
   const Setter: TRefSystemTypeSetterProcedure<TRect>; Duration, ID: Integer;
@@ -221,6 +277,44 @@ begin
 
           if Progress = 1 then
             FireCompleteEvent(O, OnComplete{$IFDEF OutputDebugAnimation}, 'RectAnimation'{$ENDIF});
+        end, nil, ID);
+    end);
+end;
+
+function TAQPSystemTypesAnimations.ShakePoint(const Getter: TRefSystemTypeGetterFunction<TPointF>;
+  const Setter: TRefSystemTypeSetterProcedure<TPointF>; XTimes, XDiff, YTimes, YDiff, Duration,
+  ID: Integer; const OnComplete: TAnonymNotifyEvent): TAQ;
+begin
+  Result := Each(
+    function(AQ: TAQ; O: TObject): Boolean
+    var
+      PrevPoint: TPointF;
+    begin
+      Result := True;
+      PrevPoint := Getter(O);
+
+      Take(O).EachAnimation(Duration,
+        function(AQ: TAQ; O: TObject): Boolean
+        var
+          Progress: Real;
+          AniPoint: TPointF;
+        begin
+          Result := True;
+          Progress := AQ.CurrentInterval.Progress;
+          AniPoint := PrevPoint;
+
+          if Progress < 1 then
+          begin
+            if XDiff > 0 then
+              AniPoint.X := AniPoint.X + SwingSingle(XTimes, XDiff, Progress);
+            if YDiff > 0 then
+              AniPoint.Y := AniPoint.Y + SwingSingle(YTimes, YDiff, Progress);
+          end;
+
+          Setter(O, AniPoint);
+
+          if Progress = 1 then
+            FireCompleteEvent(O, OnComplete{$IFDEF OutputDebugAnimation}, 'ShakePoint'{$ENDIF});
         end, nil, ID);
     end);
 end;
