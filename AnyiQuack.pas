@@ -232,6 +232,7 @@ type
     FChainedTo: TAQ;
     FConditionCount: Byte;
     FBools: Byte;
+    FImmortally: Boolean;
 
     function HasActors(ActorRole: TActorRole; ID: Integer = 0): Boolean;
 
@@ -264,12 +265,10 @@ type
     function GetRecurse: Boolean;
     procedure SetConditionLock(Value: Boolean);
     function GetConditionLock: Boolean;
-    procedure SetImmortally(Value: Boolean);
-    function GetImmortally: Boolean;
 
     property Recurse: Boolean read GetRecurse write SetRecurse;
     property ConditionLock: Boolean read GetConditionLock write SetConditionLock;
-    property Immortally: Boolean read GetImmortally write SetImmortally;
+    property Immortally: Boolean read FImmortally write FImmortally;
 
   // Because TAQ is sealed, no new methods are introduced as protected, but some must be overriden
   protected
@@ -544,7 +543,6 @@ const
 const
   RecurseBitMask       = $01;
   ConditionLockBitMask = $02;
-  ImmortallyBitMask    = $04;
 
 var
   Initialized, Finalized: Boolean;
@@ -1962,11 +1960,6 @@ begin
   Result := GetBit(FBools, ConditionLockBitMask);
 end;
 
-function TAQ.GetImmortally: Boolean;
-begin
-  Result := GetBit(FBools, ImmortallyBitMask);
-end;
-
 function TAQ.GetIntervals: TObjectList<TObject>;
 begin
   if not Assigned(FIntervals) then
@@ -2471,13 +2464,6 @@ begin
   if Value = ConditionLock then
     Exit;
   SetBit(FBools, ConditionLockBitMask, Value);
-end;
-
-procedure TAQ.SetImmortally(Value: Boolean);
-begin
-  if Value = Immortally then
-    Exit;
-  SetBit(FBools, ImmortallyBitMask, Value);
 end;
 
 procedure TAQ.SetRecurse(Value: Boolean);
