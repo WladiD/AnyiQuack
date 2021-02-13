@@ -276,6 +276,12 @@ type
 
   // Public class related stuff
   public
+    // Maximum life time of an active TAQ instance (animation, delay, interval) in milliseconds
+    // Default is 10000
+    class var MaxLifeTime: Integer;
+
+    class constructor Create;
+
     class procedure Initialize;
     class procedure Finalize;
 
@@ -524,9 +530,6 @@ type
 
   procedure ProgressMap(EntriesCount: Integer; Progress: Real; out SubProgress: Real;
     out IndexA, IndexB: Integer);
-
-const
-  MaxLifeTime = 10000;
 
 implementation
 
@@ -1006,6 +1009,11 @@ begin
       Result := not Found;
     end);
   Result := Found;
+end;
+
+class constructor TAQ.Create;
+begin
+  MaxLifeTime := 10000;
 end;
 
 constructor TAQ.Create;
